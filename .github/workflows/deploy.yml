@@ -1,15 +1,17 @@
 name: Deploy Admin Angular
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Angular code
         uses: actions/checkout@v4
 
       - name: Setup Node.js 20
@@ -19,28 +21,106 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
-      - name: Build production
-        run: npm run build -- --configuration production
+      - name: Build Angular production
+        run: |
+          npm run build -- --configuration production
 
-      - name: Copy files to VPS
-        uses: appleboy/scp-action@v0.1.7
+      - name: Find Angular build output folder
+        id: find_dist
+        shell: bash
+        run: |
+          BUILD_DIR=$(find dist -type f -name "index.html" -printf '%h\n' | head -n 1)
+
+          if [ -z "$BUILD_DIR" ]; then
+            echo "Angular build output not found. No index.html inside dist folder."
+            echo "Current dist content:"
+            find dist -maxdepth 4 -type f || true
+            exit 1
+          fi
+
+          echo "Using Angular build folder: $BUILD_DIR"
+          echo "build_dir=$BUILD_DIR" >> $GITHUB_OUTPUT
+
+      - name: Prepare deploy folder
+        shell: bash
+        run: |
+          rm -rf deploy
+          mkdir -p deploy
+
+          cp -a "${{ steps.find_dist.outputs.build_dir }}/." deploy/
+
+          echo "Deploy folder content:"
+          ls -la deploy
+
+          if [ ! -f deploy/index.html ]; then
+            echo "index.html missing from deploy folder."
+            exit 1
+          fi
+
+      - name: Prepare temporary upload folder on VPS
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
-          username: deployer
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./dist/admin-angular/browser/*"
-          target: "/var/www/crm-admin"
-          strip_components: 3
-          rm: true
-
-      - name: Reload Nginx
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: deployer
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASS }}
+          port: ${{ secrets.SERVER_PORT }}
           script: |
-            sudo systemctl reload nginx
-            echo "Angular deployed successfully"
+            set -e
+
+            echo "Preparing temporary Angular upload folder..."
+            rm -rf /tmp/crm-admin-upload
+            mkdir -p /tmp/crm-admin-upload
+            chmod 777 /tmp/crm-admin-upload
+
+      - name: Upload Angular files to VPS temporary folder
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASS }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "./deploy/*"
+          target: "/tmp/crm-admin-upload"
+          strip_components: 1
+
+      - name: Move Angular files and reload Nginx
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASS }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -e
+
+            echo "Preparing frontend folder..."
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S mkdir -p /var/www/crm-admin
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S rm -rf /var/www/crm-admin/*
+
+            echo "Copying Angular files..."
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S cp -a /tmp/crm-admin-upload/. /var/www/crm-admin/
+
+            echo "Fixing frontend permissions..."
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S chown -R www-data:www-data /var/www/crm-admin
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S chmod -R 775 /var/www/crm-admin
+
+            echo "Checking deployed files..."
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S ls -la /var/www/crm-admin | head
+
+            echo "Testing Nginx config..."
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S nginx -t
+
+            echo "Reloading Nginx..."
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S systemctl reload nginx
+
+            echo "Testing frontend locally on VPS..."
+            curl -I http://127.0.0.1 || true
+
+            echo "Angular frontend deployed successfully."
