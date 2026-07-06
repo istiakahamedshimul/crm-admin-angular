@@ -1,0 +1,43 @@
+name: Deploy Admin Angular
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Build
+        run: |
+          npm install
+          npm run build -- --configuration production
+
+      - name: Copy to Server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASS }}
+          source: "./dist/admin-angular/browser/*"
+          target: "C:/inetpub/crm-admin"
+          strip_components: 3
+
+      - name: Restart IIS Site
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASS }}
+          script: |
+            Import-Module WebAdministration
+            Stop-WebSite -Name "crm-admin"
+            Start-WebSite -Name "crm-admin"
