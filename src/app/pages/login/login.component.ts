@@ -35,8 +35,8 @@ export class LoginComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  email = 'admin@crm.local';
-  password = 'Admin@12345';
+  email = '';
+  password = '';
   loading = false;
   error = '';
 
