@@ -468,3 +468,131 @@ tr:hover td {
     overflow-x: auto;
   }
 }
+
+
+
+/* ---------- Rakin ---------- */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 18px;
+    gap: 8px;
+}
+
+    .field span {
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+    }
+
+.primary-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #0f8f83;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .2s;
+    margin-top: 10px;
+}
+
+    .primary-btn:hover {
+        background: #0c766d;
+    }
+
+
+
+.table-panel {
+    margin-top: 24px;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #e6f7f5;
+    color: #0f8f83;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.empty-table {
+    text-align: center;
+    padding: 30px;
+    color: #888;
+    font-style: italic;
+}
+/* ---------- Two Column  ---------- */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+    .field span {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .field input,
+    .field select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #d6dbe3;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: .2s;
+    }
+
+        .field input:focus,
+        .field select:focus {
+            outline: none;
+            border-color: #0f8f83;
+            box-shadow: 0 0 0 3px rgba(15,143,131,.12);
+        }
+
+/* For Mobile */
+
+@media (max-width:768px) {
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .full-width {
+        grid-column: auto;
+    }
+}
+.menu-arrow {
+    margin-left: auto;
+    width: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+    transition: transform .2s ease;
+}

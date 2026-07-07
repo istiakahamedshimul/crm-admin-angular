@@ -4,20 +4,17 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from './core/auth.service';
 import { environment } from '../environments/environment';
 
-type NavItem = {
-  label: string;
-  route: string;
-  icon: string;
-};
-
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
-  template: `
+    selector: 'app-root',
+    standalone: true,
+    imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+    template: `
     <ng-container *ngIf="auth.isLoggedIn(); else publicPage">
+
       <main class="app-shell">
+
         <aside class="sidebar">
+
           <div class="brand">
             <div class="brand-mark">RE</div>
             <div>
@@ -27,54 +24,141 @@ type NavItem = {
           </div>
 
           <nav>
-            <a *ngFor="let item of nav" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.route === '/' }">
-              <span>{{ item.icon }}</span>
-              {{ item.label }}
+
+            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+              <span>D</span>
+              Dashboard
             </a>
+
+            <a routerLink="/users" routerLinkActive="active">
+              <span>S</span>
+              Sales Accounts
+            </a>
+
+            <a routerLink="/leads" routerLinkActive="active">
+              <span>L</span>
+              Leads
+            </a>
+
+            <a routerLink="/followups" routerLinkActive="active">
+              <span>F</span>
+              Follow-ups
+            </a>
+
+            <a routerLink="/customers" routerLinkActive="active">
+              <span>C</span>
+              Customers
+            </a>
+
+            <!-- Projects & Units -->
+            <a href="javascript:void(0)"
+               (click)="showPropertyMenu = !showPropertyMenu">
+
+              <span>P</span>
+
+              Projects & Units
+
+              <span
+    class="menu-arrow"
+    [style.transform]="showPropertyMenu ? 'rotate(90deg)' : 'rotate(0deg)'">
+    ▶
+</span>
+
+            </a>
+
+            <div
+              *ngIf="showPropertyMenu"
+              style="padding-left:35px;display:flex;flex-direction:column;gap:6px;">
+
+              <a
+                routerLink="/properties/projects"
+                routerLinkActive="active">
+                Projects
+              </a>
+
+              <a
+                routerLink="/properties/units"
+                routerLinkActive="active">
+                Units
+              </a>
+
+            </div>
+
+            <a routerLink="/invoices" routerLinkActive="active">
+              <span>I</span>
+              Invoices
+            </a>
+
+            <a routerLink="/payments" routerLinkActive="active">
+              <span>M</span>
+              Payments
+            </a>
+
+            <a routerLink="/commissions" routerLinkActive="active">
+              <span>W</span>
+              Commissions
+            </a>
+
+            <a routerLink="/reports" routerLinkActive="active">
+              <span>R</span>
+              Reports
+            </a>
+
           </nav>
 
-          <a class="swagger-link" [href]="swaggerUrl" target="_blank">API Documentation</a>
+          <a
+            class="swagger-link"
+            [href]="swaggerUrl"
+            target="_blank">
+            API Documentation
+          </a>
+
         </aside>
 
         <section class="workspace">
+
           <header class="topbar">
+
             <div>
               <p>Signed in as</p>
               <strong>{{ auth.user()?.fullName || 'CRM Admin' }}</strong>
             </div>
-            <button type="button" class="ghost-button" (click)="logout()">Logout</button>
+
+            <button
+              type="button"
+              class="ghost-button"
+              (click)="logout()">
+              Logout
+            </button>
+
           </header>
 
           <router-outlet></router-outlet>
+
         </section>
+
       </main>
+
     </ng-container>
 
     <ng-template #publicPage>
       <router-outlet></router-outlet>
     </ng-template>
+
   `
 })
 export class AppComponent {
-  auth = inject(AuthService);
-  private router = inject(Router);
-  swaggerUrl = environment.swaggerUrl;
 
-  nav: NavItem[] = [
-    { label: 'Dashboard', route: '/', icon: 'D' },
-    { label: 'Sales Accounts', route: '/users', icon: 'S' },
-    { label: 'Leads', route: '/leads', icon: 'L' },
-    { label: 'Follow-ups', route: '/followups', icon: 'F' },
-    { label: 'Customers', route: '/customers', icon: 'C' },
-    { label: 'Projects & Units', route: '/properties', icon: 'P' },
-    { label: 'Invoices', route: '/invoices', icon: 'I' },
-    { label: 'Payments', route: '/payments', icon: 'M' },
-    { label: 'Commissions', route: '/commissions', icon: 'W' },
-    { label: 'Reports', route: '/reports', icon: 'R' }
-  ];
+    auth = inject(AuthService);
+    private router = inject(Router);
 
-  logout() {
-    this.auth.logout();
-    this.router.navigateByUrl('/login');
-  }
+    swaggerUrl = environment.swaggerUrl;
+
+    showPropertyMenu = true;
+
+    logout() {
+        this.auth.logout();
+        this.router.navigateByUrl('/login');
+    }
+
 }
