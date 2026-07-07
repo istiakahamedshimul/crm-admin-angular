@@ -6,7 +6,8 @@ import { UsersComponent } from './pages/users/users.component';
 import { LeadsComponent } from './pages/leads/leads.component';
 import { FollowupsComponent } from './pages/followups/followups.component';
 import { CustomersComponent } from './pages/customers/customers.component';
-import { PropertiesComponent } from './pages/properties/properties.component';
+import { ProjectsComponent } from './pages/properties/projects/projects.component';
+import { UnitsComponent } from './pages/properties/units/units.component';
 import { InvoicesComponent } from './pages/invoices/invoices.component';
 import { PaymentsComponent } from './pages/payments/payments.component';
 import { CommissionsComponent } from './pages/commissions/commissions.component';
@@ -19,7 +20,17 @@ export const routes: Routes = [
   { path: 'leads', component: LeadsComponent, canActivate: [authGuard] },
   { path: 'followups', component: FollowupsComponent, canActivate: [authGuard] },
   { path: 'customers', component: CustomersComponent, canActivate: [authGuard] },
-  { path: 'properties', component: PropertiesComponent, canActivate: [authGuard] },
+ 
+    {
+        path: 'properties/projects',
+        component: ProjectsComponent,
+        canActivate: [authGuard]
+    },
+    {
+        path: 'properties/units',
+        component: UnitsComponent,
+        canActivate: [authGuard]
+    },
   { path: 'invoices', component: InvoicesComponent, canActivate: [authGuard] },
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard] },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },

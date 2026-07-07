@@ -65,7 +65,9 @@ export class DashboardComponent implements OnInit {
     this.load();
   }
 
-  load() {
-    this.api.dashboard().subscribe(data => this.summary = data);
-  }
+    load() {
+        this.api.dashboard().subscribe((data: any) => {
+            this.summary = data;
+        });
+    }
 }
