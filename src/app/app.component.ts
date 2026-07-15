@@ -50,39 +50,10 @@ import { environment } from '../environments/environment';
               Customers
             </a>
 
-            <!-- Projects & Units -->
-            <a href="javascript:void(0)"
-               (click)="showPropertyMenu = !showPropertyMenu">
-
+            <a routerLink="/properties/projects" routerLinkActive="active">
               <span>P</span>
-
-              Projects & Units
-
-              <span
-    class="menu-arrow"
-    [style.transform]="showPropertyMenu ? 'rotate(90deg)' : 'rotate(0deg)'">
-    ▶
-</span>
-
+              Projects
             </a>
-
-            <div
-              *ngIf="showPropertyMenu"
-              style="padding-left:35px;display:flex;flex-direction:column;gap:6px;">
-
-              <a
-                routerLink="/properties/projects"
-                routerLinkActive="active">
-                Projects
-              </a>
-
-              <a
-                routerLink="/properties/units"
-                routerLinkActive="active">
-                Units
-              </a>
-
-            </div>
 
             <a routerLink="/invoices" routerLinkActive="active">
               <span>I</span>
@@ -153,8 +124,6 @@ export class AppComponent {
     private router = inject(Router);
 
     swaggerUrl = environment.swaggerUrl;
-
-    showPropertyMenu = true;
 
     logout() {
         this.auth.logout();

@@ -29,7 +29,6 @@ import { money } from '../../shared/format';
         <div class="pipeline">
           <div><span>Total Leads</span><strong>{{ summary.leads || 0 }}</strong></div>
           <div><span>Customers</span><strong>{{ summary.customers || 0 }}</strong></div>
-          <div><span>Available Units</span><strong>{{ summary.availableUnits || 0 }}</strong></div>
         </div>
       </article>
       <article class="panel">
@@ -53,7 +52,6 @@ export class DashboardComponent implements OnInit {
       { label: 'Total Leads', value: this.summary.leads || 0 },
       { label: 'Customers', value: this.summary.customers || 0 },
       { label: 'Projects', value: this.summary.projects || 0 },
-      { label: 'Available Units', value: this.summary.availableUnits || 0 },
       { label: 'Invoices', value: this.summary.invoices || 0 },
       { label: 'Pending Payments', value: this.summary.pendingPayments || 0 },
       { label: 'Total Collection', value: this.summary.totalCollection || 0, money: true },
