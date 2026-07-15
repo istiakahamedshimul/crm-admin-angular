@@ -184,3 +184,16 @@ export type ReportSummary = {
   paymentStatus: ReportGroup[];
   invoiceStatus: ReportGroup[];
 };
+
+export type VehicleBooking = {
+  id: number;
+  salesExecutiveId: number;
+  salesExecutive: string;
+  visitDate: string;
+  personCount: number;
+  visitPlace: string;
+  pickupPlace: string;
+  status: number;
+  adminRemarks?: string | null;
+  createdAt: string;
+};
