@@ -20,7 +20,8 @@ import {
   ReportSummary,
   SalesExecutive,
   SubGroup,
-  UserSummary
+  UserSummary,
+  VehicleBooking
 } from '../models/crm.models';
 
 @Injectable({ providedIn: 'root' })
@@ -119,5 +120,17 @@ export class ApiService {
 
   reports() {
     return this.http.get<ReportSummary>(`${this.baseUrl}/reports/basic`, this.options());
+  }
+
+  vehicleBookings() {
+    return this.http.get<VehicleBooking[]>(`${this.baseUrl}/vehicle-bookings`, this.options());
+  }
+
+  approveVehicleBooking(id: number, remarks?: string) {
+    return this.http.post(`${this.baseUrl}/vehicle-bookings/${id}/approve`, { remarks }, this.options());
+  }
+
+  rejectVehicleBooking(id: number, remarks: string) {
+    return this.http.post(`${this.baseUrl}/vehicle-bookings/${id}/reject`, { remarks }, this.options());
   }
 }
