@@ -50,6 +50,47 @@ import { environment } from '../environments/environment';
               Customers
             </a>
 
+
+            <!-- Visit -->
+<a href="javascript:void(0)"
+   (click)="showVisitMenu = !showVisitMenu">
+
+  <span>V</span>
+
+  Visit
+
+  <span
+    class="menu-arrow"
+    [style.transform]="showVisitMenu ? 'rotate(90deg)' : 'rotate(0deg)'">
+    ▶
+  </span>
+
+</a>
+
+<div
+  *ngIf="showVisitMenu"
+  style="padding-left:35px;display:flex;flex-direction:column;gap:6px;">
+
+  <a
+    routerLink="/visit/booking"
+    routerLinkActive="active">
+    Visit Booking
+  </a>
+
+  <a
+    routerLink="/visit/booking-list"
+    routerLinkActive="active">
+    Booking List
+  </a>
+
+</div>
+
+ <!-- cars -->
+<a routerLink="/cars" routerLinkActive="active">
+    <span>C</span>
+    Cars
+</a>
+
             <!-- Projects & Units -->
             <a href="javascript:void(0)"
                (click)="showPropertyMenu = !showPropertyMenu">
@@ -153,6 +194,7 @@ export class AppComponent {
     private router = inject(Router);
 
     swaggerUrl = environment.swaggerUrl;
+    showVisitMenu = true;
 
     showPropertyMenu = true;
 

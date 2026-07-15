@@ -12,6 +12,9 @@ import { InvoicesComponent } from './pages/invoices/invoices.component';
 import { PaymentsComponent } from './pages/payments/payments.component';
 import { CommissionsComponent } from './pages/commissions/commissions.component';
 import { ReportsComponent } from './pages/reports/reports.component';
+import { VisitBookingComponent } from './pages/visit/visit-booking/visit-booking.component';
+import { VisitBookingListComponent } from './pages/visit/visit-booking-list/visit-booking-list.component';
+import { CarsComponent } from './pages/cars/cars.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -19,7 +22,17 @@ export const routes: Routes = [
   { path: 'users', component: UsersComponent, canActivate: [authGuard] },
   { path: 'leads', component: LeadsComponent, canActivate: [authGuard] },
   { path: 'followups', component: FollowupsComponent, canActivate: [authGuard] },
-  { path: 'customers', component: CustomersComponent, canActivate: [authGuard] },
+    { path: 'customers', component: CustomersComponent, canActivate: [authGuard] },
+    {
+        path: 'visit/booking',
+        component: VisitBookingComponent,
+        canActivate: [authGuard]
+    },
+    {
+        path: 'visit/booking-list',
+        component: VisitBookingListComponent,
+        canActivate: [authGuard]
+    },
  
     {
         path: 'properties/projects',
@@ -31,6 +44,12 @@ export const routes: Routes = [
         component: UnitsComponent,
         canActivate: [authGuard]
     },
+    {
+        path: 'cars',
+        component: CarsComponent,
+        canActivate: [authGuard]
+    },
+
   { path: 'invoices', component: InvoicesComponent, canActivate: [authGuard] },
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard] },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },
