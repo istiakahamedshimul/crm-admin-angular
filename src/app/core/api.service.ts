@@ -8,8 +8,8 @@ import {
   CreateCustomerRequest,
   CreateLeadRequest,
   CreateProjectRequest,
+  CreateSubGroupRequest,
   CreateSalesExecutiveRequest,
-  CreateUnitRequest,
   Customer,
   DashboardSummary,
   FollowUp,
@@ -19,7 +19,7 @@ import {
   Project,
   ReportSummary,
   SalesExecutive,
-  Unit,
+  SubGroup,
   UserSummary
 } from '../models/crm.models';
 
@@ -89,13 +89,12 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/projects`, request, this.options());
   }
 
-  units(projectId?: number) {
-    const suffix = projectId ? `?projectId=${projectId}` : '';
-    return this.http.get<Unit[]>(`${this.baseUrl}/units${suffix}`, this.options());
+  subGroups() {
+    return this.http.get<SubGroup[]>(`${this.baseUrl}/subgroups`, this.options());
   }
 
-  createUnit(request: CreateUnitRequest) {
-    return this.http.post(`${this.baseUrl}/units`, request, this.options());
+  createSubGroup(request: CreateSubGroupRequest) {
+    return this.http.post(`${this.baseUrl}/subgroups`, request, this.options());
   }
 
   invoices() {

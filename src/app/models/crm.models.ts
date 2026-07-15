@@ -10,8 +10,6 @@ export type DashboardSummary = {
   leads?: number;
   customers?: number;
   projects?: number;
-  availableUnits?: number;
-  bookedUnits?: number;
   invoices?: number;
   unpaidInvoices?: number;
   pendingPayments?: number;
@@ -93,46 +91,35 @@ export type CreateCustomerRequest = {
 export type Project = {
   id: number;
   name: string;
+  subGroupId: number;
+  subGroup: string;
+  companyName: string;
   type: number;
   location: string;
   status: number;
-  totalUnits: number;
-  availableUnits: number;
+};
+
+export type SubGroup = {
+  id: number;
+  name: string;
+  companyName: string;
+  description?: string | null;
+  projectCount: number;
+};
+
+export type CreateSubGroupRequest = {
+  name: string;
+  description?: string | null;
 };
 
 export type CreateProjectRequest = {
   name: string;
+  subGroupId: number;
   type: number;
   location: string;
   address?: string | null;
   description?: string | null;
   status: number;
-};
-
-export type Unit = {
-  id: number;
-  project: string;
-  towerOrBlock?: string;
-  floorNumber?: number;
-  unitNumber: string;
-  sizeSqft: number;
-  finalPrice: number;
-  bookingMoney: number;
-  status: number;
-};
-
-export type CreateUnitRequest = {
-  projectId: number;
-  towerOrBlock?: string | null;
-  floorNumber?: number | null;
-  unitNumber: string;
-  sizeSqft: number;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
-  facingDirection?: string | null;
-  basePrice: number;
-  finalPrice: number;
-  bookingMoney: number;
 };
 
 export type Invoice = {
