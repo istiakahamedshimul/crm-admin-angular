@@ -60,6 +60,11 @@ import { environment } from '../environments/environment';
               Invoices
             </a>
 
+            <a routerLink="/vehicle-bookings" routerLinkActive="active">
+              <span>V</span>
+              Vehicle Bookings
+            </a>
+
             <a routerLink="/payments" routerLinkActive="active">
               <span>M</span>
               Payments

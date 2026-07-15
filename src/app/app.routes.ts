@@ -11,6 +11,7 @@ import { InvoicesComponent } from './pages/invoices/invoices.component';
 import { PaymentsComponent } from './pages/payments/payments.component';
 import { CommissionsComponent } from './pages/commissions/commissions.component';
 import { ReportsComponent } from './pages/reports/reports.component';
+import { VehicleBookingsComponent } from './pages/vehicle-bookings/vehicle-bookings.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -29,5 +30,6 @@ export const routes: Routes = [
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard] },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
+  { path: 'vehicle-bookings', component: VehicleBookingsComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' }
 ];
