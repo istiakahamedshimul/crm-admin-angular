@@ -135,6 +135,7 @@ export class ApiService {
   }
   vehicles() { return this.http.get<Vehicle[]>(`${this.baseUrl}/vehicles`, this.options()); }
   createVehicle(request: Omit<Vehicle, 'id'>) { return this.http.post(`${this.baseUrl}/vehicles`, request, this.options()); }
+  updateVehicle(id: number, request: Omit<Vehicle, 'id'>) { return this.http.put(`${this.baseUrl}/vehicles/${id}`, request, this.options()); }
   setVehicleStatus(id: number, isActive: boolean) { return this.http.patch(`${this.baseUrl}/vehicles/${id}/status`, isActive, this.options()); }
   createAdminVisit(request: Record<string, unknown>) { return this.http.post(`${this.baseUrl}/vehicle-bookings/admin`, request, this.options()); }
 }
