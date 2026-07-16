@@ -1,53 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { VehicleBooking } from '../../models/crm.models';
-
-@Component({
-  standalone: true,
-  imports: [CommonModule],
-  template: `
-    <section class="page-head">
-      <div><p class="eyebrow">Transport</p><h1>Vehicle Visit Bookings</h1></div>
-      <button type="button" class="ghost-button" (click)="load()">Refresh</button>
-    </section>
-
-    <article class="panel table-panel">
-      <table>
-        <thead><tr><th>Visit Date</th><th>Sales Employee</th><th>Persons</th><th>Pickup</th><th>Visit Place</th><th>Status</th><th>Remarks</th><th>Action</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let booking of bookings">
-            <td>{{ booking.visitDate | date:'dd MMM yyyy' }}</td>
-            <td>{{ booking.salesExecutive }}</td>
-            <td>{{ booking.personCount }}</td>
-            <td>{{ booking.pickupPlace }}</td>
-            <td>{{ booking.visitPlace }}</td>
-            <td><span class="badge">{{ statuses[booking.status] }}</span></td>
-            <td>{{ booking.adminRemarks || '-' }}</td>
-            <td class="actions">
-              <button type="button" (click)="approve(booking.id)" [disabled]="booking.status !== 0">Approve</button>
-              <button type="button" class="danger" (click)="reject(booking.id)" [disabled]="booking.status !== 0">Reject</button>
-            </td>
-          </tr>
-          <tr *ngIf="bookings.length === 0"><td colspan="8" class="empty-table">No vehicle booking requests.</td></tr>
-        </tbody>
-      </table>
-    </article>
-  `
-})
-export class VehicleBookingsComponent implements OnInit {
-  private api = inject(ApiService);
-  bookings: VehicleBooking[] = [];
-  statuses = ['Pending', 'Approved', 'Rejected', 'Cancelled'];
-
-  ngOnInit() { this.load(); }
-  load() { this.api.vehicleBookings().subscribe(data => this.bookings = data); }
-  approve(id: number) {
-    const remarks = prompt('Approval remarks (optional)') || undefined;
-    this.api.approveVehicleBooking(id, remarks).subscribe(() => this.load());
-  }
-  reject(id: number) {
-    const remarks = prompt('Reason for rejection');
-    if (remarks?.trim()) this.api.rejectVehicleBooking(id, remarks.trim()).subscribe(() => this.load());
-  }
-}
+import { Vehicle, VehicleBooking } from '../../models/crm.models';
+import { TransportNavComponent } from './transport-nav.component';
+@Component({standalone:true,imports:[CommonModule,FormsModule,TransportNavComponent],template:`
+<section class="page-head"><div><p class="eyebrow">Transport Management</p><h1>Visit Requests</h1><p class="page-copy">Review sales requests, assign vehicles, and confirm customer visits.</p></div><button class="ghost-button" (click)="load()">Refresh</button></section><app-transport-nav/>
+<div class="stat-grid"><div class="mini-stat"><span>Pending</span><strong>{{count(0)}}</strong></div><div class="mini-stat"><span>Approved</span><strong>{{count(1)}}</strong></div><div class="mini-stat"><span>Total requests</span><strong>{{bookings.length}}</strong></div></div>
+<article class="panel table-panel"><div class="table-header"><div><h2>Customer visits</h2><p>Newest requests appear first</p></div></div><div class="responsive-table"><table><thead><tr><th>Date & Time</th><th>Customer</th><th>Project</th><th>Pickup</th><th>Visitors</th><th>Status</th><th></th></tr></thead><tbody>
+<tr *ngFor="let b of bookings"><td><strong>{{b.visitDate|date:'dd MMM yyyy'}}</strong><small>{{b.visitTime}}</small></td><td><strong>{{b.customer}}</strong><small>{{b.customerPhone}}</small></td><td>{{b.project}}</td><td>{{b.pickupPlace}}</td><td>{{b.personCount}}</td><td><span class="status-pill" [class.pending]="b.status===0" [class.approved]="b.status===1" [class.rejected]="b.status===2">{{statuses[b.status]}}</span></td><td><button class="view-btn" (click)="open(b)">View details</button></td></tr><tr *ngIf="!bookings.length"><td colspan="7" class="empty-table">No visit requests found.</td></tr></tbody></table></div></article>
+<div class="modal-backdrop" *ngIf="selected" (click)="selected=undefined"><article class="request-drawer" (click)="$event.stopPropagation()"><div class="drawer-head"><div><p class="eyebrow">Request #{{selected.id}}</p><h2>{{selected.customer}}</h2></div><button class="icon-button" (click)="selected=undefined">×</button></div>
+<div class="detail-grid"><div><span>Visit</span><strong>{{selected.visitDate|date:'dd MMM yyyy'}} at {{selected.visitTime}}</strong></div><div><span>Project</span><strong>{{selected.project}}</strong></div><div><span>Pickup</span><strong>{{selected.pickupPlace}}</strong></div><div><span>Visitors</span><strong>{{selected.personCount}}</strong></div><div><span>Purpose</span><strong>{{selected.purpose}}</strong></div><div><span>Sales employee</span><strong>{{selected.salesExecutive}}</strong></div></div><div class="note-box"><span>Additional information</span><p>{{selected.additionalInformation||'No additional information provided.'}}</p></div>
+<div *ngIf="selected.status===0" class="approval-form"><label class="field"><span>Assign vehicle *</span><select [(ngModel)]="vehicleId"><option [ngValue]="0">Select an active vehicle</option><option *ngFor="let v of active" [ngValue]="v.id">{{v.registrationNumber}} · {{v.brand}} {{v.model}} · {{v.seatingCapacity}} seats</option></select></label><label class="field"><span>Driver name</span><input [(ngModel)]="driver" placeholder="Enter driver name"></label><label class="field"><span>Admin remarks</span><textarea [(ngModel)]="remarks" placeholder="Optional internal note"></textarea></label><div class="drawer-actions"><button class="danger" (click)="reject()">Reject request</button><button (click)="approve()" [disabled]="!vehicleId">Assign & approve</button></div></div>
+<div *ngIf="selected.status!==0" class="note-box"><span>Assigned vehicle</span><p>{{selected.vehicle||'Not assigned'}} <ng-container *ngIf="selected.driver">· Driver: {{selected.driver}}</ng-container></p></div></article></div>`})
+export class VehicleBookingsComponent implements OnInit {private api=inject(ApiService);bookings:VehicleBooking[]=[];vehicles:Vehicle[]=[];selected?:VehicleBooking;vehicleId=0;driver='';remarks='';statuses=['Pending','Approved','Rejected','Cancelled'];get active(){return this.vehicles.filter(v=>v.isActive)}ngOnInit(){this.load()}load(){forkJoin([this.api.vehicleBookings(),this.api.vehicles()]).subscribe(([b,v])=>{this.bookings=b;this.vehicles=v})}count(s:number){return this.bookings.filter(x=>x.status===s).length}open(b:VehicleBooking){this.selected=b;this.vehicleId=b.vehicleId||0;this.driver=b.driver||'';this.remarks=b.adminRemarks||''}approve(){if(this.selected&&this.vehicleId)this.api.approveVehicleBooking(this.selected.id,this.vehicleId,this.driver,this.remarks).subscribe(()=>{this.selected=undefined;this.load()})}reject(){if(!this.selected)return;const reason=prompt('Reason for rejection');if(reason?.trim())this.api.rejectVehicleBooking(this.selected.id,reason.trim()).subscribe(()=>{this.selected=undefined;this.load()})}}
