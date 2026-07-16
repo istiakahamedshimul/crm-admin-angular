@@ -189,11 +189,18 @@ export type VehicleBooking = {
   id: number;
   salesExecutiveId: number;
   salesExecutive: string;
+  customerId: number; customer: string; customerPhone: string;
+  projectId: number; project: string;
   visitDate: string;
+  visitTime: string;
   personCount: number;
   visitPlace: string;
   pickupPlace: string;
+  purpose: string; additionalInformation?: string | null;
+  vehicleId?: number | null; vehicle?: string | null; driver?: string | null;
   status: number;
   adminRemarks?: string | null;
   createdAt: string;
 };
+
+export type Vehicle = { id: number; registrationNumber: string; vehicleType: string; brand: string; model: string; color?: string; seatingCapacity: number; isActive: boolean; };

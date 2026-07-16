@@ -60,10 +60,15 @@ import { environment } from '../environments/environment';
               Invoices
             </a>
 
-            <a routerLink="/vehicle-bookings" routerLinkActive="active">
+            <a routerLink="/transport/requests" routerLinkActive="active">
               <span>V</span>
-              Vehicle Bookings
+              Transport
             </a>
+            <div class="sidebar-subnav">
+              <a routerLink="/transport/requests" routerLinkActive="active">Requests</a>
+              <a routerLink="/transport/schedule" routerLinkActive="active">Schedule Visit</a>
+              <a routerLink="/transport/vehicles" routerLinkActive="active">Vehicles</a>
+            </div>
 
             <a routerLink="/payments" routerLinkActive="active">
               <span>M</span>

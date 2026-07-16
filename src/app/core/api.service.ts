@@ -21,7 +21,7 @@ import {
   SalesExecutive,
   SubGroup,
   UserSummary,
-  VehicleBooking
+  VehicleBooking, Vehicle
 } from '../models/crm.models';
 
 @Injectable({ providedIn: 'root' })
@@ -126,11 +126,15 @@ export class ApiService {
     return this.http.get<VehicleBooking[]>(`${this.baseUrl}/vehicle-bookings`, this.options());
   }
 
-  approveVehicleBooking(id: number, remarks?: string) {
-    return this.http.post(`${this.baseUrl}/vehicle-bookings/${id}/approve`, { remarks }, this.options());
+  approveVehicleBooking(id: number, vehicleId: number, driver?: string, remarks?: string) {
+    return this.http.post(`${this.baseUrl}/vehicle-bookings/${id}/approve`, { vehicleId, driver, remarks }, this.options());
   }
 
   rejectVehicleBooking(id: number, remarks: string) {
     return this.http.post(`${this.baseUrl}/vehicle-bookings/${id}/reject`, { remarks }, this.options());
   }
+  vehicles() { return this.http.get<Vehicle[]>(`${this.baseUrl}/vehicles`, this.options()); }
+  createVehicle(request: Omit<Vehicle, 'id'>) { return this.http.post(`${this.baseUrl}/vehicles`, request, this.options()); }
+  setVehicleStatus(id: number, isActive: boolean) { return this.http.patch(`${this.baseUrl}/vehicles/${id}/status`, isActive, this.options()); }
+  createAdminVisit(request: Record<string, unknown>) { return this.http.post(`${this.baseUrl}/vehicle-bookings/admin`, request, this.options()); }
 }
