@@ -30,7 +30,7 @@ jobs:
 
       - name: Build Angular production
         run: |
-          npm run build -- --configuration production
+          npx ng build admin-angular --configuration production
 
       - name: Find Angular build output folder
         id: find_dist
@@ -123,4 +123,4 @@ jobs:
             echo "Testing frontend locally on VPS..."
             curl -I http://127.0.0.1 || true
 
-            echo "Angular frontend deployed successfully."
+            echo "Angular frontend deployed successfully."c
