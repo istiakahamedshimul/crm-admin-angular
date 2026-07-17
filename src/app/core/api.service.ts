@@ -66,6 +66,16 @@ export class ApiService {
     return this.http.get<FollowUp[]>(`${this.baseUrl}/followups`, this.options());
   }
 
+  proofUrl(fileUrl: string) {
+    if (!fileUrl) return '';
+    try {
+      const path = new URL(fileUrl, window.location.origin).pathname;
+      return `${new URL(this.baseUrl).origin}${path}`;
+    } catch {
+      return fileUrl;
+    }
+  }
+
   createLead(request: CreateLeadRequest) {
     return this.http.post(`${this.baseUrl}/leads`, request, this.options());
   }
