@@ -40,6 +40,8 @@ export type Lead = {
   status: number;
   assignedToId?: number;
   assignedToName?: string;
+  projectId?: number;
+  projectName?: string;
   nextFollowUpAt?: string;
 };
 
@@ -51,7 +53,7 @@ export type CreateLeadRequest = {
   address?: string | null;
   budgetRange?: string | null;
   preferredLocation?: string | null;
-  interestedProject?: string | null;
+  projectId?: number | null;
   source: number;
   priority: number;
   assignedToId: number | null;
@@ -76,9 +78,9 @@ export type Customer = {
 };
 
 export type CreateCustomerRequest = {
-  leadId: number;
-  name?: string | null;
-  phone?: string | null;
+  leadId?: number | null;
+  name: string;
+  phone: string;
   alternativePhone?: string | null;
   email?: string | null;
   address?: string | null;
@@ -151,12 +153,16 @@ export type FollowUpProof = {
 
 export type FollowUp = {
   id: number;
+  leadId: number;
+  customerId?: number;
+  customer: string;
   lead: string;
   salesExecutive: string;
   type: number;
   summary: string;
   customerResponse?: string;
   nextFollowUpAt?: string;
+  createdAt: string;
   proofs: FollowUpProof[];
 };
 
