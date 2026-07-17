@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
-import { CreateLeadRequest, Lead, SalesExecutive } from '../../models/crm.models';
+import { CreateLeadRequest, Lead, Project, SalesExecutive } from '../../models/crm.models';
 import { label, leadPriority, leadSource, leadStatus } from '../../shared/format';
 
 @Component({
@@ -20,7 +20,12 @@ import { label, leadPriority, leadSource, leadStatus } from '../../shared/format
         <label>Phone<input name="phone" [(ngModel)]="form.phone" required></label>
         <label>Email<input name="email" [(ngModel)]="form.email"></label>
         <label>Preferred location<input name="preferredLocation" [(ngModel)]="form.preferredLocation"></label>
-        <label>Interested project<input name="interestedProject" [(ngModel)]="form.interestedProject"></label>
+        <label>Project (optional)
+          <select name="projectId" [(ngModel)]="form.projectId">
+            <option [ngValue]="null">None</option>
+            <option *ngFor="let project of projects" [ngValue]="project.id">{{ project.name }}</option>
+          </select>
+        </label>
         <label>Assign sales executive
           <select name="assignedToId" [(ngModel)]="form.assignedToId" required>
             <option [ngValue]="null">Select executive</option>
@@ -39,11 +44,12 @@ import { label, leadPriority, leadSource, leadStatus } from '../../shared/format
       <article class="panel">
         <h2>Assigned Leads</h2>
         <table>
-          <thead><tr><th>Name</th><th>Phone</th><th>Priority</th><th>Status</th><th>Sales Executive</th></tr></thead>
+          <thead><tr><th>Name</th><th>Phone</th><th>Project</th><th>Priority</th><th>Status</th><th>Sales Executive</th></tr></thead>
           <tbody>
             <tr *ngFor="let lead of leads">
               <td>{{ lead.customerName }}</td>
               <td>{{ lead.phone }}</td>
+              <td>{{ lead.projectName || 'None' }}</td>
               <td>{{ label(leadPriority, lead.priority) }}</td>
               <td><span class="badge">{{ label(leadStatus, lead.status) }}</span></td>
               <td>{{ lead.assignedToName || '-' }}</td>
@@ -58,6 +64,7 @@ export class LeadsComponent implements OnInit {
   private api = inject(ApiService);
   leads: Lead[] = [];
   salesExecutives: SalesExecutive[] = [];
+  projects: Project[] = [];
   error = '';
   label = label;
   leadPriority = leadPriority;
@@ -70,7 +77,7 @@ export class LeadsComponent implements OnInit {
     address: null,
     budgetRange: null,
     preferredLocation: null,
-    interestedProject: null,
+    projectId: null,
     source: leadSource.indexOf('Manual'),
     priority: 1,
     assignedToId: null,
@@ -80,6 +87,7 @@ export class LeadsComponent implements OnInit {
   ngOnInit() {
     this.load();
     this.api.salesExecutives().subscribe(data => this.salesExecutives = data);
+    this.api.projects().subscribe(data => this.projects = data);
   }
 
   load() {
@@ -90,7 +98,7 @@ export class LeadsComponent implements OnInit {
     this.error = '';
     this.api.createLead(this.form).subscribe({
       next: () => {
-        this.form = { ...this.form, customerName: '', phone: '', email: null, preferredLocation: null, interestedProject: null, assignedToId: null };
+        this.form = { ...this.form, customerName: '', phone: '', email: null, preferredLocation: null, projectId: null, assignedToId: null };
         this.load();
       },
       error: err => this.error = err.error?.message || 'Could not create lead.'
