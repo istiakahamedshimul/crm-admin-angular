@@ -46,6 +46,7 @@ export type Lead = {
 };
 
 export type CreateLeadRequest = {
+  customerId?: number | null;
   customerName: string;
   phone: string;
   alternativePhone?: string | null;
@@ -58,6 +59,12 @@ export type CreateLeadRequest = {
   priority: number;
   assignedToId: number | null;
   remarks?: string | null;
+};
+
+export type AvailableLeadCustomer = Pick<Customer, 'id' | 'name' | 'phone' | 'email'> & {
+  alternativePhone?: string | null;
+  address?: string | null;
+  projectId?: number | null;
 };
 
 export type CreateSalesExecutiveRequest = {
