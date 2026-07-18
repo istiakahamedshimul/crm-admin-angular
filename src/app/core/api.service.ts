@@ -4,6 +4,7 @@ import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import {
   AuthResponse,
+  AvailableLeadCustomer,
   Commission,
   CreateCustomerRequest,
   CreateLeadRequest,
@@ -86,6 +87,10 @@ export class ApiService {
 
   customers() {
     return this.http.get<Customer[]>(`${this.baseUrl}/customers`, this.options());
+  }
+
+  customersAvailableForLead() {
+    return this.http.get<AvailableLeadCustomer[]>(`${this.baseUrl}/customers/available-for-lead`, this.options());
   }
 
   createCustomer(request: CreateCustomerRequest) {
