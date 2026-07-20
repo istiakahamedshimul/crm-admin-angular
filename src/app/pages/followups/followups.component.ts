@@ -11,14 +11,14 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
   standalone: true,
   imports: [CommonModule],
   styles: [`
-    .followup-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}.followup-toolbar h2{margin:0}.back-btn{background:#eef4f4;color:#115e59}
-    .table-wrap{overflow-x:auto}.executive-link{padding:0;background:none;color:#0f766e;min-height:auto;text-align:left;text-decoration:underline;text-underline-offset:3px}
-    .proof-list{display:flex;flex-wrap:wrap;gap:7px;min-width:150px}.proof-chip{min-height:32px;padding:0 10px;background:#edf4ff;color:#1d4ed8;font-size:12px}
-    .audio-proof{width:220px;height:36px}.muted{color:#64717d}.summary-cell{min-width:190px}.customer-cell{min-width:145px}.view-all{white-space:nowrap}
-    .proof-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(15,23,42,.84);backdrop-filter:blur(5px)}
-    .proof-viewer{position:relative;width:min(1000px,96vw);max-height:92vh;padding:18px;border-radius:14px;background:#fff;box-shadow:0 30px 80px rgba(0,0,0,.35)}
-    .proof-viewer img{display:block;max-width:100%;max-height:78vh;margin:auto;border-radius:8px;object-fit:contain}.proof-caption{margin:12px 48px 0 0;font-weight:800}
-    .close-proof{position:absolute;right:14px;top:12px;width:38px;padding:0;border-radius:50%;background:#eef2f6;color:#17202a;font-size:24px}
+    .followup-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}.followup-toolbar h2{margin:0}.back-btn{background:var(--brand-light);color:var(--brand-dark)}
+    .table-wrap{overflow-x:auto}.executive-link{padding:0;background:none;color:var(--brand);min-height:auto;text-align:left;text-decoration:underline;text-underline-offset:3px}
+    .proof-list{display:flex;flex-wrap:wrap;gap:7px;min-width:150px}.proof-chip{min-height:30px;padding:0 10px;background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe;border-radius:6px;font-size:12px;display:inline-flex;align-items:center}
+    .audio-proof{width:220px;height:36px}.muted{color:var(--muted)}.summary-cell{min-width:190px}.customer-cell{min-width:145px}.view-all{white-space:nowrap}
+    .proof-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(9,13,22,.8);backdrop-filter:blur(8px)}
+    .proof-viewer{position:relative;width:min(1000px,96vw);max-height:92vh;padding:24px;border-radius:16px;background:#fff;box-shadow:0 30px 60px rgba(0,0,0,0.3)}
+    .proof-viewer img{display:block;max-width:100%;max-height:74vh;margin:auto;border-radius:8px;object-fit:contain}.proof-caption{margin:16px 48px 0 0;font-weight:700;color:var(--text-dark)}
+    .close-proof{position:absolute;right:18px;top:18px;width:38px;padding:0;border-radius:50%;background:#f1f5f9;color:#475569;font-size:24px;border:1px solid #e2e8f0}
   `],
   template: `
     <section class="page-head">
@@ -27,30 +27,86 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
     </section>
 
     <article class="panel">
-      <div class="followup-toolbar" *ngIf="selectedExecutive">
-        <button class="back-btn" type="button" (click)="back()">Back</button>
-        <div><h2>{{ selectedCustomer ? selectedCustomer.name + ' — All follow-ups' : selectedExecutive + ' — Customers' }}</h2>
-          <small class="muted">{{ selectedCustomer ? 'Complete customer history' : 'Latest follow-up for every customer handled' }}</small></div>
+      <!-- Toolbar when executive/customer selected -->
+      <div class="followup-toolbar" *ngIf="selectedExecutive" style="margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+        <button class="back-btn" type="button" (click)="back()" style="min-height: 36px; padding: 0 14px; border-radius: 6px;">Back</button>
+        <div>
+          <h2 style="font-size: 18px; font-weight: 700; color: var(--text-dark); margin: 0 0 2px;">{{ selectedCustomer ? selectedCustomer.name + ' — History' : selectedExecutive + ' — Customer List' }}</h2>
+          <small class="muted" style="font-size: 12px; display: block; margin-top: 1px;">{{ selectedCustomer ? 'Complete customer touchpoint history' : 'Latest follow-up contact for each customer handled' }}</small>
+        </div>
       </div>
-      <div class="followup-toolbar" *ngIf="!selectedExecutive"><h2>All Follow-ups</h2></div>
+      <div class="followup-toolbar" *ngIf="!selectedExecutive" style="margin-bottom: 24px;">
+        <h2 style="font-size: 18px; font-weight: 700; color: var(--text-dark); margin: 0;">Chronological Activity Timeline</h2>
+      </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Lead / Customer</th><th>Sales Executive</th><th>Type</th><th>Summary</th><th>Response</th><th>Next</th><th>Proofs</th><th *ngIf="selectedExecutive && !selectedCustomer"></th></tr></thead>
-          <tbody>
-            <tr *ngFor="let item of displayedFollowUps">
-              <td class="customer-cell"><strong>{{ item.customer || item.lead }}</strong><small>{{ item.createdAt | date:'medium' }}</small></td>
-              <td><button *ngIf="!selectedExecutive; else executiveText" class="executive-link" type="button" (click)="openExecutive(item.salesExecutive)">{{ item.salesExecutive }}</button><ng-template #executiveText>{{ item.salesExecutive }}</ng-template></td>
-              <td><span class="badge">{{ typeLabel(item.type) }}</span></td><td class="summary-cell">{{ item.summary }}</td><td>{{ item.customerResponse || '-' }}</td><td>{{ item.nextFollowUpAt ? (item.nextFollowUpAt | date:'medium') : '-' }}</td>
-              <td><div class="proof-list" *ngIf="item.proofs?.length; else noProof"><ng-container *ngFor="let proof of item.proofs">
-                <audio *ngIf="isAudio(proof); else proofButton" class="audio-proof" controls preload="metadata" [src]="proofUrl(proof)"></audio>
-                <ng-template #proofButton><button class="proof-chip" type="button" (click)="openProof(proof)">{{ proofLabel(proof.proofType) }}</button></ng-template>
-              </ng-container></div><ng-template #noProof>-</ng-template></td>
-              <td *ngIf="selectedExecutive && !selectedCustomer"><button class="view-all" type="button" (click)="openCustomer(item)">View all follow-ups</button></td>
-            </tr>
-            <tr *ngIf="!displayedFollowUps.length"><td [attr.colspan]="selectedExecutive && !selectedCustomer ? 8 : 7" class="empty-table">No follow-up updates found.</td></tr>
-          </tbody>
-        </table>
+      <!-- Modern Timeline Feed instead of Table -->
+      <div class="timeline-feed" style="position: relative; padding: 10px 0 10px 24px; border-left: 2px solid var(--line); margin-left: 12px; display: flex; flex-direction: column; gap: 24px;">
+        
+        <div class="timeline-item" *ngFor="let item of displayedFollowUps" style="position: relative;">
+          <!-- Node Indicator -->
+          <div style="position: absolute; left: -31px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: white; border: 3px solid var(--brand); box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.15);"></div>
+          
+          <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; transition: all 0.2s ease;">
+            <!-- Header section of timeline card -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 700; color: var(--text-dark); margin: 0;">{{ item.customer || item.lead }}</h3>
+                <small class="muted" style="font-size: 11px;">🕒 {{ item.createdAt | date:'medium' }}</small>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="badge">{{ typeLabel(item.type) }}</span>
+                <!-- Executive Link or Text -->
+                <button *ngIf="!selectedExecutive; else executiveText" class="executive-link" type="button" (click)="openExecutive(item.salesExecutive)" style="font-size: 12px; font-weight: 700; border: 0; background: none; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; color: var(--brand);">
+                  👤 {{ item.salesExecutive }}
+                </button>
+                <ng-template #executiveText><span style="font-size: 12px; color: var(--muted); font-weight: 600;">👤 {{ item.salesExecutive }}</span></ng-template>
+              </div>
+            </div>
+            
+            <!-- Summary Note & Response speech bubble -->
+            <div style="background: white; border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+              <span class="muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; display: block; margin-bottom: 4px;">Update Summary</span>
+              <p style="font-size: 14px; color: var(--text-dark); margin: 0; line-height: 1.5;">{{ item.summary }}</p>
+              
+              <div *ngIf="item.customerResponse" style="margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px;">
+                <span class="muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; display: block; margin-bottom: 2px;">Customer Response</span>
+                <p style="font-size: 13px; color: #475569; margin: 0; font-style: italic;">"{{ item.customerResponse }}"</p>
+              </div>
+            </div>
+
+            <!-- Meta details (Next Follow-up & Proofs) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px;">
+              <!-- Next Date -->
+              <div style="font-size: 12px;">
+                <span class="muted" style="font-weight: 600;">📅 Next follow-up:</span>
+                <span style="font-weight: 700; color: var(--text-dark); margin-left: 4px;">{{ item.nextFollowUpAt ? (item.nextFollowUpAt | date:'medium') : 'None scheduled' }}</span>
+              </div>
+              
+              <!-- Proofs section -->
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="proof-list" *ngIf="item.proofs?.length">
+                  <ng-container *ngFor="let proof of item.proofs">
+                    <audio *ngIf="isAudio(proof); else proofButton" class="audio-proof" controls preload="metadata" [src]="proofUrl(proof)"></audio>
+                    <ng-template #proofButton>
+                      <button class="proof-chip" type="button" (click)="openProof(proof)">
+                        📁 {{ proofLabel(proof.proofType) }}
+                      </button>
+                    </ng-template>
+                  </ng-container>
+                </div>
+                
+                <!-- "View all followups" when in executive customers overview -->
+                <button *ngIf="selectedExecutive && !selectedCustomer" class="view-btn" type="button" (click)="openCustomer(item)" style="min-height: 30px; font-size: 12px; font-weight: 700; padding: 0 12px; border-radius: 6px;">
+                  View History →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!displayedFollowUps.length" class="empty-table" style="margin-top: 10px;">
+          No follow-up updates found.
+        </div>
       </div>
     </article>
 
