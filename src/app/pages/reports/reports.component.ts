@@ -14,10 +14,73 @@ import { invoiceStatus, label, leadSource, leadStatus, money, paymentStatus } fr
     </section>
 
     <section class="report-grid">
-      <article class="panel"><h2>Lead Status</h2><div class="report-row" *ngFor="let row of report?.leadStatus"><span>{{ label(leadStatus, row.status) }}</span><strong>{{ row.count }}</strong></div></article>
-      <article class="panel"><h2>Lead Source</h2><div class="report-row" *ngFor="let row of report?.leadSource"><span>{{ label(leadSource, row.source) }}</span><strong>{{ row.count }}</strong></div></article>
-      <article class="panel"><h2>Payments</h2><div class="report-row" *ngFor="let row of report?.paymentStatus"><span>{{ label(paymentStatus, row.status) }}</span><strong>{{ money(row.amount || 0) }}</strong></div></article>
-      <article class="panel"><h2>Invoices</h2><div class="report-row" *ngFor="let row of report?.invoiceStatus"><span>{{ label(invoiceStatus, row.status) }}</span><strong>{{ money(row.amount || 0) }}</strong></div></article>
+      <!-- Lead Status Chart -->
+      <article class="panel">
+        <h2>Lead Status Distribution</h2>
+        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Counts of active prospects by operational priority status.</p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div *ngFor="let row of report?.leadStatus">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
+              <span>{{ label(leadStatus, row.status) }}</span>
+              <strong>{{ row.count }} leads</strong>
+            </div>
+            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
+              <div style="height: 100%; background: linear-gradient(90deg, #6366f1, #4f46e5); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="(row.count / getMaxCount(report?.leadStatus)) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Lead Source Chart -->
+      <article class="panel">
+        <h2>Lead Source Channels</h2>
+        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Performance of marketing campaigns and referral listings.</p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div *ngFor="let row of report?.leadSource">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
+              <span>{{ label(leadSource, row.source) }}</span>
+              <strong>{{ row.count }} leads</strong>
+            </div>
+            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
+              <div style="height: 100%; background: linear-gradient(90deg, #ec4899, #db2777); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="(row.count / getMaxCount(report?.leadSource)) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Payment Collections Chart -->
+      <article class="panel">
+        <h2>Payment Verification Totals</h2>
+        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Financial values of verified vs pending manual collections.</p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div *ngFor="let row of report?.paymentStatus">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
+              <span>{{ label(paymentStatus, row.status) }}</span>
+              <strong>{{ money(row.amount || 0) }}</strong>
+            </div>
+            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
+              <div style="height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="((row.amount || 0) / getMaxAmount(report?.paymentStatus)) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Invoices Status Chart -->
+      <article class="panel">
+        <h2>Invoiced Amounts Overview</h2>
+        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Total values of outstanding, paid, and drafted client billings.</p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div *ngFor="let row of report?.invoiceStatus">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
+              <span>{{ label(invoiceStatus, row.status) }}</span>
+              <strong>{{ money(row.amount || 0) }}</strong>
+            </div>
+            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
+              <div style="height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="((row.amount || 0) / getMaxAmount(report?.invoiceStatus)) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </article>
     </section>
   `
 })
@@ -30,6 +93,19 @@ export class ReportsComponent implements OnInit {
   leadSource = leadSource;
   paymentStatus = paymentStatus;
   invoiceStatus = invoiceStatus;
+
+  getMaxCount(groups?: ReportGroup[]): number {
+    if (!groups || groups.length === 0) return 1;
+    const count = Math.max(...groups.map(g => g.count));
+    return count > 0 ? count : 1;
+  }
+
+  getMaxAmount(groups?: ReportGroup[]): number {
+    if (!groups || groups.length === 0) return 1;
+    const amount = Math.max(...groups.map(g => g.amount || 0));
+    return amount > 0 ? amount : 1;
+  }
+
   ngOnInit() { this.load(); }
   load() { this.api.reports().subscribe(data => this.report = data); }
 }
