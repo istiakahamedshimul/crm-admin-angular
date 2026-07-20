@@ -5,16 +5,146 @@ import { forkJoin, finalize } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { Vehicle, VehicleBooking } from '../../models/crm.models';
 import { TransportNavComponent } from './transport-nav.component';
-@Component({standalone:true,imports:[CommonModule,FormsModule,TransportNavComponent],template:`
-<section class="page-head"><div><p class="eyebrow">Transport Management</p><h1>Visit Requests</h1><p class="page-copy">Review sales requests, assign vehicles, and confirm customer visits.</p></div><button class="ghost-button" (click)="load()">Refresh</button></section><app-transport-nav/>
-<p class="success" *ngIf="message">{{message}}</p><p class="error" *ngIf="error&&!selected">{{error}}</p>
-<div class="stat-grid"><div class="mini-stat"><span>Pending</span><strong>{{count(0)}}</strong></div><div class="mini-stat"><span>Approved</span><strong>{{count(1)}}</strong></div><div class="mini-stat"><span>Total requests</span><strong>{{bookings.length}}</strong></div></div>
-<article class="panel table-panel"><div class="table-header"><div><h2>Customer visits</h2><p>Newest requests appear first</p></div></div><div class="responsive-table"><table><thead><tr><th>Date & Time</th><th>Customer</th><th>Project</th><th>Pickup</th><th>Visitors</th><th>Status</th><th></th></tr></thead><tbody>
-<tr *ngFor="let b of bookings"><td><strong>{{b.visitDate|date:'dd MMM yyyy'}}</strong><small>{{b.visitTime}}</small></td><td><strong>{{b.customer}}</strong><small>{{b.customerPhone}}</small></td><td>{{b.project}}</td><td>{{b.pickupPlace}}</td><td>{{b.personCount}}</td><td><span class="status-pill" [class.pending]="b.status===0" [class.approved]="b.status===1" [class.rejected]="b.status===2">{{statuses[b.status]}}</span></td><td><button class="view-btn" (click)="open(b)">View details</button></td></tr><tr *ngIf="!bookings.length"><td colspan="7" class="empty-table">No visit requests found.</td></tr></tbody></table></div></article>
-<div class="modal-backdrop" *ngIf="selected" (click)="selected=undefined"><article class="request-drawer" (click)="$event.stopPropagation()"><div class="drawer-head"><div><p class="eyebrow">Request #{{selected.id}}</p><h2>{{selected.customer}}</h2></div><button class="icon-button" (click)="selected=undefined">×</button></div>
-<p class="error" *ngIf="error">{{error}}</p><div class="detail-grid"><div><span>Visit</span><strong>{{selected.visitDate|date:'dd MMM yyyy'}} at {{selected.visitTime}}</strong></div><div><span>Project</span><strong>{{selected.project}}</strong></div><div><span>Pickup</span><strong>{{selected.pickupPlace}}</strong></div><div><span>Visitors</span><strong>{{selected.personCount}}</strong></div><div><span>Purpose</span><strong>{{selected.purpose}}</strong></div><div><span>Sales employee</span><strong>{{selected.salesExecutive}}</strong></div></div><div class="note-box"><span>Additional information</span><p>{{selected.additionalInformation||'No additional information provided.'}}</p></div>
-<div *ngIf="selected.status===0" class="approval-form"><label class="field"><span>Assign vehicle *</span><select [(ngModel)]="vehicleId" [disabled]="submitting"><option [ngValue]="0">Select an active vehicle</option><option *ngFor="let v of active" [ngValue]="v.id">{{v.registrationNumber}} · {{v.brand}} {{v.model}} · {{v.seatingCapacity}} seats</option></select></label><label class="field"><span>Driver name</span><input [(ngModel)]="driver" [disabled]="submitting" placeholder="Enter driver name"></label><label class="field"><span>Admin remarks</span><textarea [(ngModel)]="remarks" [disabled]="submitting" placeholder="Optional internal note"></textarea></label><div class="drawer-actions"><button type="button" class="danger" (click)="reject()" [disabled]="submitting">Reject request</button><button type="button" (click)="approve()" [disabled]="!vehicleId||submitting">{{submitting?'Saving...':'Assign & approve'}}</button></div></div>
-<div *ngIf="selected.status!==0" class="note-box"><span>Assigned vehicle</span><p>{{selected.vehicle||'Not assigned'}} <ng-container *ngIf="selected.driver">· Driver: {{selected.driver}}</ng-container></p></div></article></div>`})
+
+@Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, TransportNavComponent],
+  template: `
+    <section class="page-head">
+      <div>
+        <p class="eyebrow">Transport Management</p>
+        <h1>Visit Requests</h1>
+        <p class="page-copy">Review sales requests, assign vehicles, and confirm customer visits.</p>
+      </div>
+      <button class="ghost-button" (click)="load()">Refresh</button>
+    </section>
+    
+    <app-transport-nav/>
+
+    <p class="success" *ngIf="message">{{message}}</p>
+    <p class="error" *ngIf="error&&!selected">{{error}}</p>
+
+    <div class="stat-grid">
+      <div class="mini-stat"><span>Pending Approval</span><strong>{{count(0)}}</strong></div>
+      <div class="mini-stat"><span>Approved Bookings</span><strong>{{count(1)}}</strong></div>
+      <div class="mini-stat"><span>Total requests</span><strong>{{bookings.length}}</strong></div>
+    </div>
+
+    <article class="panel table-panel">
+      <div class="table-header">
+        <div>
+          <h2>Customer Site Visits</h2>
+          <p>Newest requests appear first</p>
+        </div>
+      </div>
+      <div class="responsive-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Customer</th>
+              <th>Project Destination</th>
+              <th>Pickup Address</th>
+              <th>Visitors Count</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let b of bookings">
+              <td>
+                <strong style="color: var(--text-dark);">{{b.visitDate|date:'dd MMM yyyy'}}</strong>
+                <small>{{b.visitTime}}</small>
+              </td>
+              <td>
+                <strong style="color: var(--text-dark);">{{b.customer}}</strong>
+                <small>📞 {{b.customerPhone}}</small>
+              </td>
+              <td><span style="font-weight: 700; color: var(--brand);">{{b.project}}</span></td>
+              <td>{{b.pickupPlace}}</td>
+              <td>
+                <span style="padding: 3px 8px; background: var(--panel-soft); border: 1px solid var(--line); border-radius: 6px; font-weight: 700; font-size: 13px;">
+                  👥 {{b.personCount}}
+                </span>
+              </td>
+              <td>
+                <span class="status-pill" [class.pending]="b.status===0" [class.approved]="b.status===1" [class.rejected]="b.status===2">
+                  {{statuses[b.status]}}
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <button class="view-btn" (click)="open(b)" style="min-height: 32px; font-size: 13px; padding: 0 12px; border-radius: 6px;">
+                  Verify & Assign
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!bookings.length">
+              <td colspan="7" class="empty-table">No visit requests found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <!-- Details Overlay Modal -->
+    <div class="modal-backdrop" *ngIf="selected" (click)="selected=undefined">
+      <article class="request-drawer" (click)="$event.stopPropagation()">
+        <div class="drawer-head">
+          <div>
+            <p class="eyebrow">Request ID #{{selected.id}}</p>
+            <h2>{{selected.customer}}</h2>
+          </div>
+          <button class="icon-button" (click)="selected=undefined">×</button>
+        </div>
+        
+        <p class="error" *ngIf="error">{{error}}</p>
+        
+        <div class="detail-grid">
+          <div><span>Visit Schedule</span><strong>{{selected.visitDate|date:'dd MMM yyyy'}} at {{selected.visitTime}}</strong></div>
+          <div><span>Project Target</span><strong>{{selected.project}}</strong></div>
+          <div><span>Pickup Location</span><strong>{{selected.pickupPlace}}</strong></div>
+          <div><span>Visitors count</span><strong>👥 {{selected.personCount}} people</strong></div>
+          <div><span>Purpose of Visit</span><strong>{{selected.purpose}}</strong></div>
+          <div><span>Sales Agent</span><strong>👤 {{selected.salesExecutive}}</strong></div>
+        </div>
+
+        <div class="note-box" style="margin-bottom: 20px;">
+          <span>Additional information</span>
+          <p>{{selected.additionalInformation||'No additional information provided.'}}</p>
+        </div>
+
+        <!-- Approval / Assignment Form -->
+        <div *ngIf="selected.status===0" class="approval-form">
+          <label class="field">
+            <span>Assign active vehicle *</span>
+            <select [(ngModel)]="vehicleId" [disabled]="submitting">
+              <option [ngValue]="0">Select an active vehicle</option>
+              <option *ngFor="let v of active" [ngValue]="v.id">{{v.registrationNumber}} · {{v.brand}} {{v.model}} · ({{v.seatingCapacity}} seats)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Driver name</span>
+            <input [(ngModel)]="driver" [disabled]="submitting" placeholder="e.g. Michael Cooper">
+          </label>
+          <label class="field">
+            <span>Admin internal remarks</span>
+            <textarea [(ngModel)]="remarks" [disabled]="submitting" placeholder="Optional notes visible internally..."></textarea>
+          </label>
+          <div class="drawer-actions">
+            <button type="button" class="danger" (click)="reject()" [disabled]="submitting" style="min-height: 40px;">Reject Request</button>
+            <button type="button" (click)="approve()" [disabled]="!vehicleId||submitting" style="min-height: 40px;">Assign & Approve</button>
+          </div>
+        </div>
+        
+        <!-- Info when already processed -->
+        <div *ngIf="selected.status!==0" class="note-box" style="border-color: var(--success); background: var(--success-bg); color: var(--success-dark);">
+          <span>Assigned Transport Details</span>
+          <p style="font-weight: 700;">{{selected.vehicle||'Not assigned'}} <ng-container *ngIf="selected.driver">· Driver: {{selected.driver}}</ng-container></p>
+        </div>
+      </article>
+    </div>
+  `
+})
 export class VehicleBookingsComponent implements OnInit {
   private api=inject(ApiService);
   bookings:VehicleBooking[]=[];vehicles:Vehicle[]=[];selected?:VehicleBooking;
@@ -34,7 +164,6 @@ export class VehicleBookingsComponent implements OnInit {
     if(!this.selected)return;
     const vehicle=this.active.find(v=>v.id===this.vehicleId);
     if(!vehicle){this.error='Select an active vehicle before approving this request.';return}
-    // Seating capacity is informational and does not prevent admin approval.
     this.error='';this.message='';this.submitting=true;
     this.api.approveVehicleBooking(this.selected.id,this.vehicleId,this.driver.trim(),this.remarks.trim()).pipe(finalize(()=>this.submitting=false)).subscribe({
       next:()=>{this.selected=undefined;this.message='Vehicle request approved successfully.';this.load()},

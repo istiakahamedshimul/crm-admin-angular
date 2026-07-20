@@ -11,11 +11,49 @@ import { commissionStatus, label, money } from '../../shared/format';
     <section class="page-head">
       <div><p class="eyebrow">Sales Earnings</p><h1>Commissions</h1></div>
     </section>
+
+    <!-- Computed Commissions Earnings Summaries -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div class="mini-stat" style="background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow);">
+        <span>Total Commissions Disbursed</span>
+        <strong style="display: block; margin-top: 6px; font-size: 26px; font-weight: 800; color: var(--success-dark);">
+          {{ money(paidCommissions) }}
+        </strong>
+      </div>
+      <div class="mini-stat" style="background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow);">
+        <span>Commissions Pending Payout</span>
+        <strong style="display: block; margin-top: 6px; font-size: 26px; font-weight: 800; color: var(--warning-dark);">
+          {{ money(pendingCommissions) }}
+        </strong>
+      </div>
+    </div>
+
     <article class="panel">
-      <table>
-        <thead><tr><th>Sales Executive</th><th>Payment</th><th>Rate</th><th>Commission</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody><tr *ngFor="let row of commissions"><td>{{ row.salesExecutive }}</td><td>{{ money(row.paymentAmount) }}</td><td>{{ row.percentage }}%</td><td>{{ money(row.amount) }}</td><td><span class="badge">{{ label(commissionStatus, row.status) }}</span></td><td>{{ row.createdAt | date }}</td></tr></tbody>
-      </table>
+      <h2>Disbursement Records</h2>
+      <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Detailed log of commission payouts and calculations per verified collection.</p>
+      
+      <div class="responsive-table">
+        <table>
+          <thead><tr><th>Sales Executive</th><th>Collection Received</th><th>Rate</th><th>Commission Amount</th><th>Payout Status</th><th>Date</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let row of commissions">
+              <td><strong>{{ row.salesExecutive }}</strong></td>
+              <td>{{ money(row.paymentAmount) }}</td>
+              <td><span style="font-weight: 700; color: var(--brand);">{{ row.percentage }}%</span></td>
+              <td><strong>{{ money(row.amount) }}</strong></td>
+              <td>
+                <span class="status-pill" [class.approved]="row.status === 1" [class.pending]="row.status === 0" [class.rejected]="row.status === 2">
+                  {{ label(commissionStatus, row.status) }}
+                </span>
+              </td>
+              <td>{{ row.createdAt | date }}</td>
+            </tr>
+            <tr *ngIf="!commissions.length">
+              <td colspan="6" class="empty-table">No commission records found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </article>
   `
 })
@@ -25,5 +63,14 @@ export class CommissionsComponent implements OnInit {
   label = label;
   money = money;
   commissionStatus = commissionStatus;
+
+  get paidCommissions(): number {
+    return this.commissions.filter(c => c.status === 1).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  }
+
+  get pendingCommissions(): number {
+    return this.commissions.filter(c => c.status === 0).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  }
+
   ngOnInit() { this.api.commissions().subscribe(data => this.commissions = data); }
 }
