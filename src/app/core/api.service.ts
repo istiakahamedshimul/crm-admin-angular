@@ -19,8 +19,9 @@ import {
   Project,
   ReportSummary,
   SalesExecutive,
+  SalesExecutiveDetail,
   SubGroup,
-  UserSummary,
+  UserSummary, UpdateSalesExecutiveRequest,
   VehicleBooking, Vehicle
 } from '../models/crm.models';
 
@@ -52,6 +53,14 @@ export class ApiService {
 
   createSalesExecutive(request: CreateSalesExecutiveRequest) {
     return this.http.post(`${this.baseUrl}/users/sales-executives`, request, this.options());
+  }
+
+  salesExecutiveDetail(id: number) {
+    return this.http.get<SalesExecutiveDetail>(`${this.baseUrl}/users/sales-executives/${id}`, this.options());
+  }
+
+  updateSalesExecutive(id: number, request: UpdateSalesExecutiveRequest) {
+    return this.http.put(`${this.baseUrl}/users/sales-executives/${id}`, request, this.options());
   }
 
   salesExecutives() {

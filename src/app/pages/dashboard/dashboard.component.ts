@@ -160,7 +160,7 @@ import { money } from '../../shared/format';
         </div>
       </a>
 
-      <!-- Paid Commission (This Month) -->
+      <!-- Commission (This Month) -->
       <article class="dashboard-metric-card">
         <div class="icon-wrapper commissions-theme">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -168,8 +168,8 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Paid Commission (This Month)</span>
-          <strong class="card-val text-success">{{ formatMoney(paidCommissionThisMonth) }}</strong>
+          <span class="card-label">Commission (This Month)</span>
+          <strong class="card-val text-success">{{ formatMoney(commissionThisMonth) }}</strong>
         </div>
       </article>
     </section>
@@ -671,24 +671,12 @@ export class DashboardComponent implements OnInit {
     return total ? Math.round((approved / total) * 100) : 0;
   }
 
-  get paidCommissionThisMonth(): number {
+  get commissionThisMonth(): number {
     const now = new Date();
     return this.commissionsList
       .filter(c => {
         const date = new Date(c.createdAt);
-        return c.status === 3 && // Paid
-               date.getFullYear() === now.getFullYear() &&
-               date.getMonth() === now.getMonth();
-      })
-      .reduce((sum, c) => sum + (c.amount || 0), 0);
-  }
-
-  get pendingCommissionThisMonth(): number {
-    const now = new Date();
-    return this.commissionsList
-      .filter(c => {
-        const date = new Date(c.createdAt);
-        return c.status === 0 && // Pending
+        return c.status !== 2 &&
                date.getFullYear() === now.getFullYear() &&
                date.getMonth() === now.getMonth();
       })
