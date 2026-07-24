@@ -10,8 +10,6 @@ export type DashboardSummary = {
   leads?: number;
   customers?: number;
   projects?: number;
-  invoices?: number;
-  unpaidInvoices?: number;
   pendingPayments?: number;
   approvedPayments?: number;
   totalCollection?: number;
@@ -36,12 +34,12 @@ export type Lead = {
   phone: string;
   email?: string;
   source: number;
-  priority: number;
   status: number;
   assignedToId?: number;
   assignedToName?: string;
   projectId?: number;
   projectName?: string;
+  projectType?: number;
   nextFollowUpAt?: string;
 };
 
@@ -56,7 +54,6 @@ export type CreateLeadRequest = {
   preferredLocation?: string | null;
   projectId?: number | null;
   source: number;
-  priority: number;
   assignedToId: number | null;
   remarks?: string | null;
 };
@@ -131,20 +128,10 @@ export type CreateProjectRequest = {
   status: number;
 };
 
-export type Invoice = {
-  id: number;
-  invoiceNumber: string;
-  customer: string;
-  salesExecutive: string;
-  finalAmount: number;
-  status: number;
-  dueDate: string;
-};
-
 export type Payment = {
   id: number;
   customer: string;
-  invoiceNumber: string;
+  collectionNumber: string;
   salesExecutive: string;
   amount: number;
   method: number;
@@ -195,7 +182,6 @@ export type ReportSummary = {
   leadStatus: ReportGroup[];
   leadSource: ReportGroup[];
   paymentStatus: ReportGroup[];
-  invoiceStatus: ReportGroup[];
 };
 
 export type VehicleBooking = {
