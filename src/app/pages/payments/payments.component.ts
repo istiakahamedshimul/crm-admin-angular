@@ -9,7 +9,7 @@ import { label, money, paymentStatus } from '../../shared/format';
   imports: [CommonModule],
   template: `
     <section class="page-head">
-      <div><p class="eyebrow">Verification</p><h1>Manual Payments</h1></div>
+      <div><p class="eyebrow">Verification</p><h1>Collections</h1></div>
       <button type="button" class="ghost-button" (click)="load()">Refresh</button>
     </section>
 
@@ -35,11 +35,11 @@ import { label, money, paymentStatus } from '../../shared/format';
       
       <div class="responsive-table">
         <table>
-          <thead><tr><th>Customer</th><th>Invoice</th><th>Sales Executive</th><th>Amount</th><th>Status</th><th>Proof File</th><th style="text-align: right;">Action</th></tr></thead>
+          <thead><tr><th>Customer</th><th>Collection No.</th><th>Sales Executive</th><th>Amount</th><th>Status</th><th>Receipt</th><th style="text-align: right;">Action</th></tr></thead>
           <tbody>
             <tr *ngFor="let payment of payments">
               <td><strong>{{ payment.customer }}</strong></td>
-              <td><code>{{ payment.invoiceNumber }}</code></td>
+              <td><code>{{ payment.collectionNumber }}</code></td>
               <td>{{ payment.salesExecutive }}</td>
               <td><strong>{{ money(payment.amount) }}</strong></td>
               <td>

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { ApiService } from '../../core/api.service';
 import { ReportGroup, ReportSummary } from '../../models/crm.models';
-import { invoiceStatus, label, leadSource, leadStatus, money, paymentStatus } from '../../shared/format';
+import { label, leadSource, leadStatus, money, paymentStatus } from '../../shared/format';
 
 @Component({
   standalone: true,
@@ -65,22 +65,6 @@ import { invoiceStatus, label, leadSource, leadStatus, money, paymentStatus } fr
         </div>
       </article>
 
-      <!-- Invoices Status Chart -->
-      <article class="panel">
-        <h2>Invoiced Amounts Overview</h2>
-        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Total values of outstanding, paid, and drafted client billings.</p>
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div *ngFor="let row of report?.invoiceStatus">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
-              <span>{{ label(invoiceStatus, row.status) }}</span>
-              <strong>{{ money(row.amount || 0) }}</strong>
-            </div>
-            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
-              <div style="height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="((row.amount || 0) / getMaxAmount(report?.invoiceStatus)) * 100"></div>
-            </div>
-          </div>
-        </div>
-      </article>
     </section>
   `
 })
@@ -92,7 +76,6 @@ export class ReportsComponent implements OnInit {
   leadStatus = leadStatus;
   leadSource = leadSource;
   paymentStatus = paymentStatus;
-  invoiceStatus = invoiceStatus;
 
   getMaxCount(groups?: ReportGroup[]): number {
     if (!groups || groups.length === 0) return 1;

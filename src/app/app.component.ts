@@ -55,11 +55,6 @@ import { environment } from '../environments/environment';
               Projects
             </a>
 
-            <a routerLink="/invoices" routerLinkActive="active">
-              <span>I</span>
-              Invoices
-            </a>
-
             <a routerLink="/transport/requests" routerLinkActive="active">
               <span>V</span>
               Transport
@@ -72,7 +67,7 @@ import { environment } from '../environments/environment';
 
             <a routerLink="/payments" routerLinkActive="active">
               <span>M</span>
-              Payments
+              Collections
             </a>
 
             <a routerLink="/commissions" routerLinkActive="active">

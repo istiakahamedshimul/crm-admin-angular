@@ -14,7 +14,6 @@ import {
   Customer,
   DashboardSummary,
   FollowUp,
-  Invoice,
   Lead,
   Payment,
   Project,
@@ -81,6 +80,17 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/leads`, request, this.options());
   }
 
+  importLeads(file: File, autoAssign: boolean) {
+    const body = new FormData();
+    body.append('file', file);
+    body.append('autoAssign', String(autoAssign));
+    return this.http.post<{ imported: number; skipped: unknown[] }>(`${this.baseUrl}/leads/import`, body, {
+      headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token()}` })
+    });
+  }
+
+  leadImportTemplateUrl() { return `${this.baseUrl}/leads/import-template`; }
+
   updateLead(id: number, request: Partial<CreateLeadRequest> & Record<string, unknown>) {
     return this.http.put(`${this.baseUrl}/leads/${id}`, request, this.options());
   }
@@ -111,10 +121,6 @@ export class ApiService {
 
   createSubGroup(request: CreateSubGroupRequest) {
     return this.http.post(`${this.baseUrl}/subgroups`, request, this.options());
-  }
-
-  invoices() {
-    return this.http.get<Invoice[]>(`${this.baseUrl}/invoices`, this.options());
   }
 
   payments() {
