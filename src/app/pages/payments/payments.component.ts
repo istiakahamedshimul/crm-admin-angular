@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { VoiceService } from '../../core/voice.service';
 import { Payment } from '../../models/crm.models';
 import { label, money, paymentStatus } from '../../shared/format';
 
@@ -744,6 +745,7 @@ import { label, money, paymentStatus } from '../../shared/format';
 })
 export class PaymentsComponent implements OnInit {
   private api = inject(ApiService);
+  private voiceService = inject(VoiceService);
   payments: Payment[] = [];
   label = label;
   money = money;
@@ -761,6 +763,7 @@ export class PaymentsComponent implements OnInit {
   period: 'week' | 'month' | 'year' | 'overall' | 'custom' = 'month';
   customFrom = '';
   customTo = '';
+  voiceExecutiveFilter = '';
 
   get approvedSum(): number {
     return this.periodPayments.filter(p => p.status === 1).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
@@ -828,18 +831,35 @@ export class PaymentsComponent implements OnInit {
       // 2. Filter by search query
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase();
-        return (
+        const matchesSearch = (
           p.customer.toLowerCase().includes(query) ||
           p.collectionNumber.toLowerCase().includes(query) ||
           p.salesExecutive.toLowerCase().includes(query) ||
           p.amount.toString().includes(query)
         );
+        if (!matchesSearch) return false;
       }
+      if (
+        this.voiceExecutiveFilter &&
+        !p.salesExecutive.toLowerCase().includes(this.voiceExecutiveFilter.toLowerCase())
+      ) return false;
       return true;
     });
   }
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.voiceService.collectionFilter$.subscribe(filter => {
+      if (!filter) return;
+      this.activeTab = filter.status || 'all';
+      this.period = filter.period || 'overall';
+      this.customFrom = filter.from || '';
+      this.customTo = filter.to || '';
+      this.voiceExecutiveFilter = filter.salesExecutiveName || '';
+      this.searchQuery = filter.search || '';
+      this.voiceService.collectionFilterSubject.next(null);
+    });
+    this.load();
+  }
 
   load() {
     this.api.payments().subscribe(data => this.payments = data);
