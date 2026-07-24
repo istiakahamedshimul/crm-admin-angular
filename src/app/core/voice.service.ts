@@ -7,7 +7,7 @@ import { Lead } from '../models/crm.models';
 import { environment } from '../../environments/environment';
 
 const GEMINI_API_KEY = environment.geminiApiKey || '';
-const GEMINI_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
+const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
 export interface PerformanceReport {
