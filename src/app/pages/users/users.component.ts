@@ -9,6 +9,7 @@ import {
   UserSummary
 } from '../../models/crm.models';
 import { label, leadStatus, money } from '../../shared/format';
+import { VoiceService } from '../../core/voice.service';
 
 @Component({
   standalone: true,
@@ -112,6 +113,7 @@ import { label, leadStatus, money } from '../../shared/format';
 })
 export class UsersComponent implements OnInit {
   private api = inject(ApiService);
+  private voiceService = inject(VoiceService);
   users: UserSummary[] = [];
   detail: SalesExecutiveDetail | null = null;
   editForm: UpdateSalesExecutiveRequest = { fullName: '', email: '', phone: '', isActive: true, password: '' };
@@ -122,6 +124,7 @@ export class UsersComponent implements OnInit {
   saving = false;
   formatMoney = money;
   form: CreateSalesExecutiveRequest = { fullName: '', email: '', phone: '', password: 'Sales@12345' };
+  pendingAutoSelectId: number | null = null;
 
   get salesUsers() {
     return this.users.filter(user => user.role === 'SalesExecutive');
@@ -143,10 +146,33 @@ export class UsersComponent implements OnInit {
     ];
   }
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+    this.voiceService.autoSelectSalesExecutive$.subscribe(id => {
+      if (id) {
+        const user = this.salesUsers.find(u => u.id === id);
+        if (user) {
+          this.openDetail(user);
+          this.voiceService.autoSelectSalesExecutiveSubject.next(null);
+        } else {
+          this.pendingAutoSelectId = id;
+        }
+      }
+    });
+  }
 
   load() {
-    this.api.users().subscribe(data => this.users = data);
+    this.api.users().subscribe(data => {
+      this.users = data;
+      if (this.pendingAutoSelectId) {
+        const user = this.salesUsers.find(u => u.id === this.pendingAutoSelectId);
+        if (user) {
+          this.openDetail(user);
+          this.pendingAutoSelectId = null;
+          this.voiceService.autoSelectSalesExecutiveSubject.next(null);
+        }
+      }
+    });
   }
 
   openDetail(user: UserSummary) {

@@ -3,22 +3,12 @@ import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { Lead } from '../models/crm.models';
+import { UserSummary } from '../models/crm.models';
 import { environment } from '../../environments/environment';
 
 const GEMINI_API_KEY = environment.geminiApiKey || '';
 const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
-export interface PerformanceReport {
-  name: string;
-  leadsGiven: number;
-  booked: number;
-  lost: number;
-  notInterested: number;
-  assignedStage: number;
-  detailsText: string;
-}
 
 @Injectable({ providedIn: 'root' })
 export class VoiceService {
@@ -36,14 +26,16 @@ export class VoiceService {
   private errorSubject = new BehaviorSubject<string | null>(null);
   error$: Observable<string | null> = this.errorSubject.asObservable();
 
-  private activePerformanceReportSubject = new BehaviorSubject<PerformanceReport | null>(null);
-  activePerformanceReport$: Observable<PerformanceReport | null> = this.activePerformanceReportSubject.asObservable();
+  // Subject to trigger auto-selection in UsersComponent
+  public autoSelectSalesExecutiveSubject = new BehaviorSubject<number | null>(null);
+  autoSelectSalesExecutive$: Observable<number | null> = this.autoSelectSalesExecutiveSubject.asObservable();
 
   // Active language code: 'en' for English, 'bn' for Bengali
   language: 'en' | 'bn' = 'en';
 
   private recognition: any;
   private currentSpeechUtterance: SpeechSynthesisUtterance | null = null;
+  private isExplicitlyStarted = false; // Flag to maintain continuous listening state
 
   constructor() {
     this.initSpeechRecognition();
@@ -53,6 +45,11 @@ export class VoiceService {
     this.language = this.language === 'en' ? 'bn' : 'en';
     if (this.recognition) {
       this.recognition.lang = this.language === 'bn' ? 'bn-BD' : 'en-US';
+      // If recognition is currently running, restart it to apply the new language settings
+      if (this.isExplicitlyStarted) {
+        this.stopListening();
+        setTimeout(() => this.startListening(), 300);
+      }
     }
   }
 
@@ -64,39 +61,57 @@ export class VoiceService {
     }
 
     this.recognition = new SpeechRecognition();
-    this.recognition.continuous = false;
+    this.recognition.continuous = true; // Stay active to receive multiple sentences
     this.recognition.interimResults = false;
     this.recognition.lang = this.language === 'bn' ? 'bn-BD' : 'en-US';
 
     this.recognition.onstart = () => {
       this.listeningSubject.next(true);
       this.errorSubject.next(null);
-      this.stopSpeaking();
     };
 
     this.recognition.onresult = (event: any) => {
-      const speechText = event.results[0][0].transcript;
-      this.processingSubject.next(true);
-      this.parseCommandWithGemini(speechText);
+      // Get the latest finalized transcript segment
+      const resultIndex = event.resultIndex;
+      const speechText = event.results[resultIndex][0].transcript.trim();
+      
+      if (speechText) {
+        this.processingSubject.next(true);
+        this.parseCommandWithGemini(speechText);
+      }
     };
 
     this.recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'not-allowed') {
         this.errorSubject.next('Microphone permission denied. Please allow mic access.');
+        this.isExplicitlyStarted = false;
+        this.listeningSubject.next(false);
+      } else if (event.error === 'aborted') {
+        // Normal state when manually stopped or reset
       } else {
-        this.errorSubject.next(`Speech capture failed: ${event.error}`);
+        this.errorSubject.next(`Speech capture: ${event.error}`);
       }
-      this.listeningSubject.next(false);
-      this.processingSubject.next(false);
     };
 
     this.recognition.onend = () => {
-      this.listeningSubject.next(false);
+      // If the user did not click to stop, automatically restart listening
+      if (this.isExplicitlyStarted) {
+        try {
+          this.recognition.start();
+        } catch (e) {
+          console.warn('Failed to restart speech recognition:', e);
+        }
+      } else {
+        this.listeningSubject.next(false);
+      }
     };
   }
 
   startListening() {
+    this.isExplicitlyStarted = true;
+    this.stopSpeaking();
+    
     if (!this.recognition) {
       this.initSpeechRecognition();
     }
@@ -111,9 +126,15 @@ export class VoiceService {
   }
 
   stopListening() {
+    this.isExplicitlyStarted = false;
     if (this.recognition) {
-      this.recognition.stop();
+      try {
+        this.recognition.stop();
+      } catch (e) {
+        console.warn('Failed to stop speech recognition:', e);
+      }
     }
+    this.listeningSubject.next(false);
   }
 
   speak(text: string, langCode: string) {
@@ -124,7 +145,10 @@ export class VoiceService {
     this.currentSpeechUtterance = new SpeechSynthesisUtterance(text);
     this.currentSpeechUtterance.lang = langCode;
     
-    // Choose a suitable voice if available
+    // Setup natural non-robotic rate & pitch
+    this.currentSpeechUtterance.rate = 1.0;
+    this.currentSpeechUtterance.pitch = 1.05;
+    
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
       const matchingVoice = voices.find(v => v.lang.startsWith(langCode));
@@ -133,6 +157,22 @@ export class VoiceService {
       }
     }
 
+    // Temporarily pause listening while the assistant speaks to avoid feedback echo
+    if (this.isExplicitlyStarted && this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (e) {}
+    }
+
+    this.currentSpeechUtterance.onend = () => {
+      // Resume listening once speech synthesis finishes
+      if (this.isExplicitlyStarted && this.recognition) {
+        try {
+          this.recognition.start();
+        } catch (e) {}
+      }
+    };
+
     window.speechSynthesis.speak(this.currentSpeechUtterance);
   }
 
@@ -140,11 +180,6 @@ export class VoiceService {
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
-  }
-
-  closePerformanceReport() {
-    this.activePerformanceReportSubject.next(null);
-    this.stopSpeaking();
   }
 
   private parseCommandWithGemini(speechText: string) {
@@ -167,13 +202,16 @@ Actions:
 1. "navigate": If the user wants to go/navigate/open a specific page (e.g. "go to leads", "লিড পেইজ ওপেন করো"). Set "target" to the matching route path from the list above.
 2. "view_performance": If the user wants to see the sales performance, reports, bookings, or statistics of a sales executive (e.g. "show me Mr John's performance", "ইশতিয়াক এর পারফরম্যান্স দেখতে চাই").
    - Set "target" to the name of the sales executive in English (e.g. "John", "Istiak", "Demo Sales Executive") so it matches our system records.
-3. "unknown": If the command is not understood.
+3. "unknown": If the command is not supported or not understood.
+   - For unsupported requests, set "spokenResponse" to:
+     - English: "I'm sorry, I cannot perform that action."
+     - Bengali: "আমি দুঃখিত, আমি এটি করতে পারছি না।"
 
 Response format:
 - "spokenResponse": A short spoken confirmation in the user's language. If the user spoke in Bengali, return it in Bengali (Bangla unicode text). If in English, return in English.
   Examples:
-  - English: "Opening the Leads page."
-  - Bengali: "লিড পেইজ খোলা হচ্ছে।" or "এখানে ইশতিয়াকের পারফরম্যান্সের বিবরণ দেওয়া হলো।"
+  - English: "Opening the profile details."
+  - Bengali: "প্রোফাইল বিবরণ খোলা হচ্ছে।"
 
 Return ONLY a valid JSON object matching this TypeScript type:
 {
@@ -223,9 +261,9 @@ User Spoken Command: "${speechText}"`;
     } else if (intent.action === 'view_performance') {
       this.loadPerformanceStats(intent.target, intent.spokenResponse);
     } else {
-      const unknownMsg = this.language === 'bn'
-        ? `আমি দুঃখিত, আমি এই কমান্ডটি বুঝতে পারিনি: "${originalSpeech}"`
-        : `Sorry, I did not understand the command: "${originalSpeech}"`;
+      const unknownMsg = intent.spokenResponse || (this.language === 'bn'
+        ? `আমি দুঃখিত, আমি এটি করতে পারছি না।`
+        : `I'm sorry, I cannot do this.`);
       this.speak(unknownMsg, langCode);
     }
   }
@@ -233,62 +271,63 @@ User Spoken Command: "${speechText}"`;
   private loadPerformanceStats(execName: string, confirmationSpeech: string) {
     this.processingSubject.next(true);
 
-    this.api.leads().subscribe({
-      next: (leads: Lead[]) => {
-        this.processingSubject.next(false);
-        
+    this.api.users().subscribe({
+      next: (users: UserSummary[]) => {
         const normalizedTarget = execName.toLowerCase().replace(/^(mr|ms|mrs)\.?\s+/i, '');
-        const execLeads = leads.filter(l => {
-          if (!l.assignedToName) return false;
-          const normalizedName = l.assignedToName.toLowerCase();
-          return normalizedName.includes(normalizedTarget) || normalizedTarget.includes(normalizedName);
+        const matchedUser = users.find(u => {
+          if (u.role !== 'SalesExecutive') return false;
+          const name = u.fullName.toLowerCase();
+          return name.includes(normalizedTarget) || normalizedTarget.includes(name);
         });
 
-        if (execLeads.length === 0) {
+        if (!matchedUser) {
+          this.processingSubject.next(false);
           const notFoundMsg = this.language === 'bn'
-            ? `আমি দুঃখিত, বিক্রয় নির্বাহী "${execName}" এর কোনো লিড রেকর্ড খুঁজে পাইনি।`
-            : `Sorry, I couldn't find any sales records for "${execName}".`;
+            ? `আমি দুঃখিত, আমি এটি করতে পারছি না। বিক্রয় নির্বাহী "${execName}" এর কোনো তথ্য খুঁজে পাইনি।`
+            : `I'm sorry, I cannot do this. I couldn't find any sales records for "${execName}".`;
           this.speak(notFoundMsg, this.language === 'bn' ? 'bn-BD' : 'en-US');
           this.errorSubject.next(`No record found for sales executive "${execName}".`);
           return;
         }
 
-        // Calculate statistics
-        const leadsGiven = execLeads.length;
-        const booked = execLeads.filter(l => l.status === 9).length; // Booked (index 9)
-        const lost = execLeads.filter(l => l.status === 10).length; // Lost (index 10)
-        const notInterested = execLeads.filter(l => l.status === 11).length; // Not Interested (index 11)
-        const assignedStage = execLeads.filter(l => l.status === 1).length; // Assigned (index 1)
+        // Load the details for metrics calculation
+        this.api.salesExecutiveDetail(matchedUser.id).subscribe({
+          next: (detail) => {
+            this.processingSubject.next(false);
 
-        const officialName = execLeads[0].assignedToName || execName;
+            const leadsGiven = detail.metrics.totalAssignedLeads;
+            const booked = detail.metrics.positiveCustomers;
+            const lost = detail.metrics.lost;
+            const notInterested = detail.metrics.notInterested;
+            const assignedStage = detail.metrics.assignedStage;
 
-        // Construct detailed report text
-        let detailsText = '';
-        if (this.language === 'bn') {
-          detailsText = `${officialName} এর মোট লিড দেওয়া হয়েছে ${leadsGiven}টি। এর মধ্যে ${booked}টি বুকড কাস্টমার, ${lost}টি লস্ট, ${notInterested}টি নট ইন্টারেস্টেড এবং ${assignedStage}টি বর্তমানে অ্যাসাইনড অবস্থায় রয়েছে।`;
-        } else {
-          detailsText = `${officialName} has been given ${leadsGiven} total leads. Out of these, ${booked} are booked customers, ${lost} are lost, ${notInterested} are not interested, and ${assignedStage} are currently in the assigned stage.`;
-        }
+            // Construct detailed report text in natural tones
+            let detailsText = '';
+            if (this.language === 'bn') {
+              detailsText = `বিক্রয় নির্বাহী ${detail.fullName} এর পারফরম্যান্সের বিবরণ এখানে রয়েছে। তিনি মোট ${leadsGiven}টি লিড পেয়েছেন। তার মধ্যে ${booked} জন বুকড কাস্টমার, ${lost} জন লস্ট এবং ${notInterested} জন নট ইন্টারেস্টেড হিসেবে আছেন। এছাড়া বর্তমানে ${assignedStage}টি লিড অ্যাসাইনড অবস্থায় রয়েছে।`;
+            } else {
+              detailsText = `Here is a summary of the performance for sales executive ${detail.fullName}. They have received a total of ${leadsGiven} leads. Among these, ${booked} are booked customers, ${lost} are lost, and ${notInterested} are not interested. Additionally, ${assignedStage} leads are currently in the assigned stage.`;
+            }
 
-        // Trigger confirmation + stats speech
-        const finalSpeech = `${confirmationSpeech} ${detailsText}`;
-        this.speak(finalSpeech, this.language === 'bn' ? 'bn-BD' : 'en-US');
+            // Trigger natural speech synthesis
+            const finalSpeech = `${confirmationSpeech} ${detailsText}`;
+            this.speak(finalSpeech, this.language === 'bn' ? 'bn-BD' : 'en-US');
 
-        // Set the report to display visually
-        this.activePerformanceReportSubject.next({
-          name: officialName,
-          leadsGiven,
-          booked,
-          lost,
-          notInterested,
-          assignedStage,
-          detailsText
+            // Emit executive id and navigate to /users page
+            this.autoSelectSalesExecutiveSubject.next(matchedUser.id);
+            this.router.navigateByUrl('/users');
+          },
+          error: (err) => {
+            this.processingSubject.next(false);
+            console.error('Failed to load sales executive metrics:', err);
+            this.errorSubject.next('Failed to retrieve performance details.');
+          }
         });
       },
       error: (err) => {
-        console.error('Failed to load leads statistics:', err);
         this.processingSubject.next(false);
-        this.errorSubject.next('Failed to retrieve performance metrics.');
+        console.error('Failed to load users list:', err);
+        this.errorSubject.next('Failed to retrieve sales team list.');
       }
     });
   }

@@ -151,66 +151,6 @@ import { VoiceService } from './core/voice.service';
     <ng-template #publicPage>
       <router-outlet></router-outlet>
     </ng-template>
-
-    <!-- Glassmorphic Sales Executive Performance Report Modal -->
-    <div *ngIf="voiceService.activePerformanceReport$ | async as report" class="modal-backdrop" (click)="voiceService.closePerformanceReport()">
-      <div class="performance-modal-box" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div class="header-main">
-            <span class="tag-badge">Sales Performance</span>
-            <h2>{{ report.name }}</h2>
-          </div>
-          <button type="button" class="ghost-button close-btn" (click)="voiceService.closePerformanceReport()">
-            Close
-          </button>
-        </div>
-
-        <!-- Visual Stats Layout -->
-        <div class="modal-stats-grid">
-          <!-- Total Leads Given -->
-          <div class="modal-stat-card leads-card">
-            <span class="stat-label">Total Leads Assigned</span>
-            <strong class="stat-value">{{ report.leadsGiven }}</strong>
-          </div>
-          
-          <!-- Booked -->
-          <div class="modal-stat-card success-card">
-            <span class="stat-label">Booked Customers</span>
-            <strong class="stat-value">{{ report.booked }}</strong>
-          </div>
-
-          <!-- Assigned/Assing Stage -->
-          <div class="modal-stat-card warning-card">
-            <span class="stat-label">Assigned Stage</span>
-            <strong class="stat-value">{{ report.assignedStage }}</strong>
-          </div>
-
-          <!-- Lost -->
-          <div class="modal-stat-card danger-card">
-            <span class="stat-label">Lost Leads</span>
-            <strong class="stat-value">{{ report.lost }}</strong>
-          </div>
-
-          <!-- Not Interested -->
-          <div class="modal-stat-card slate-card">
-            <span class="stat-label">Not Interested</span>
-            <strong class="stat-value">{{ report.notInterested }}</strong>
-          </div>
-        </div>
-
-        <!-- Voice synthesis text and audio trigger -->
-        <div class="report-narrative-section">
-          <h3>Report Narrative</h3>
-          <p class="narrative-text">{{ report.detailsText }}</p>
-          <button type="button" class="replay-btn" (click)="voiceService.speak(report.detailsText, voiceService.language === 'bn' ? 'bn-BD' : 'en-US')">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="replay-icon">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-            </svg>
-            <span>Replay Report Audio</span>
-          </button>
-        </div>
-      </div>
-    </div>
   `,
   styles: [`
     .topbar {
