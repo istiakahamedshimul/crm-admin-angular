@@ -13,10 +13,8 @@ export type DashboardSummary = {
   pendingPayments?: number;
   approvedPayments?: number;
   totalCollection?: number;
-  rejectedCollectionAmount?: number;
   pendingCommission?: number;
   paidCommission?: number;
-  reversedCommission?: number;
 };
 
 export type UserSummary = {
@@ -140,6 +138,7 @@ export type Payment = {
   status: number;
   proofUrl?: string;
   rejectReason?: string;
+  createdAt: string;
 };
 
 export type FollowUpProof = {
