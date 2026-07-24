@@ -13,8 +13,10 @@ export type DashboardSummary = {
   pendingPayments?: number;
   approvedPayments?: number;
   totalCollection?: number;
+  rejectedCollectionAmount?: number;
   pendingCommission?: number;
   paidCommission?: number;
+  reversedCommission?: number;
 };
 
 export type UserSummary = {
