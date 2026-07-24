@@ -1,403 +1,519 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 import { UserSummary } from '../models/crm.models';
 import { environment } from '../../environments/environment';
 
-// You can change the model name here. 
-// gemini-2.0-flash and gemini-3.6-flash both natively support the ["AUDIO", "TEXT"] response modalities.
-const GEMINI_MODEL = 'gemini-2.0-flash'; 
+const GEMINI_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 const GEMINI_API_KEY = environment.geminiApiKey || '';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_LIVE_URL =
+  `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+const INPUT_SAMPLE_RATE = 16000;
+const OUTPUT_SAMPLE_RATE = 24000;
+
+interface SalesExecutiveContext {
+  id: number;
+  fullName: string;
+  metrics?: {
+    totalAssignedLeads: number;
+    positiveCustomers: number;
+    lost: number;
+    notInterested: number;
+    assignedStage: number;
+  };
+  unavailable?: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class VoiceService {
   private router = inject(Router);
   private api = inject(ApiService);
-  private http = inject(HttpClient);
 
-  // Observables for state management
-  private listeningSubject = new BehaviorSubject<boolean>(false);
+  private listeningSubject = new BehaviorSubject(false);
   listening$: Observable<boolean> = this.listeningSubject.asObservable();
 
-  private processingSubject = new BehaviorSubject<boolean>(false);
+  private processingSubject = new BehaviorSubject(false);
   processing$: Observable<boolean> = this.processingSubject.asObservable();
 
   private errorSubject = new BehaviorSubject<string | null>(null);
   error$: Observable<string | null> = this.errorSubject.asObservable();
 
-  // Subject to trigger auto-selection in UsersComponent
   public autoSelectSalesExecutiveSubject = new BehaviorSubject<number | null>(null);
-  autoSelectSalesExecutive$: Observable<number | null> = this.autoSelectSalesExecutiveSubject.asObservable();
+  autoSelectSalesExecutive$: Observable<number | null> =
+    this.autoSelectSalesExecutiveSubject.asObservable();
 
-  // Active language code: 'en' for English, 'bn' for Bengali
   language: 'en' | 'bn' = 'en';
 
-  private recognition: any;
-  private isExplicitlyStarted = false; // Flag to maintain continuous listening state
-  private activeAudioSource: AudioBufferSourceNode | null = null;
-  private audioCtx: AudioContext | null = null;
+  private socket: WebSocket | null = null;
+  private mediaStream: MediaStream | null = null;
+  private captureContext: AudioContext | null = null;
+  private captureSource: MediaStreamAudioSourceNode | null = null;
+  private captureProcessor: ScriptProcessorNode | null = null;
+  private captureSilencer: GainNode | null = null;
 
-  constructor() {
-    this.initSpeechRecognition();
-  }
+  private playbackContext: AudioContext | null = null;
+  private playbackSources = new Set<AudioBufferSourceNode>();
+  private nextPlaybackTime = 0;
 
-  toggleLanguage() {
+  private explicitlyStarted = false;
+  private setupComplete = false;
+  private executives: SalesExecutiveContext[] = [];
+
+  toggleLanguage(): void {
     this.language = this.language === 'en' ? 'bn' : 'en';
-    if (this.recognition) {
-      this.recognition.lang = this.language === 'bn' ? 'bn-BD' : 'en-US';
-      if (this.isExplicitlyStarted) {
-        this.stopListening();
-        setTimeout(() => this.startListening(), 300);
-      }
+
+    // The language instruction is part of Live API session setup, so reconnect.
+    if (this.explicitlyStarted) {
+      void this.restartSession();
     }
   }
 
-  private initSpeechRecognition() {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      this.errorSubject.next('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+  async startListening(): Promise<void> {
+    if (this.explicitlyStarted) {
       return;
     }
 
-    this.recognition = new SpeechRecognition();
-    this.recognition.continuous = true; 
-    this.recognition.interimResults = false;
-    this.recognition.lang = this.language === 'bn' ? 'bn-BD' : 'en-US';
+    this.explicitlyStarted = true;
+    this.errorSubject.next(null);
+    this.processingSubject.next(true);
 
-    this.recognition.onstart = () => {
-      this.listeningSubject.next(true);
-      this.errorSubject.next(null);
-    };
-
-    this.recognition.onresult = (event: any) => {
-      const resultIndex = event.resultIndex;
-      const speechText = event.results[resultIndex][0].transcript.trim();
-      
-      if (speechText) {
-        this.processingSubject.next(true);
-        this.processLiveConversation(speechText);
-      }
-    };
-
-    this.recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      if (event.error === 'not-allowed') {
-        this.errorSubject.next('Microphone permission denied. Please allow mic access.');
-        this.isExplicitlyStarted = false;
-        this.listeningSubject.next(false);
-      } else if (event.error === 'aborted') {
-        // Normal stop state
-      } else {
-        this.errorSubject.next(`Speech capture: ${event.error}`);
-      }
-    };
-
-    this.recognition.onend = () => {
-      if (this.isExplicitlyStarted) {
-        try {
-          this.recognition.start();
-        } catch (e) {
-          console.warn('Failed to restart speech recognition:', e);
-        }
-      } else {
-        this.listeningSubject.next(false);
-      }
-    };
-  }
-
-  startListening() {
-    this.isExplicitlyStarted = true;
-    this.stopSpeaking();
-    
-    if (!this.recognition) {
-      this.initSpeechRecognition();
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'GEMINI_API_KEY_PLACEHOLDER') {
+      this.failSession('Gemini Live API key is not configured.');
+      return;
     }
-    
-    if (this.recognition) {
-      try {
-        this.recognition.start();
-      } catch (e) {
-        console.warn('Speech recognition already running:', e);
-      }
+
+    try {
+      this.executives = await this.loadSalesExecutiveContext();
+      await this.openLiveSession();
+    } catch (error) {
+      console.error('Unable to start Gemini Live conversation:', error);
+      this.failSession(
+        this.language === 'bn'
+          ? 'লাইভ ভয়েস কথোপকথন শুরু করা যায়নি।'
+          : 'Could not start the live voice conversation.'
+      );
     }
   }
 
-  stopListening() {
-    this.isExplicitlyStarted = false;
-    if (this.recognition) {
-      try {
-        this.recognition.stop();
-      } catch (e) {
-        console.warn('Failed to stop speech recognition:', e);
-      }
-    }
+  stopListening(): void {
+    this.explicitlyStarted = false;
     this.listeningSubject.next(false);
+    this.processingSubject.next(false);
+    this.closeSession();
   }
 
-  private loadDatabaseContext(callback: (context: string) => void) {
-    this.api.users().subscribe({
-      next: (users: UserSummary[]) => {
-        const salesUsers = users.filter(u => u.role === 'SalesExecutive');
-        if (salesUsers.length === 0) {
-          callback('[]');
+  stopSpeaking(): void {
+    this.stopPlayback();
+  }
+
+  private async restartSession(): Promise<void> {
+    this.closeSession();
+    this.errorSubject.next(null);
+    this.processingSubject.next(true);
+
+    try {
+      this.executives = await this.loadSalesExecutiveContext();
+      await this.openLiveSession();
+    } catch (error) {
+      console.error('Unable to restart Gemini Live conversation:', error);
+      this.failSession(
+        this.language === 'bn'
+          ? 'ভাষা পরিবর্তনের পরে ভয়েস সেশন চালু করা যায়নি।'
+          : 'Could not restart the voice session after changing language.'
+      );
+    }
+  }
+
+  private async loadSalesExecutiveContext(): Promise<SalesExecutiveContext[]> {
+    const users = await firstValueFrom(this.api.users());
+    const salesUsers = users.filter((user: UserSummary) => user.role === 'SalesExecutive');
+
+    return Promise.all(
+      salesUsers.map(async (user) => {
+        try {
+          const detail = await firstValueFrom(this.api.salesExecutiveDetail(user.id));
+          return {
+            id: user.id,
+            fullName: user.fullName,
+            metrics: {
+              totalAssignedLeads: detail.metrics.totalAssignedLeads,
+              positiveCustomers: detail.metrics.positiveCustomers,
+              lost: detail.metrics.lost,
+              notInterested: detail.metrics.notInterested,
+              assignedStage: detail.metrics.assignedStage
+            }
+          };
+        } catch {
+          return { id: user.id, fullName: user.fullName, unavailable: true };
+        }
+      })
+    );
+  }
+
+  private openLiveSession(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.setupComplete = false;
+      const socket = new WebSocket(GEMINI_LIVE_URL);
+      this.socket = socket;
+
+      const startupTimeout = window.setTimeout(() => {
+        reject(new Error('Gemini Live setup timed out.'));
+        socket.close();
+      }, 15000);
+
+      socket.onopen = () => {
+        socket.send(JSON.stringify(this.createSetupMessage()));
+      };
+
+      socket.onmessage = (event: MessageEvent<string>) => {
+        let message: any;
+        try {
+          message = JSON.parse(event.data);
+        } catch (error) {
+          console.warn('Ignored invalid Gemini Live message:', error);
           return;
         }
 
-        const promises = salesUsers.map(user => {
-          return new Promise<any>((resolve) => {
-            this.api.salesExecutiveDetail(user.id).subscribe({
-              next: (detail) => {
-                resolve({
-                  id: user.id,
-                  fullName: user.fullName,
-                  totalAssignedLeads: detail.metrics.totalAssignedLeads,
-                  bookedCustomers: detail.metrics.positiveCustomers,
-                  lostLeads: detail.metrics.lost,
-                  notInterested: detail.metrics.notInterested,
-                  assignedStage: detail.metrics.assignedStage
-                });
-              },
-              error: () => resolve({ id: user.id, fullName: user.fullName, error: true })
-            });
-          });
-        });
+        if (message.setupComplete && !this.setupComplete) {
+          this.setupComplete = true;
+          window.clearTimeout(startupTimeout);
+          this.processingSubject.next(false);
+          void this.startMicrophone()
+            .then(() => {
+              this.listeningSubject.next(true);
+              resolve();
+            })
+            .catch(reject);
+          return;
+        }
 
-        Promise.all(promises).then((data) => {
-          callback(JSON.stringify(data));
-        });
-      },
-      error: () => callback('[]')
+        this.handleServerMessage(message);
+      };
+
+      socket.onerror = () => {
+        window.clearTimeout(startupTimeout);
+        reject(new Error('Gemini Live WebSocket connection failed.'));
+      };
+
+      socket.onclose = () => {
+        window.clearTimeout(startupTimeout);
+        this.setupComplete = false;
+        this.listeningSubject.next(false);
+        if (this.explicitlyStarted) {
+          this.errorSubject.next(
+            this.language === 'bn'
+              ? 'লাইভ ভয়েস সংযোগ বিচ্ছিন্ন হয়েছে। আবার চেষ্টা করুন।'
+              : 'The live voice connection ended. Please try again.'
+          );
+          this.explicitlyStarted = false;
+        }
+      };
     });
   }
 
-  private processLiveConversation(speechText: string) {
-    // Step 1: Load complete database context dynamically from backend
-    this.loadDatabaseContext((dbContext) => {
-      const systemPrompt = `You are a voice command assistant for a Real Estate CRM Admin Panel.
-You process queries from the administrator and respond with BOTH a JSON object in the text block AND a natural, human-sounding voice in the audio block.
+  private createSetupMessage(): object {
+    const answerLanguage =
+      this.language === 'bn'
+        ? 'Always understand and speak natural Bengali. Use English names only when needed.'
+        : 'Always understand and speak natural English. Understand Bengali names and accents too.';
 
-Available Pages / Routes:
-- Dashboard: "/dashboard"
-- Leads: "/leads"
-- Follow-ups: "/followups"
-- Customers: "/customers"
-- Projects: "/properties/projects"
-- Invoices: "/invoices"
-- Transport Schedule / Vehicle Bookings: "/transport/schedule"
-- Payments/Collections: "/payments"
-- Commissions: "/commissions"
-- Reports: "/reports"
+    return {
+      setup: {
+        model: `models/${GEMINI_MODEL}`,
+        responseModalities: ['AUDIO'],
+        systemInstruction: {
+          parts: [{
+            text: `You are the live voice assistant for a real-estate CRM administrator.
+${answerLanguage}
 
-Database Context (Current Sales Executives Metrics):
-${dbContext}
+Have a direct, natural spoken conversation. Keep answers clear and concise. Never use text-to-speech,
+never say that you are reading JSON, and never invent CRM data.
 
-User Spoken Command: "${speechText}"
+Your main job is to explain a sales executive's performance when the administrator asks. Match spoken
+names flexibly, including Bengali pronunciation and transliteration. Use only the current CRM data below.
+Explain assigned leads, booked/positive customers, lost leads, not-interested leads, and assigned-stage
+leads in a natural summary. If a metric or person is unavailable, say so honestly.
 
-Instructions:
-1. Parse the user's spoken command (can be in English or Bengali).
-2. If navigating: set "action" to "navigate", "target" to the route path, and "spokenResponse" to a polite confirmation (e.g. "Opening leads page").
-3. If requesting performance:
-   - Match the executive name to the database name (e.g. "ইশতিয়াক" to "Istiak").
-   - Extract the statistics from the Database Context.
-   - Build a detailed summary text in the user's spoken language. Set "action" to "view_performance", "target" to the matching name, "targetId" to their user ID, and "spokenResponse" to the detailed summary text.
-4. If the command is not supported, set "action" to "unknown", "target" to "", and "spokenResponse" to:
-   - English: "I'm sorry, I cannot do this."
-   - Bengali: "আমি দুঃখিত, আমি এটি করতে পারছি না।"
+When a sales executive is matched, call open_sales_executive_performance with the exact CRM id so the
+admin panel opens that person's profile. Continue with a natural spoken explanation after the tool result.
 
-Format numbers as words in your spokenResponse (e.g. read '11' as 'eleven' or 'এগারো' instead of 'one one' or 'এক এক') to make it sound 100% natural.
+You may also open a known CRM page with open_crm_page when explicitly asked.
+For any request outside these supported CRM capabilities, always respond politely:
+- English: "I'm sorry, I can't do this."
+- Bengali: "দুঃখিত, আমি এটি করতে পারি না।"
+Do not silently ignore any request; always give a spoken response.
 
-Return ONLY a valid JSON object matching this type:
-{
-  "action": "navigate" | "view_performance" | "unknown",
-  "target": string,
-  "targetId": number | null,
-  "spokenResponse": string
-}`;
-
-      const requestBody = {
-        contents: [{
-          parts: [{ text: systemPrompt }]
-        }],
-        generationConfig: {
-          responseModalities: ["AUDIO", "TEXT"],
-          responseMimeType: "application/json"
-        }
-      };
-
-      // Temporarily pause mic listening while querying the API
-      if (this.isExplicitlyStarted && this.recognition) {
-        try {
-          this.recognition.stop();
-        } catch (e) {}
-      }
-
-      this.http.post<any>(GEMINI_URL, requestBody).subscribe({
-        next: (response) => {
-          this.processingSubject.next(false);
-          try {
-            const parts = response.candidates[0].content.parts;
-            let jsonText = '';
-            let audioBase64 = '';
-
-            for (const part of parts) {
-              if (part.text) {
-                jsonText = part.text;
-              } else if (part.inlineData && part.inlineData.data) {
-                audioBase64 = part.inlineData.data;
+Current sales executive performance data:
+${JSON.stringify(this.executives)}`
+          }]
+        },
+        tools: [{
+          functionDeclarations: [
+            {
+              name: 'open_sales_executive_performance',
+              description: 'Open the matched sales executive profile in the CRM.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  executiveId: { type: 'INTEGER' }
+                },
+                required: ['executiveId']
+              }
+            },
+            {
+              name: 'open_crm_page',
+              description: 'Open a supported CRM page.',
+              parameters: {
+                type: 'OBJECT',
+                properties: {
+                  route: {
+                    type: 'STRING',
+                    enum: [
+                      '/', '/users', '/leads', '/followups', '/customers',
+                      '/properties/projects', '/payments', '/commissions', '/reports',
+                      '/transport/requests', '/transport/schedule', '/transport/vehicles'
+                    ]
+                  }
+                },
+                required: ['route']
               }
             }
-
-            if (jsonText) {
-              const intent = JSON.parse(jsonText.trim());
-              this.executeParsedAction(intent, audioBase64);
-            } else {
-              console.warn('No text JSON found in Gemini output.');
-              this.resumeListening();
-            }
-          } catch (e) {
-            console.error('Failed to parse Gemini multimodal response:', e);
-            this.errorSubject.next('Failed to process conversation.');
-            this.resumeListening();
-          }
-        },
-        error: (err) => {
-          console.error('Gemini Multimodal API Error:', err);
-          this.processingSubject.next(false);
-          this.errorSubject.next('Failed to connect to live voice LLM.');
-          this.resumeListening();
+          ]
+        }],
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
+        realtimeInputConfig: {
+          automaticActivityDetection: {
+            disabled: false,
+            startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
+            endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
+            silenceDurationMs: 650
+          },
+          activityHandling: 'START_OF_ACTIVITY_INTERRUPTS'
         }
-      });
+      }
+    };
+  }
+
+  private async startMicrophone(): Promise<void> {
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
     });
+
+    this.captureContext = new AudioContext();
+    await this.captureContext.resume();
+    this.captureSource = this.captureContext.createMediaStreamSource(this.mediaStream);
+    this.captureProcessor = this.captureContext.createScriptProcessor(4096, 1, 1);
+    this.captureSilencer = this.captureContext.createGain();
+    this.captureSilencer.gain.value = 0;
+
+    this.captureProcessor.onaudioprocess = (event: AudioProcessingEvent) => {
+      if (!this.setupComplete || this.socket?.readyState !== WebSocket.OPEN) {
+        return;
+      }
+
+      const source = event.inputBuffer.getChannelData(0);
+      const resampled = this.resample(source, event.inputBuffer.sampleRate, INPUT_SAMPLE_RATE);
+      const pcm = this.floatToPcm16(resampled);
+      this.socket.send(JSON.stringify({
+        realtimeInput: {
+          audio: {
+            data: this.bytesToBase64(new Uint8Array(pcm.buffer)),
+            mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`
+          }
+        }
+      }));
+    };
+
+    this.captureSource.connect(this.captureProcessor);
+    this.captureProcessor.connect(this.captureSilencer);
+    this.captureSilencer.connect(this.captureContext.destination);
   }
 
-  private executeParsedAction(intent: { action: string; target: string; targetId: number | null; spokenResponse: string }, audioBase64: string) {
-    if (intent.action === 'navigate') {
-      this.playAndExecute(audioBase64, intent.spokenResponse, () => {
-        this.router.navigateByUrl(intent.target);
-      });
-    } else if (intent.action === 'view_performance' && intent.targetId) {
-      this.playAndExecute(audioBase64, intent.spokenResponse, () => {
-        this.autoSelectSalesExecutiveSubject.next(intent.targetId);
-        this.router.navigateByUrl('/users');
-      });
-    } else {
-      this.playAndExecute(audioBase64, intent.spokenResponse, () => {});
+  private handleServerMessage(message: any): void {
+    if (message.serverContent?.interrupted) {
+      this.stopPlayback();
+    }
+
+    const parts = message.serverContent?.modelTurn?.parts || [];
+    for (const part of parts) {
+      if (part.inlineData?.data) {
+        this.queueNativeAudio(part.inlineData.data);
+      }
+    }
+
+    if (message.toolCall?.functionCalls) {
+      this.handleToolCalls(message.toolCall.functionCalls);
     }
   }
 
-  private playAndExecute(audioBase64: string, textFallback: string, actionCallback: () => void) {
-    // If Gemini returned a native audio response, play it
-    if (audioBase64) {
-      this.playPCMAudio(audioBase64, actionCallback);
-    } else {
-      // Otherwise, run action immediately and speak using local fallback
-      actionCallback();
-      this.fallbackBrowserSpeak(textFallback);
-    }
-  }
+  private handleToolCalls(functionCalls: any[]): void {
+    const responses = functionCalls.map((call) => {
+      let result = 'Unsupported action.';
 
-  private playPCMAudio(base64Data: string, onEndedCallback: () => void) {
-    try {
-      const binaryString = window.atob(base64Data);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      if (call.name === 'open_sales_executive_performance') {
+        const executiveId = Number(call.args?.executiveId);
+        const executive = this.executives.find((item) => item.id === executiveId);
+        if (executive) {
+          this.autoSelectSalesExecutiveSubject.next(executiveId);
+          void this.router.navigateByUrl('/users');
+          result = `Opened ${executive.fullName}'s performance profile.`;
+        } else {
+          result = 'No matching sales executive was found.';
+        }
+      } else if (call.name === 'open_crm_page') {
+        const route = String(call.args?.route || '');
+        const allowedRoutes = [
+          '/', '/users', '/leads', '/followups', '/customers', '/properties/projects',
+          '/payments', '/commissions', '/reports', '/transport/requests',
+          '/transport/schedule', '/transport/vehicles'
+        ];
+        if (allowedRoutes.includes(route)) {
+          void this.router.navigateByUrl(route);
+          result = `Opened ${route}.`;
+        }
       }
 
-      const arrayBuffer = bytes.buffer;
-      const view = new DataView(arrayBuffer);
-      const numOfSamples = arrayBuffer.byteLength / 2;
-      const floatBuffer = new Float32Array(numOfSamples);
-
-      // L16 raw PCM is big-endian
-      for (let i = 0; i < numOfSamples; i++) {
-        const sample = view.getInt16(i * 2, false);
-        floatBuffer[i] = sample / 32768.0;
-      }
-
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      this.audioCtx = new AudioContextClass();
-      
-      const buffer = this.audioCtx.createBuffer(1, numOfSamples, 24000); // 1 channel mono, 24KHz
-      buffer.copyToChannel(floatBuffer, 0);
-
-      this.activeAudioSource = this.audioCtx.createBufferSource();
-      this.activeAudioSource.buffer = buffer;
-      this.activeAudioSource.connect(this.audioCtx.destination);
-
-      this.activeAudioSource.onended = () => {
-        this.cleanupAudio();
-        onEndedCallback();
-        this.resumeListening();
+      return {
+        id: call.id,
+        name: call.name,
+        response: { result }
       };
+    });
 
-      this.activeAudioSource.start();
-    } catch (e) {
-      console.error('Error playing raw PCM bytes:', e);
-      onEndedCallback();
-      this.resumeListening();
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({
+        toolResponse: { functionResponses: responses }
+      }));
     }
   }
 
-  private cleanupAudio() {
-    this.activeAudioSource = null;
-    if (this.audioCtx) {
-      try {
-        this.audioCtx.close();
-      } catch (e) {}
-      this.audioCtx = null;
-    }
-  }
-
-  private fallbackBrowserSpeak(text: string) {
-    if (!window.speechSynthesis) {
-      this.resumeListening();
+  private queueNativeAudio(base64Data: string): void {
+    const bytes = this.base64ToBytes(base64Data);
+    const sampleCount = Math.floor(bytes.byteLength / 2);
+    if (!sampleCount) {
       return;
     }
 
-    const langCode = this.language === 'bn' ? 'bn-BD' : 'en-US';
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = langCode;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.05;
+    if (!this.playbackContext) {
+      this.playbackContext = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+      this.nextPlaybackTime = this.playbackContext.currentTime;
+    }
 
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      const matchingVoice = voices.find(v => v.lang.startsWith(langCode));
-      if (matchingVoice) {
-        utterance.voice = matchingVoice;
+    const samples = new Float32Array(sampleCount);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, sampleCount * 2);
+    for (let index = 0; index < sampleCount; index++) {
+      samples[index] = view.getInt16(index * 2, true) / 32768;
+    }
+
+    const buffer = this.playbackContext.createBuffer(1, sampleCount, OUTPUT_SAMPLE_RATE);
+    buffer.copyToChannel(samples, 0);
+    const source = this.playbackContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.playbackContext.destination);
+
+    const startAt = Math.max(this.playbackContext.currentTime, this.nextPlaybackTime);
+    this.nextPlaybackTime = startAt + buffer.duration;
+    this.playbackSources.add(source);
+    source.onended = () => this.playbackSources.delete(source);
+    source.start(startAt);
+  }
+
+  private stopPlayback(): void {
+    for (const source of this.playbackSources) {
+      try {
+        source.stop();
+      } catch {
+        // The source may already have ended.
       }
     }
-
-    utterance.onend = () => {
-      this.resumeListening();
-    };
-
-    window.speechSynthesis.speak(utterance);
+    this.playbackSources.clear();
+    this.nextPlaybackTime = this.playbackContext?.currentTime || 0;
   }
 
-  private resumeListening() {
-    if (this.isExplicitlyStarted && this.recognition) {
-      try {
-        this.recognition.start();
-      } catch (e) {}
+  private closeSession(): void {
+    this.setupComplete = false;
+    this.stopPlayback();
+
+    if (this.captureProcessor) {
+      this.captureProcessor.onaudioprocess = null;
+      this.captureProcessor.disconnect();
+      this.captureProcessor = null;
+    }
+    this.captureSource?.disconnect();
+    this.captureSource = null;
+    this.captureSilencer?.disconnect();
+    this.captureSilencer = null;
+    this.mediaStream?.getTracks().forEach((track) => track.stop());
+    this.mediaStream = null;
+    void this.captureContext?.close();
+    this.captureContext = null;
+    void this.playbackContext?.close();
+    this.playbackContext = null;
+
+    if (this.socket) {
+      this.socket.onclose = null;
+      this.socket.close();
+      this.socket = null;
     }
   }
 
-  stopSpeaking() {
-    if (this.activeAudioSource) {
-      try {
-        this.activeAudioSource.stop();
-      } catch (e) {}
-      this.cleanupAudio();
+  private failSession(message: string): void {
+    this.explicitlyStarted = false;
+    this.listeningSubject.next(false);
+    this.processingSubject.next(false);
+    this.errorSubject.next(message);
+    this.closeSession();
+  }
+
+  private resample(input: Float32Array, fromRate: number, toRate: number): Float32Array {
+    if (fromRate === toRate) {
+      return input;
     }
 
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+    const ratio = fromRate / toRate;
+    const length = Math.max(1, Math.round(input.length / ratio));
+    const output = new Float32Array(length);
+    for (let index = 0; index < length; index++) {
+      const position = index * ratio;
+      const before = Math.floor(position);
+      const after = Math.min(before + 1, input.length - 1);
+      const weight = position - before;
+      output[index] = input[before] * (1 - weight) + input[after] * weight;
     }
+    return output;
+  }
+
+  private floatToPcm16(input: Float32Array): Int16Array {
+    const output = new Int16Array(input.length);
+    for (let index = 0; index < input.length; index++) {
+      const sample = Math.max(-1, Math.min(1, input[index]));
+      output[index] = sample < 0 ? sample * 32768 : sample * 32767;
+    }
+    return output;
+  }
+
+  private bytesToBase64(bytes: Uint8Array): string {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+    }
+    return window.btoa(binary);
+  }
+
+  private base64ToBytes(value: string): Uint8Array {
+    const binary = window.atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index++) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
   }
 }
