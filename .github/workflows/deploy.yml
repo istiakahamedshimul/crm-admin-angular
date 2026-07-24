@@ -28,6 +28,18 @@ jobs:
             npm install
           fi
 
+      - name: Inject production API key
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const file = 'src/environments/environment.production.ts';
+            let content = fs.readFileSync(file, 'utf8');
+            content = content.replace('GEMINI_API_KEY_PLACEHOLDER', process.env.GEMINI_KEY);
+            fs.writeFileSync(file, content, 'utf8');
+          "
+
       - name: Build Angular production
         run: |
           npm run build -- --configuration production
