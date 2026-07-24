@@ -59,6 +59,14 @@ export class VoiceService {
   private explicitlyStarted = false;
   private setupComplete = false;
   private executives: SalesExecutiveContext[] = [];
+  private voiceState: 'idle' | 'candidate' | 'speaking' | 'processing' = 'idle';
+  private candidateChunks: Int16Array[] = [];
+  private candidateVoiceFrames = 0;
+  private lastVoiceAt = 0;
+  private speechStartedAt = 0;
+  private noiseFloor = 0.004;
+  private serverTurnComplete = false;
+  private processingTimeout: number | null = null;
 
   toggleLanguage(): void {
     this.language = this.language === 'en' ? 'bn' : 'en';
@@ -285,12 +293,9 @@ ${JSON.stringify(this.executives)}`
         outputAudioTranscription: {},
         realtimeInputConfig: {
           automaticActivityDetection: {
-            disabled: false,
-            startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
-            endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
-            silenceDurationMs: 650
+            disabled: true
           },
-          activityHandling: 'START_OF_ACTIVITY_INTERRUPTS'
+          activityHandling: 'NO_INTERRUPTION'
         }
       }
     };
@@ -314,21 +319,18 @@ ${JSON.stringify(this.executives)}`
     this.captureSilencer.gain.value = 0;
 
     this.captureProcessor.onaudioprocess = (event: AudioProcessingEvent) => {
-      if (!this.setupComplete || this.socket?.readyState !== WebSocket.OPEN) {
+      if (
+        !this.setupComplete ||
+        this.socket?.readyState !== WebSocket.OPEN ||
+        this.voiceState === 'processing'
+      ) {
         return;
       }
 
       const source = event.inputBuffer.getChannelData(0);
       const resampled = this.resample(source, event.inputBuffer.sampleRate, INPUT_SAMPLE_RATE);
       const pcm = this.floatToPcm16(resampled);
-      this.socket.send(JSON.stringify({
-        realtimeInput: {
-          audio: {
-            data: this.bytesToBase64(new Uint8Array(pcm.buffer)),
-            mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`
-          }
-        }
-      }));
+      this.processMicrophoneFrame(resampled, pcm);
     };
 
     this.captureSource.connect(this.captureProcessor);
@@ -349,7 +351,13 @@ ${JSON.stringify(this.executives)}`
     }
 
     if (message.toolCall?.functionCalls) {
+      this.serverTurnComplete = false;
       this.handleToolCalls(message.toolCall.functionCalls);
+    }
+
+    if (message.serverContent?.turnComplete) {
+      this.serverTurnComplete = true;
+      this.finishProcessingWhenPlaybackEnds();
     }
   }
 
@@ -421,7 +429,10 @@ ${JSON.stringify(this.executives)}`
     const startAt = Math.max(this.playbackContext.currentTime, this.nextPlaybackTime);
     this.nextPlaybackTime = startAt + buffer.duration;
     this.playbackSources.add(source);
-    source.onended = () => this.playbackSources.delete(source);
+    source.onended = () => {
+      this.playbackSources.delete(source);
+      this.finishProcessingWhenPlaybackEnds();
+    };
     source.start(startAt);
   }
 
@@ -439,6 +450,11 @@ ${JSON.stringify(this.executives)}`
 
   private closeSession(): void {
     this.setupComplete = false;
+    this.resetVoiceDetection();
+    if (this.processingTimeout !== null) {
+      window.clearTimeout(this.processingTimeout);
+      this.processingTimeout = null;
+    }
     this.stopPlayback();
 
     if (this.captureProcessor) {
@@ -470,6 +486,156 @@ ${JSON.stringify(this.executives)}`
     this.processingSubject.next(false);
     this.errorSubject.next(message);
     this.closeSession();
+  }
+
+  private processMicrophoneFrame(samples: Float32Array, pcm: Int16Array): void {
+    const now = performance.now();
+    const rms = this.calculateRms(samples);
+    const peak = this.calculatePeak(samples);
+
+    // The adaptive floor follows quiet background sound slowly. A clear voice must
+    // be substantially louder than that floor and also exceed an absolute level.
+    if (this.voiceState === 'idle' && rms < Math.max(0.012, this.noiseFloor * 2.2)) {
+      this.noiseFloor = this.noiseFloor * 0.97 + rms * 0.03;
+    }
+    const speechThreshold = Math.max(0.014, Math.min(0.06, this.noiseFloor * 3.5));
+    const clearVoice = rms >= speechThreshold && peak >= speechThreshold * 1.8;
+
+    if (this.voiceState === 'idle') {
+      if (!clearVoice) {
+        return;
+      }
+      this.voiceState = 'candidate';
+      this.candidateChunks = [pcm];
+      this.candidateVoiceFrames = 1;
+      this.lastVoiceAt = now;
+      return;
+    }
+
+    if (this.voiceState === 'candidate') {
+      this.candidateChunks.push(pcm);
+      if (this.candidateChunks.length > 5) {
+        this.candidateChunks.shift();
+      }
+
+      if (clearVoice) {
+        this.candidateVoiceFrames++;
+        this.lastVoiceAt = now;
+      } else if (now - this.lastVoiceAt > 260) {
+        // A short click, fan burst, or other noise never reaches Gemini.
+        this.resetVoiceDetection();
+        return;
+      }
+
+      if (this.candidateVoiceFrames >= 3) {
+        this.voiceState = 'speaking';
+        this.speechStartedAt = now;
+        this.sendRealtimeInput({ activityStart: {} });
+        for (const chunk of this.candidateChunks) {
+          this.sendAudioChunk(chunk);
+        }
+        this.candidateChunks = [];
+        this.listeningSubject.next(true);
+      }
+      return;
+    }
+
+    if (this.voiceState === 'speaking') {
+      this.sendAudioChunk(pcm);
+      if (clearVoice) {
+        this.lastVoiceAt = now;
+      }
+
+      if (now - this.lastVoiceAt >= 900 && now - this.speechStartedAt >= 350) {
+        this.sendRealtimeInput({ activityEnd: {} });
+        this.voiceState = 'processing';
+        this.serverTurnComplete = false;
+        this.listeningSubject.next(false);
+        this.processingSubject.next(true);
+        this.startProcessingTimeout();
+      }
+    }
+  }
+
+  private sendAudioChunk(pcm: Int16Array): void {
+    this.sendRealtimeInput({
+      audio: {
+        data: this.bytesToBase64(new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength)),
+        mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`
+      }
+    });
+  }
+
+  private sendRealtimeInput(input: object): void {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ realtimeInput: input }));
+    }
+  }
+
+  private finishProcessingWhenPlaybackEnds(): void {
+    if (
+      this.voiceState !== 'processing' ||
+      !this.serverTurnComplete ||
+      this.playbackSources.size > 0
+    ) {
+      return;
+    }
+
+    if (this.processingTimeout !== null) {
+      window.clearTimeout(this.processingTimeout);
+      this.processingTimeout = null;
+    }
+    this.processingSubject.next(false);
+    this.resetVoiceDetection();
+    if (this.explicitlyStarted && this.setupComplete) {
+      this.listeningSubject.next(true);
+    }
+  }
+
+  private startProcessingTimeout(): void {
+    if (this.processingTimeout !== null) {
+      window.clearTimeout(this.processingTimeout);
+    }
+    this.processingTimeout = window.setTimeout(() => {
+      if (this.voiceState !== 'processing') {
+        return;
+      }
+      this.processingSubject.next(false);
+      this.errorSubject.next(
+        this.language === 'bn'
+          ? 'কমান্ডটি প্রক্রিয়া করা যায়নি। পরিষ্কারভাবে আবার বলুন।'
+          : 'The command could not be processed. Please speak clearly and try again.'
+      );
+      this.resetVoiceDetection();
+      if (this.explicitlyStarted && this.setupComplete) {
+        this.listeningSubject.next(true);
+      }
+    }, 30000);
+  }
+
+  private resetVoiceDetection(): void {
+    this.voiceState = 'idle';
+    this.candidateChunks = [];
+    this.candidateVoiceFrames = 0;
+    this.lastVoiceAt = 0;
+    this.speechStartedAt = 0;
+    this.serverTurnComplete = false;
+  }
+
+  private calculateRms(samples: Float32Array): number {
+    let sum = 0;
+    for (let index = 0; index < samples.length; index++) {
+      sum += samples[index] * samples[index];
+    }
+    return Math.sqrt(sum / Math.max(1, samples.length));
+  }
+
+  private calculatePeak(samples: Float32Array): number {
+    let peak = 0;
+    for (let index = 0; index < samples.length; index++) {
+      peak = Math.max(peak, Math.abs(samples[index]));
+    }
+    return peak;
   }
 
   private resample(input: Float32Array, fromRate: number, toRate: number): Float32Array {
