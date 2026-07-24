@@ -7,7 +7,6 @@ import { LeadsComponent } from './pages/leads/leads.component';
 import { FollowupsComponent } from './pages/followups/followups.component';
 import { CustomersComponent } from './pages/customers/customers.component';
 import { ProjectsComponent } from './pages/properties/projects/projects.component';
-import { InvoicesComponent } from './pages/invoices/invoices.component';
 import { PaymentsComponent } from './pages/payments/payments.component';
 import { CommissionsComponent } from './pages/commissions/commissions.component';
 import { ReportsComponent } from './pages/reports/reports.component';
@@ -28,7 +27,6 @@ export const routes: Routes = [
         component: ProjectsComponent,
         canActivate: [authGuard]
     },
-  { path: 'invoices', component: InvoicesComponent, canActivate: [authGuard] },
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard] },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },

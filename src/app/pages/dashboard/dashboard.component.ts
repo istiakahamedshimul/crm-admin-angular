@@ -13,7 +13,7 @@ import { money } from '../../shared/format';
       <div>
         <p class="eyebrow">Overview</p>
         <h1>Admin Dashboard</h1>
-        <p class="page-copy">Real-time indicators of your sales funnel, properties, invoices, and payments collection.</p>
+        <p class="page-copy">Real-time indicators of your sales funnel, properties, and collections.</p>
       </div>
       <button type="button" class="ghost-button" (click)="load()">Refresh</button>
     </section>
@@ -40,7 +40,7 @@ import { money } from '../../shared/format';
           <span style="font-size: 18px;">🏗️</span> New Project
         </a>
         <a routerLink="/payments" style="display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); padding: 12px 16px; border-radius: 8px; font-weight: 600; text-decoration: none; color: var(--text-dark); transition: all 0.2s ease;">
-          <span style="font-size: 18px;">💳</span> Verify Payments
+          <span style="font-size: 18px;">💳</span> Verify Collections
         </a>
         <a routerLink="/transport/schedule" style="display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); padding: 12px 16px; border-radius: 8px; font-weight: 600; text-decoration: none; color: var(--text-dark); transition: all 0.2s ease;">
           <span style="font-size: 18px;">🚐</span> Schedule Visit
@@ -77,17 +77,17 @@ import { money } from '../../shared/format';
 
         <div class="pipeline">
           <div><span>Total Leads</span><strong>{{ summary.leads || 0 }}</strong></div>
-          <div><span>Customers</span><strong>{{ summary.customers || 0 }}</strong></div>
+          <div><span>Positive Customers (Booked)</span><strong>{{ summary.customers || 0 }}</strong></div>
         </div>
       </article>
 
       <article class="panel">
         <h2>Collections Control</h2>
-        <p class="panel-desc">Distribution of collections, verified payments, and outstanding invoices.</p>
+        <p class="panel-desc">Distribution of submitted and verified collections.</p>
 
         <div class="pipeline-progress">
           <div class="progress-info">
-            <span>Payment Approval Rate</span>
+            <span>Collection Approval Rate</span>
             <strong>{{ paymentApprovalRate }}%</strong>
           </div>
           <div class="progress-bar-bg">
@@ -125,10 +125,9 @@ export class DashboardComponent implements OnInit {
   get cards() {
     return [
       { label: 'Total Leads', value: this.summary.leads || 0, icon: 'L', bg: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
-      { label: 'Customers', value: this.summary.customers || 0, icon: 'C', bg: 'linear-gradient(135deg, #ec4899, #db2777)' },
+      { label: 'Positive Customers (Booked)', value: this.summary.customers || 0, icon: 'C', bg: 'linear-gradient(135deg, #ec4899, #db2777)' },
       { label: 'Projects', value: this.summary.projects || 0, icon: 'P', bg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
-      { label: 'Invoices', value: this.summary.invoices || 0, icon: 'I', bg: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
-      { label: 'Pending Payments', value: this.summary.pendingPayments || 0, icon: 'P', bg: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+      { label: 'Pending Collections', value: this.summary.pendingPayments || 0, icon: 'P', bg: 'linear-gradient(135deg, #f59e0b, #d97706)' },
       { label: 'Total Collection', value: this.summary.totalCollection || 0, money: true, icon: 'T', bg: 'linear-gradient(135deg, #10b981, #059669)' },
       { label: 'Paid Commission', value: this.summary.paidCommission || 0, money: true, icon: 'C', bg: 'linear-gradient(135deg, #3b82f6, #2563eb)' }
     ];
