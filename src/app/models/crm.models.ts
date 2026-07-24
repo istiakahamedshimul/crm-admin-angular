@@ -13,8 +13,7 @@ export type DashboardSummary = {
   pendingPayments?: number;
   approvedPayments?: number;
   totalCollection?: number;
-  pendingCommission?: number;
-  paidCommission?: number;
+  totalCommission?: number;
 };
 
 export type UserSummary = {
@@ -69,6 +68,45 @@ export type CreateSalesExecutiveRequest = {
   email: string;
   phone: string;
   password: string;
+};
+
+export type UpdateSalesExecutiveRequest = {
+  fullName: string;
+  email: string;
+  phone: string;
+  isActive: boolean;
+  password?: string | null;
+};
+
+export type SalesExecutiveDetail = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt?: string | null;
+  metrics: {
+    totalAssignedLeads: number;
+    assignedStage: number;
+    followingUp: number;
+    positiveCustomers: number;
+    lost: number;
+    notInterested: number;
+    approvedCollectionCount: number;
+    approvedCollectionAmount: number;
+    commission: number;
+  };
+  recentLeads: Array<{
+    id: number;
+    customerName: string;
+    phone: string;
+    status: number;
+    projectId?: number | null;
+    project?: string | null;
+    nextFollowUpAt?: string | null;
+    createdAt: string;
+  }>;
 };
 
 export type Customer = {
