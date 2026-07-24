@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { ApiService } from '../../core/api.service';
+import { VoiceService } from '../../core/voice.service';
 import { FollowUp, FollowUpProof } from '../../models/crm.models';
 
 const followUpTypes = ['WhatsApp', 'Call', 'Facebook', 'Meeting', 'Office', 'Site Visit', 'SMS', 'Email', 'Other'];
@@ -121,13 +122,23 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
 })
 export class FollowupsComponent implements OnInit {
   private api = inject(ApiService);
+  private voiceService = inject(VoiceService);
   followUps: FollowUp[] = [];
   selectedExecutive?: string;
   selectedCustomer?: CustomerGroup;
   selectedProof?: FollowUpProof;
   proofError = false;
+  private pendingVoiceExecutive?: string;
+  private followUpsLoaded = false;
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.voiceService.followupExecutive$.subscribe(name => {
+      if (!name) return;
+      this.pendingVoiceExecutive = name;
+      this.applyVoiceExecutive();
+    });
+    this.load();
+  }
   get executiveCustomers(): CustomerGroup[] {
     if (!this.selectedExecutive) return [];
     const groups = new Map<string, FollowUp[]>();
@@ -142,7 +153,29 @@ export class FollowupsComponent implements OnInit {
     if (this.selectedExecutive) return this.executiveCustomers.map(x => x.latest);
     return this.followUps;
   }
-  load() { this.api.followUps().subscribe(data => { this.followUps = data.sort((a,b) => b.createdAt.localeCompare(a.createdAt)); this.selectedExecutive=undefined; this.selectedCustomer=undefined; }); }
+  load() {
+    this.api.followUps().subscribe(data => {
+      this.followUps = data.sort((a,b) => b.createdAt.localeCompare(a.createdAt));
+      this.followUpsLoaded = true;
+      this.selectedExecutive=undefined;
+      this.selectedCustomer=undefined;
+      this.applyVoiceExecutive();
+    });
+  }
+  private applyVoiceExecutive() {
+    if (!this.pendingVoiceExecutive || !this.followUpsLoaded) return;
+    const requested = this.pendingVoiceExecutive.toLowerCase();
+    const matchedName = this.followUps
+      .map(item => item.salesExecutive)
+      .find(name =>
+        name.toLowerCase().includes(requested) ||
+        requested.includes(name.toLowerCase())
+      );
+    this.selectedExecutive = matchedName || this.pendingVoiceExecutive;
+    this.selectedCustomer = undefined;
+    this.pendingVoiceExecutive = undefined;
+    this.voiceService.followupExecutiveSubject.next(null);
+  }
   openExecutive(name: string) { this.selectedExecutive = name; this.selectedCustomer = undefined; }
   openCustomer(item: FollowUp) { this.selectedCustomer = this.executiveCustomers.find(x => x.key === (item.customerId ? `customer-${item.customerId}` : `lead-${item.leadId}`)); }
   back() { if (this.selectedCustomer) this.selectedCustomer=undefined; else this.selectedExecutive=undefined; }

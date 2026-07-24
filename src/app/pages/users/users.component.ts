@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import {
   CreateSalesExecutiveRequest,
@@ -113,6 +114,7 @@ import { VoiceService } from '../../core/voice.service';
 })
 export class UsersComponent implements OnInit {
   private api = inject(ApiService);
+  private router = inject(Router);
   private voiceService = inject(VoiceService);
   users: UserSummary[] = [];
   detail: SalesExecutiveDetail | null = null;
@@ -176,21 +178,7 @@ export class UsersComponent implements OnInit {
   }
 
   openDetail(user: UserSummary) {
-    this.detailError = '';
-    this.detailMessage = '';
-    this.api.salesExecutiveDetail(user.id).subscribe({
-      next: detail => {
-        this.detail = detail;
-        this.editForm = {
-          fullName: detail.fullName,
-          email: detail.email,
-          phone: detail.phone,
-          isActive: detail.isActive,
-          password: ''
-        };
-      },
-      error: err => this.error = err.error?.message || 'Could not load salesperson details.'
-    });
+    void this.router.navigate(['/users', user.id]);
   }
 
   closeDetail() {

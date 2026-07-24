@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
+import { VoiceService } from '../../core/voice.service';
 import { AvailableLeadCustomer, CreateLeadRequest, Lead, Project, SalesExecutive } from '../../models/crm.models';
 import { label, leadSource, leadStatus, projectType } from '../../shared/format';
 
@@ -261,6 +262,7 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
 })
 export class LeadsComponent implements OnInit {
   private api = inject(ApiService);
+  private voiceService = inject(VoiceService);
   leads: Lead[] = [];
   salesExecutives: SalesExecutive[] = [];
   projects: Project[] = [];
@@ -326,6 +328,11 @@ export class LeadsComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.voiceService.leadExecutive$.subscribe(name => {
+      if (!name) return;
+      this.searchTerm = name;
+      this.voiceService.leadExecutiveSubject.next(null);
+    });
     this.load();
     this.api.salesExecutives().subscribe(data => this.salesExecutives = data);
     this.api.projects().subscribe(data => this.projects = data);
