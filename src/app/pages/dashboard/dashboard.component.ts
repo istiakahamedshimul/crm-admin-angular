@@ -99,6 +99,7 @@ import { money } from '../../shared/format';
           <div><span>Pending Approvals</span><strong>{{ summary.pendingPayments || 0 }}</strong></div>
           <div><span>Approved Count</span><strong>{{ summary.approvedPayments || 0 }}</strong></div>
           <div><span>Pending Commission</span><strong>{{ formatMoney(summary.pendingCommission || 0) }}</strong></div>
+          <div><span>Reversed Commission</span><strong style="color:#b42318">{{ formatMoney(summary.reversedCommission || 0) }}</strong></div>
         </div>
       </article>
     </section>
@@ -129,6 +130,7 @@ export class DashboardComponent implements OnInit {
       { label: 'Projects', value: this.summary.projects || 0, icon: 'P', bg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
       { label: 'Pending Collections', value: this.summary.pendingPayments || 0, icon: 'P', bg: 'linear-gradient(135deg, #f59e0b, #d97706)' },
       { label: 'Total Collection', value: this.summary.totalCollection || 0, money: true, icon: 'T', bg: 'linear-gradient(135deg, #10b981, #059669)' },
+      { label: 'Reversed Collections', value: this.summary.rejectedCollectionAmount || 0, money: true, icon: 'R', bg: 'linear-gradient(135deg, #ef4444, #b91c1c)' },
       { label: 'Paid Commission', value: this.summary.paidCommission || 0, money: true, icon: 'C', bg: 'linear-gradient(135deg, #3b82f6, #2563eb)' }
     ];
   }
