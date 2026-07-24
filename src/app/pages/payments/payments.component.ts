@@ -82,6 +82,20 @@ import { label, money, paymentStatus } from '../../shared/format';
         </button>
       </div>
 
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select [(ngModel)]="period" aria-label="Collection period" style="min-width:145px">
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+          <option value="year">This year</option>
+          <option value="overall">Overall</option>
+          <option value="custom">Custom range</option>
+        </select>
+        <ng-container *ngIf="period === 'custom'">
+          <input type="date" [(ngModel)]="customFrom" aria-label="From date">
+          <input type="date" [(ngModel)]="customTo" aria-label="To date">
+        </ng-container>
+      </div>
+
       <div class="search-box">
         <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" />
@@ -117,6 +131,7 @@ import { label, money, paymentStatus } from '../../shared/format';
                 <div class="customer-info">
                   <span class="customer-name">{{ payment.customer }}</span>
                   <code class="receipt-number">{{ payment.collectionNumber }}</code>
+                  <span style="display:block;color:var(--muted);font-size:11px;margin-top:3px">{{ payment.createdAt | date:'mediumDate' }}</span>
                 </div>
                 <div *ngIf="payment.status === 2" class="rejection-reason-inline">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:12px; height:12px; flex-shrink:0;">
@@ -743,22 +758,25 @@ export class PaymentsComponent implements OnInit {
   // Search & Filter state
   searchQuery = '';
   activeTab: 'all' | 'pending' | 'approved' | 'rejected' = 'all';
+  period: 'week' | 'month' | 'year' | 'overall' | 'custom' = 'month';
+  customFrom = '';
+  customTo = '';
 
   get approvedSum(): number {
-    return this.payments.filter(p => p.status === 1).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
+    return this.periodPayments.filter(p => p.status === 1).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
   }
 
   get pendingCount(): number {
-    return this.payments.filter(p => p.status === 0).length;
+    return this.periodPayments.filter(p => p.status === 0).length;
   }
 
   get rejectedSum(): number {
-    return this.payments.filter(p => p.status === 2).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
+    return this.periodPayments.filter(p => p.status === 2).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
   }
 
   // Count Getters for Tabs
   get countAll(): number {
-    return this.payments.length;
+    return this.periodPayments.length;
   }
 
   get countPending(): number {
@@ -766,16 +784,42 @@ export class PaymentsComponent implements OnInit {
   }
 
   get countApproved(): number {
-    return this.payments.filter(p => p.status === 1).length;
+    return this.periodPayments.filter(p => p.status === 1).length;
   }
 
   get countRejected(): number {
-    return this.payments.filter(p => p.status === 2).length;
+    return this.periodPayments.filter(p => p.status === 2).length;
+  }
+
+  get periodPayments(): Payment[] {
+    if (this.period === 'overall') return this.payments;
+    const now = new Date();
+    let start: Date;
+    let end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+    if (this.period === 'week') {
+      const day = now.getDay();
+      const daysSinceMonday = day === 0 ? 6 : day - 1;
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
+    } else if (this.period === 'year') {
+      start = new Date(now.getFullYear(), 0, 1);
+    } else if (this.period === 'custom') {
+      if (!this.customFrom && !this.customTo) return this.payments;
+      start = this.customFrom ? new Date(this.customFrom + 'T00:00:00') : new Date(0);
+      end = this.customTo ? new Date(this.customTo + 'T23:59:59.999') : end;
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    return this.payments.filter(payment => {
+      const created = new Date(payment.createdAt);
+      return created >= start && created < end;
+    });
   }
 
   // Client-filtered list of payments
   get filteredPayments(): Payment[] {
-    return this.payments.filter(p => {
+    return this.periodPayments.filter(p => {
       // 1. Filter by status tab
       if (this.activeTab === 'pending' && p.status !== 0) return false;
       if (this.activeTab === 'approved' && p.status !== 1) return false;
