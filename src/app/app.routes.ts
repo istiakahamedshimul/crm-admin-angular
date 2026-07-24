@@ -3,6 +3,7 @@ import { authGuard } from './core/auth.guard';
 import { LoginComponent } from './pages/login/login.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { UsersComponent } from './pages/users/users.component';
+import { SalesExecutiveProfileComponent } from './pages/users/sales-executive-profile.component';
 import { LeadsComponent } from './pages/leads/leads.component';
 import { FollowupsComponent } from './pages/followups/followups.component';
 import { CustomersComponent } from './pages/customers/customers.component';
@@ -18,6 +19,7 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: '', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'users', component: UsersComponent, canActivate: [authGuard] },
+  { path: 'users/:id', component: SalesExecutiveProfileComponent, canActivate: [authGuard] },
   { path: 'leads', component: LeadsComponent, canActivate: [authGuard] },
   { path: 'followups', component: FollowupsComponent, canActivate: [authGuard] },
   { path: 'customers', component: CustomersComponent, canActivate: [authGuard] },
