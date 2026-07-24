@@ -8,7 +8,7 @@ import { environment } from '../../environments/environment';
 
 // You can change the model name here. 
 // gemini-2.0-flash and gemini-3.6-flash both natively support the ["AUDIO", "TEXT"] response modalities.
-const GEMINI_MODEL = 'gemini-2.0-flash'; 
+const GEMINI_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025'; 
 const GEMINI_API_KEY = environment.geminiApiKey || '';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
