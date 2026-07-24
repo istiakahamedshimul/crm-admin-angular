@@ -1,14 +1,23 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import {
+  ActivityHandling,
+  EndSensitivity,
+  GoogleGenAI,
+  LiveConnectConfig,
+  LiveServerMessage,
+  Modality,
+  Session,
+  StartSensitivity,
+  Type
+} from '@google/genai';
 import { ApiService } from './api.service';
 import { UserSummary } from '../models/crm.models';
 import { environment } from '../../environments/environment';
 
 const GEMINI_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 const GEMINI_API_KEY = environment.geminiApiKey || '';
-const GEMINI_LIVE_URL =
-  `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
 
@@ -45,7 +54,7 @@ export class VoiceService {
 
   language: 'en' | 'bn' = 'en';
 
-  private socket: WebSocket | null = null;
+  private session: Session | null = null;
   private mediaStream: MediaStream | null = null;
   private captureContext: AudioContext | null = null;
   private captureSource: MediaStreamAudioSourceNode | null = null;
@@ -159,80 +168,59 @@ export class VoiceService {
     );
   }
 
-  private openLiveSession(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.setupComplete = false;
-      const socket = new WebSocket(GEMINI_LIVE_URL);
-      this.socket = socket;
-
-      const startupTimeout = window.setTimeout(() => {
-        reject(new Error('Gemini Live setup timed out.'));
-        socket.close();
-      }, 15000);
-
-      socket.onopen = () => {
-        socket.send(JSON.stringify(this.createSetupMessage()));
-      };
-
-      socket.onmessage = (event: MessageEvent<string>) => {
-        let message: any;
-        try {
-          message = JSON.parse(event.data);
-        } catch (error) {
-          console.warn('Ignored invalid Gemini Live message:', error);
-          return;
-        }
-
-        if (message.setupComplete && !this.setupComplete) {
-          this.setupComplete = true;
-          window.clearTimeout(startupTimeout);
-          this.processingSubject.next(false);
-          void this.startMicrophone()
-            .then(() => {
-              this.listeningSubject.next(true);
-              resolve();
-            })
-            .catch(reject);
-          return;
-        }
-
-        this.handleServerMessage(message);
-      };
-
-      socket.onerror = () => {
-        window.clearTimeout(startupTimeout);
-        reject(new Error('Gemini Live WebSocket connection failed.'));
-      };
-
-      socket.onclose = () => {
-        window.clearTimeout(startupTimeout);
-        this.setupComplete = false;
-        this.listeningSubject.next(false);
-        if (this.explicitlyStarted) {
+  private async openLiveSession(): Promise<void> {
+    this.setupComplete = false;
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const session = await ai.live.connect({
+      model: GEMINI_MODEL,
+      config: this.createSessionConfig(),
+      callbacks: {
+        onopen: () => console.info('Gemini Live connected.'),
+        onmessage: (message: LiveServerMessage) => this.handleServerMessage(message),
+        onerror: (error) => {
+          console.error('Gemini Live connection error:', error);
           this.errorSubject.next(
             this.language === 'bn'
-              ? 'লাইভ ভয়েস সংযোগ বিচ্ছিন্ন হয়েছে। আবার চেষ্টা করুন।'
-              : 'The live voice connection ended. Please try again.'
+              ? 'Gemini Live সংযোগে সমস্যা হয়েছে।'
+              : 'The Gemini Live connection failed.'
           );
-          this.explicitlyStarted = false;
+        },
+        onclose: () => {
+          this.setupComplete = false;
+          this.listeningSubject.next(false);
+          if (this.explicitlyStarted) {
+            this.errorSubject.next(
+              this.language === 'bn'
+                ? 'লাইভ ভয়েস সংযোগ বিচ্ছিন্ন হয়েছে। আবার চেষ্টা করুন।'
+                : 'The live voice connection ended. Please try again.'
+            );
+            this.explicitlyStarted = false;
+          }
         }
-      };
+      }
     });
+
+    if (!this.explicitlyStarted) {
+      session.close();
+      throw new Error('Voice session was stopped before connecting.');
+    }
+
+    this.session = session;
+    this.setupComplete = true;
+    this.processingSubject.next(false);
+    await this.startMicrophone();
+    this.listeningSubject.next(true);
   }
 
-  private createSetupMessage(): object {
+  private createSessionConfig(): LiveConnectConfig {
     const answerLanguage =
       this.language === 'bn'
         ? 'Always understand and speak natural Bengali. Use English names only when needed.'
         : 'Always understand and speak natural English. Understand Bengali names and accents too.';
 
     return {
-      setup: {
-        model: `models/${GEMINI_MODEL}`,
-        responseModalities: ['AUDIO'],
-        systemInstruction: {
-          parts: [{
-            text: `You are the live voice assistant for a real-estate CRM administrator.
+      responseModalities: [Modality.AUDIO],
+      systemInstruction: `You are the live voice assistant for a real-estate CRM administrator.
 ${answerLanguage}
 
 Have a direct, natural spoken conversation. Keep answers clear and concise. Never use text-to-speech,
@@ -253,18 +241,19 @@ For any request outside these supported CRM capabilities, always respond politel
 Do not silently ignore any request; always give a spoken response.
 
 Current sales executive performance data:
-${JSON.stringify(this.executives)}`
-          }]
-        },
-        tools: [{
+${JSON.stringify(this.executives)}`,
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
+      },
+      tools: [{
           functionDeclarations: [
             {
               name: 'open_sales_executive_performance',
               description: 'Open the matched sales executive profile in the CRM.',
               parameters: {
-                type: 'OBJECT',
+                type: Type.OBJECT,
                 properties: {
-                  executiveId: { type: 'INTEGER' }
+                  executiveId: { type: Type.INTEGER }
                 },
                 required: ['executiveId']
               }
@@ -273,10 +262,10 @@ ${JSON.stringify(this.executives)}`
               name: 'open_crm_page',
               description: 'Open a supported CRM page.',
               parameters: {
-                type: 'OBJECT',
+                type: Type.OBJECT,
                 properties: {
                   route: {
-                    type: 'STRING',
+                    type: Type.STRING,
                     enum: [
                       '/', '/users', '/leads', '/followups', '/customers',
                       '/properties/projects', '/payments', '/commissions', '/reports',
@@ -289,14 +278,16 @@ ${JSON.stringify(this.executives)}`
             }
           ]
         }],
-        inputAudioTranscription: {},
-        outputAudioTranscription: {},
-        realtimeInputConfig: {
-          automaticActivityDetection: {
-            disabled: true
-          },
-          activityHandling: 'NO_INTERRUPTION'
-        }
+      inputAudioTranscription: {},
+      outputAudioTranscription: {},
+      realtimeInputConfig: {
+        automaticActivityDetection: {
+          disabled: false,
+          startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+          endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
+          silenceDurationMs: 700
+        },
+        activityHandling: ActivityHandling.NO_INTERRUPTION
       }
     };
   }
@@ -321,7 +312,7 @@ ${JSON.stringify(this.executives)}`
     this.captureProcessor.onaudioprocess = (event: AudioProcessingEvent) => {
       if (
         !this.setupComplete ||
-        this.socket?.readyState !== WebSocket.OPEN ||
+        !this.session ||
         this.voiceState === 'processing'
       ) {
         return;
@@ -338,7 +329,7 @@ ${JSON.stringify(this.executives)}`
     this.captureSilencer.connect(this.captureContext.destination);
   }
 
-  private handleServerMessage(message: any): void {
+  private handleServerMessage(message: LiveServerMessage): void {
     if (message.serverContent?.interrupted) {
       this.stopPlayback();
     }
@@ -395,11 +386,7 @@ ${JSON.stringify(this.executives)}`
       };
     });
 
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({
-        toolResponse: { functionResponses: responses }
-      }));
-    }
+    this.session?.sendToolResponse({ functionResponses: responses });
   }
 
   private queueNativeAudio(base64Data: string): void {
@@ -473,10 +460,9 @@ ${JSON.stringify(this.executives)}`
     void this.playbackContext?.close();
     this.playbackContext = null;
 
-    if (this.socket) {
-      this.socket.onclose = null;
-      this.socket.close();
-      this.socket = null;
+    if (this.session) {
+      this.session.close();
+      this.session = null;
     }
   }
 
@@ -530,7 +516,6 @@ ${JSON.stringify(this.executives)}`
       if (this.candidateVoiceFrames >= 3) {
         this.voiceState = 'speaking';
         this.speechStartedAt = now;
-        this.sendRealtimeInput({ activityStart: {} });
         for (const chunk of this.candidateChunks) {
           this.sendAudioChunk(chunk);
         }
@@ -547,7 +532,9 @@ ${JSON.stringify(this.executives)}`
       }
 
       if (now - this.lastVoiceAt >= 900 && now - this.speechStartedAt >= 350) {
-        this.sendRealtimeInput({ activityEnd: {} });
+        // Explicitly close this audio turn so Gemini responds immediately. The
+        // next clear speech chunk automatically opens a fresh input stream.
+        this.sendRealtimeInput({ audioStreamEnd: true });
         this.voiceState = 'processing';
         this.serverTurnComplete = false;
         this.listeningSubject.next(false);
@@ -567,9 +554,7 @@ ${JSON.stringify(this.executives)}`
   }
 
   private sendRealtimeInput(input: object): void {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({ realtimeInput: input }));
-    }
+    this.session?.sendRealtimeInput(input);
   }
 
   private finishProcessingWhenPlaybackEnds(): void {
