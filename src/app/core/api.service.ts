@@ -15,6 +15,7 @@ import {
   DashboardSummary,
   FollowUp,
   Lead,
+  LeadAutomationSettings,
   Payment,
   Project,
   ReportSummary,
@@ -102,6 +103,14 @@ export class ApiService {
 
   updateLead(id: number, request: Partial<CreateLeadRequest> & Record<string, unknown>) {
     return this.http.put(`${this.baseUrl}/leads/${id}`, request, this.options());
+  }
+
+  leadAutomationSettings() {
+    return this.http.get<LeadAutomationSettings>(`${this.baseUrl}/lead-automation-settings`, this.options());
+  }
+
+  updateLeadAutomationSettings(request: LeadAutomationSettings) {
+    return this.http.put<LeadAutomationSettings>(`${this.baseUrl}/lead-automation-settings`, request, this.options());
   }
 
   customers() {

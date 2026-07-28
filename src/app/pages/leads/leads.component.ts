@@ -3,7 +3,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { VoiceService } from '../../core/voice.service';
-import { AvailableLeadCustomer, CreateLeadRequest, Lead, Project, SalesExecutive } from '../../models/crm.models';
+import { AvailableLeadCustomer, CreateLeadRequest, Lead, LeadAutomationSettings, Project, SalesExecutive } from '../../models/crm.models';
 import { label, leadSource, leadStatus, projectType } from '../../shared/format';
 
 @Component({
@@ -16,6 +16,26 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
         <h1>Lead Management</h1>
         <p class="page-copy">Manage manually created leads, bulk import prospects, and assign tasks to sales executives.</p>
       </div>
+    </section>
+
+    <section class="panel" style="padding:20px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0 0 6px;">Assigned lead automation</h2>
+          <p class="page-copy" style="margin:0;">Warn employees at the selected interval. Leads still in Assigned state with no follow-up return to Unassigned automatically.</p>
+        </div>
+        <form (ngSubmit)="saveAutomationSettings()" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <label>Return to unassigned after (hours)
+            <input type="number" name="unassignAfterHours" min="1" max="720" required [(ngModel)]="automationSettings.unassignAfterHours">
+          </label>
+          <label>Warning interval (hours)
+            <input type="number" name="reminderIntervalHours" min="1" max="168" required [(ngModel)]="automationSettings.reminderIntervalHours">
+          </label>
+          <button type="submit" [disabled]="savingAutomation">Save configuration</button>
+        </form>
+      </div>
+      <p class="success" *ngIf="automationMessage" style="margin:12px 0 0;">{{ automationMessage }}</p>
+      <p class="error" *ngIf="automationError" style="margin:12px 0 0;">{{ automationError }}</p>
     </section>
 
     <!-- Refined Metrics Bar -->
@@ -179,9 +199,18 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
         <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
-              <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">Assigned Leads Directory</h2>
+              <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">Lead Directory</h2>
               <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0;">Review lead status, project options, and executive performance.</p>
             </div>
+          </div>
+
+          <div style="display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+            <button type="button" class="ghost-button" [class.active]="directoryTab === 'assigned'" (click)="directoryTab='assigned'">
+              Assigned ({{ assignedLeads }})
+            </button>
+            <button type="button" class="ghost-button" [class.active]="directoryTab === 'unassigned'" (click)="directoryTab='unassigned'">
+              Unassigned ({{ unassignedLeads }})
+            </button>
           </div>
 
           <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; width: 100%;">
@@ -280,6 +309,11 @@ export class LeadsComponent implements OnInit {
 
   // Tab State
   activeTab: 'create' | 'import' = 'create';
+  directoryTab: 'assigned' | 'unassigned' = 'assigned';
+  automationSettings: LeadAutomationSettings = { unassignAfterHours: 24, reminderIntervalHours: 1 };
+  automationMessage = '';
+  automationError = '';
+  savingAutomation = false;
   searchTerm = '';
   selectedCustomerId: number | null = null;
 
@@ -310,8 +344,14 @@ export class LeadsComponent implements OnInit {
     return this.leads.filter(lead => lead.status === 0).length;
   }
 
+  get unassignedLeads() {
+    return this.leads.filter(lead => lead.assignedToId === null || lead.assignedToId === undefined).length;
+  }
+
   get filteredLeads() {
-    let result = this.leads;
+    let result = this.leads.filter(lead => this.directoryTab === 'assigned'
+      ? lead.assignedToId !== null && lead.assignedToId !== undefined
+      : lead.assignedToId === null || lead.assignedToId === undefined);
     if (this.selectedProjectType !== null) {
       result = result.filter(lead => lead.projectType === this.selectedProjectType);
     }
@@ -334,10 +374,28 @@ export class LeadsComponent implements OnInit {
       this.voiceService.leadExecutiveSubject.next(null);
     });
     this.load();
+    this.api.leadAutomationSettings().subscribe(data => this.automationSettings = data);
     this.api.salesExecutives().subscribe(data => this.salesExecutives = data);
     this.api.projects().subscribe(data => this.projects = data);
     this.loadAvailableCustomers();
     this.templateUrl = this.api.leadImportTemplateUrl();
+  }
+
+  saveAutomationSettings() {
+    this.savingAutomation = true;
+    this.automationMessage = '';
+    this.automationError = '';
+    this.api.updateLeadAutomationSettings(this.automationSettings).subscribe({
+      next: data => {
+        this.automationSettings = data;
+        this.automationMessage = 'Lead automation configuration saved.';
+        this.savingAutomation = false;
+      },
+      error: err => {
+        this.automationError = err.error?.message || 'Could not save lead automation configuration.';
+        this.savingAutomation = false;
+      }
+    });
   }
 
   chooseImportFile(event: Event) {
