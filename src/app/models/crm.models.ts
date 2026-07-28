@@ -42,6 +42,11 @@ export type Lead = {
   nextFollowUpAt?: string;
 };
 
+export type LeadAutomationSettings = {
+  unassignAfterHours: number;
+  reminderIntervalHours: number;
+};
+
 export type CreateLeadRequest = {
   customerId?: number | null;
   customerName: string;
