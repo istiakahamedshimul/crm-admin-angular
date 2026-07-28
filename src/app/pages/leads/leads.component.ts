@@ -26,10 +26,10 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
         </div>
         <form (ngSubmit)="saveAutomationSettings()" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
           <label>Return to unassigned after (hours)
-            <input type="number" name="unassignAfterHours" min="1" max="720" required [(ngModel)]="automationSettings.unassignAfterHours">
+            <input type="number" name="unassignAfterHours" min="0.0167" max="720" step="any" required [(ngModel)]="automationSettings.unassignAfterHours">
           </label>
           <label>Warning interval (hours)
-            <input type="number" name="reminderIntervalHours" min="1" max="168" required [(ngModel)]="automationSettings.reminderIntervalHours">
+            <input type="number" name="reminderIntervalHours" min="0.0167" max="168" step="any" required [(ngModel)]="automationSettings.reminderIntervalHours">
           </label>
           <button type="submit" [disabled]="savingAutomation">Save configuration</button>
         </form>
