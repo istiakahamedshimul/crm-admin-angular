@@ -3,7 +3,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { VoiceService } from '../../core/voice.service';
-import { AvailableLeadCustomer, CreateLeadRequest, Lead, LeadAutomationSettings, Project, SalesExecutive } from '../../models/crm.models';
+import { AvailableLeadCustomer, CreateLeadRequest, Lead, LeadAutomationSettings, Project, ReturnedLead, SalesExecutive } from '../../models/crm.models';
 import { label, leadSource, leadStatus, projectType } from '../../shared/format';
 
 @Component({
@@ -211,6 +211,9 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
             <button type="button" class="ghost-button" [class.active]="directoryTab === 'unassigned'" (click)="directoryTab='unassigned'">
               Unassigned ({{ unassignedLeads }})
             </button>
+            <button type="button" class="ghost-button" [class.active]="directoryTab === 'returned'" (click)="directoryTab='returned'">
+              Returned history ({{ returnedLeads.length }})
+            </button>
           </div>
 
           <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; width: 100%;">
@@ -233,7 +236,7 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
         </div>
 
         <!-- Refined Leads Card Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+        <div *ngIf="directoryTab !== 'returned'" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
           <div *ngFor="let lead of filteredLeads" 
                style="background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden; transition: all 0.2s ease-in-out;"
                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-hover)'; this.style.borderColor='var(--brand)';"
@@ -279,20 +282,119 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
                 {{ label(leadStatus, lead.status) }}
               </span>
             </div>
+
+            <div *ngIf="directoryTab === 'unassigned'" style="display:flex;gap:8px;align-items:flex-end;border-top:1px solid var(--line);padding-top:12px">
+              <label style="flex:1;margin:0;font-size:11px">Quick assign
+                <select [(ngModel)]="quickAssignee[lead.id]" style="min-height:36px;font-size:12px">
+                  <option [ngValue]="null">Select salesperson</option>
+                  <option *ngFor="let sales of salesExecutives" [ngValue]="sales.id">{{ sales.fullName }}</option>
+                </select>
+              </label>
+              <button type="button" (click)="quickAssign(lead)" [disabled]="!quickAssignee[lead.id]"
+                style="min-height:36px;padding:0 12px">Assign</button>
+              <button type="button" class="ghost-button" (click)="openLeadEditor(lead)"
+                style="min-height:36px;padding:0 12px">Edit</button>
+            </div>
           </div>
         </div>
         
-        <div *ngIf="filteredLeads.length === 0" class="empty-card" style="margin-top: 20px;">
+        <div *ngIf="directoryTab !== 'returned' && filteredLeads.length === 0" class="empty-card" style="margin-top: 20px;">
           No leads found matching current filters.
+        </div>
+
+        <div *ngIf="directoryTab === 'returned'" style="overflow:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:900px;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:12px;border-bottom:1px solid var(--line)">Lead</th>
+                <th style="text-align:left;padding:12px;border-bottom:1px solid var(--line)">Returned from</th>
+                <th style="text-align:left;padding:12px;border-bottom:1px solid var(--line)">Assigned time</th>
+                <th style="text-align:left;padding:12px;border-bottom:1px solid var(--line)">Returned time</th>
+                <th style="text-align:center;padding:12px;border-bottom:1px solid var(--line)">Warnings</th>
+                <th style="text-align:left;padding:12px;border-bottom:1px solid var(--line)">Current status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of filteredReturnedLeads">
+                <td style="padding:12px;border-bottom:1px solid var(--line)">
+                  <strong>{{ item.customerName }}</strong>
+                  <small style="display:block;color:var(--muted)">{{ item.phone }}</small>
+                </td>
+                <td style="padding:12px;border-bottom:1px solid var(--line)">{{ item.salesExecutive }}</td>
+                <td style="padding:12px;border-bottom:1px solid var(--line)">{{ item.assignedAt | date:'medium' }}</td>
+                <td style="padding:12px;border-bottom:1px solid var(--line)">{{ item.returnedAt | date:'medium' }}</td>
+                <td style="padding:12px;text-align:center;border-bottom:1px solid var(--line)">{{ item.notificationCount }}</td>
+                <td style="padding:12px;border-bottom:1px solid var(--line)">
+                  <span class="status-pill">{{ label(leadStatus, item.currentStatus) }}</span>
+                  <small *ngIf="item.currentAssignedTo" style="display:block;color:var(--muted);margin-top:4px">
+                    Now assigned to {{ item.currentAssignedTo }}
+                  </small>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="filteredReturnedLeads.length === 0" class="empty-card" style="margin-top:20px">
+            No returned leads found.
+          </div>
         </div>
       </article>
     </section>
+
+    <div *ngIf="editingLead" (click)="closeLeadEditor()"
+      style="position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:1100;overflow:auto;padding:24px">
+      <form (click)="$event.stopPropagation()" (ngSubmit)="saveLeadEditor()"
+        style="width:min(760px,100%);margin:auto;background:white;border-radius:18px;padding:24px;box-shadow:0 30px 70px rgba(15,23,42,.3)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px">
+          <div>
+            <p class="eyebrow">Full lead editor</p>
+            <h2 style="margin:0">Edit {{ editingLead.customerName }}</h2>
+          </div>
+          <button type="button" class="ghost-button" (click)="closeLeadEditor()">Close</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+          <label>Lead name<input name="editCustomerName" [(ngModel)]="editLeadForm.customerName" required></label>
+          <label>Phone<input name="editPhone" [(ngModel)]="editLeadForm.phone" required></label>
+          <label>Alternative phone<input name="editAlternativePhone" [(ngModel)]="editLeadForm.alternativePhone"></label>
+          <label>Email<input name="editEmail" type="email" [(ngModel)]="editLeadForm.email"></label>
+          <label>Address<input name="editAddress" [(ngModel)]="editLeadForm.address"></label>
+          <label>Preferred location<input name="editPreferredLocation" [(ngModel)]="editLeadForm.preferredLocation"></label>
+          <label>Budget range<input name="editBudgetRange" [(ngModel)]="editLeadForm.budgetRange"></label>
+          <label>Project
+            <select name="editProjectId" [(ngModel)]="editLeadForm.projectId">
+              <option [ngValue]="null">None</option>
+              <option *ngFor="let project of projects" [ngValue]="project.id">{{ project.name }}</option>
+            </select>
+          </label>
+          <label>Sales executive
+            <select name="editAssignedToId" [(ngModel)]="editLeadForm.assignedToId">
+              <option [ngValue]="null">Keep unassigned</option>
+              <option *ngFor="let sales of salesExecutives" [ngValue]="sales.id">{{ sales.fullName }}</option>
+            </select>
+          </label>
+          <label>Status
+            <select name="editStatus" [(ngModel)]="editLeadForm.status">
+              <option *ngFor="let option of leadStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+          <label style="grid-column:1/-1">Remarks
+            <textarea name="editRemarks" rows="4" [(ngModel)]="editLeadForm.remarks"></textarea>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+          <button type="button" class="ghost-button" (click)="closeLeadEditor()">Cancel</button>
+          <button type="submit" [disabled]="savingLead">{{ savingLead ? 'Saving...' : 'Save lead' }}</button>
+        </div>
+        <p class="error" *ngIf="leadEditorError" style="margin-top:12px">{{ leadEditorError }}</p>
+      </form>
+    </div>
   `
 })
 export class LeadsComponent implements OnInit {
   private api = inject(ApiService);
   private voiceService = inject(VoiceService);
   leads: Lead[] = [];
+  returnedLeads: ReturnedLead[] = [];
   salesExecutives: SalesExecutive[] = [];
   projects: Project[] = [];
   availableCustomers: AvailableLeadCustomer[] = [];
@@ -306,10 +408,16 @@ export class LeadsComponent implements OnInit {
   leadStatus = leadStatus;
   selectedProjectType: number | null = null;
   propertyTypeOptions = projectType.map((type, value) => ({ value, label: type }));
+  leadStatusOptions = leadStatus.map((status, value) => ({ value, label: status }));
+  quickAssignee: Record<number, number | null> = {};
+  editingLead: Lead | null = null;
+  editLeadForm: any = {};
+  savingLead = false;
+  leadEditorError = '';
 
   // Tab State
   activeTab: 'create' | 'import' = 'create';
-  directoryTab: 'assigned' | 'unassigned' = 'assigned';
+  directoryTab: 'assigned' | 'unassigned' | 'returned' = 'assigned';
   automationSettings: LeadAutomationSettings = { unassignAfterHours: 24, reminderIntervalHours: 1 };
   automationMessage = '';
   automationError = '';
@@ -349,6 +457,7 @@ export class LeadsComponent implements OnInit {
   }
 
   get filteredLeads() {
+    if (this.directoryTab === 'returned') return [];
     let result = this.leads.filter(lead => this.directoryTab === 'assigned'
       ? lead.assignedToId !== null && lead.assignedToId !== undefined
       : lead.assignedToId === null || lead.assignedToId === undefined);
@@ -367,6 +476,15 @@ export class LeadsComponent implements OnInit {
     return result;
   }
 
+  get filteredReturnedLeads() {
+    const term = this.searchTerm.toLowerCase().trim();
+    if (!term) return this.returnedLeads;
+    return this.returnedLeads.filter(item =>
+      item.customerName.toLowerCase().includes(term) ||
+      item.phone.includes(term) ||
+      item.salesExecutive.toLowerCase().includes(term));
+  }
+
   ngOnInit() {
     this.voiceService.leadExecutive$.subscribe(name => {
       if (!name) return;
@@ -374,11 +492,69 @@ export class LeadsComponent implements OnInit {
       this.voiceService.leadExecutiveSubject.next(null);
     });
     this.load();
+    this.loadReturnedLeads();
     this.api.leadAutomationSettings().subscribe(data => this.automationSettings = data);
     this.api.salesExecutives().subscribe(data => this.salesExecutives = data);
     this.api.projects().subscribe(data => this.projects = data);
     this.loadAvailableCustomers();
     this.templateUrl = this.api.leadImportTemplateUrl();
+  }
+
+  loadReturnedLeads() {
+    this.api.returnedLeads().subscribe(data => this.returnedLeads = data);
+  }
+
+  quickAssign(lead: Lead) {
+    const assignedToId = this.quickAssignee[lead.id];
+    if (!assignedToId) return;
+    this.api.updateLead(lead.id, { assignedToId, status: 1 }).subscribe({
+      next: () => {
+        delete this.quickAssignee[lead.id];
+        this.load();
+      },
+      error: err => this.error = err.error?.message || 'Could not assign lead.'
+    });
+  }
+
+  openLeadEditor(lead: Lead) {
+    this.editingLead = lead;
+    this.leadEditorError = '';
+    this.editLeadForm = {
+      customerName: lead.customerName,
+      phone: lead.phone,
+      alternativePhone: lead.alternativePhone ?? null,
+      email: lead.email ?? null,
+      address: lead.address ?? null,
+      preferredLocation: lead.preferredLocation ?? null,
+      budgetRange: lead.budgetRange ?? null,
+      projectId: lead.projectId ?? null,
+      assignedToId: lead.assignedToId ?? null,
+      status: lead.status,
+      remarks: lead.remarks ?? null
+    };
+  }
+
+  closeLeadEditor() {
+    if (!this.savingLead) this.editingLead = null;
+  }
+
+  saveLeadEditor() {
+    if (!this.editingLead) return;
+    if (this.editLeadForm.assignedToId && this.editLeadForm.status === 0)
+      this.editLeadForm.status = 1;
+    this.savingLead = true;
+    this.leadEditorError = '';
+    this.api.updateLead(this.editingLead.id, this.editLeadForm).subscribe({
+      next: () => {
+        this.savingLead = false;
+        this.editingLead = null;
+        this.load();
+      },
+      error: err => {
+        this.savingLead = false;
+        this.leadEditorError = err.error?.message || 'Could not update lead.';
+      }
+    });
   }
 
   saveAutomationSettings() {
