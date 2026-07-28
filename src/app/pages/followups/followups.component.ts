@@ -64,15 +64,10 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
               </div>
             </div>
             
-            <!-- Summary Note & Response speech bubble -->
+            <!-- Follow-up summary -->
             <div style="background: white; border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
               <span class="muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; display: block; margin-bottom: 4px;">Update Summary</span>
               <p style="font-size: 14px; color: var(--text-dark); margin: 0; line-height: 1.5;">{{ item.summary }}</p>
-              
-              <div *ngIf="item.customerResponse" style="margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px;">
-                <span class="muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; display: block; margin-bottom: 2px;">Customer Response</span>
-                <p style="font-size: 13px; color: #475569; margin: 0; font-style: italic;">"{{ item.customerResponse }}"</p>
-              </div>
             </div>
 
             <!-- Meta details (Next Follow-up & Proofs) -->

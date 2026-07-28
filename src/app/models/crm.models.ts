@@ -219,7 +219,6 @@ export type FollowUp = {
   salesExecutive: string;
   type: number;
   summary: string;
-  customerResponse?: string;
   nextFollowUpAt?: string;
   createdAt: string;
   proofs: FollowUpProof[];
