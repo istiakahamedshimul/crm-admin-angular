@@ -19,6 +19,7 @@ import {
   Payment,
   Project,
   ReportSummary,
+  ReturnedLead,
   SalesExecutive,
   SalesExecutiveDetail,
   SubGroup,
@@ -70,6 +71,10 @@ export class ApiService {
 
   leads() {
     return this.http.get<Lead[]>(`${this.baseUrl}/leads`, this.options());
+  }
+
+  returnedLeads() {
+    return this.http.get<ReturnedLead[]>(`${this.baseUrl}/leads/returned`, this.options());
   }
 
   followUps() {

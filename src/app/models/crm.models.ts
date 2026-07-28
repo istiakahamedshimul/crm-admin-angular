@@ -31,7 +31,11 @@ export type Lead = {
   id: number;
   customerName: string;
   phone: string;
+  alternativePhone?: string | null;
   email?: string;
+  address?: string | null;
+  budgetRange?: string | null;
+  preferredLocation?: string | null;
   source: number;
   status: number;
   assignedToId?: number;
@@ -40,11 +44,27 @@ export type Lead = {
   projectName?: string;
   projectType?: number;
   nextFollowUpAt?: string;
+  remarks?: string | null;
+  assignedAt?: string | null;
+  createdAt: string;
 };
 
 export type LeadAutomationSettings = {
   unassignAfterHours: number;
   reminderIntervalHours: number;
+};
+
+export type ReturnedLead = {
+  id: number;
+  leadId: number;
+  customerName: string;
+  phone: string;
+  salesExecutive: string;
+  assignedAt: string;
+  returnedAt: string;
+  notificationCount: number;
+  currentStatus: number;
+  currentAssignedTo?: string | null;
 };
 
 export type CreateLeadRequest = {
@@ -93,6 +113,7 @@ export type SalesExecutiveDetail = {
   lastLoginAt?: string | null;
   metrics: {
     totalAssignedLeads: number;
+    returnedLeads: number;
     assignedStage: number;
     followingUp: number;
     positiveCustomers: number;
