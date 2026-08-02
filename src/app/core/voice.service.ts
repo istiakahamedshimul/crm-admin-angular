@@ -95,6 +95,10 @@ export class VoiceService {
   private audioChunksSent = 0;
   private audioBytesReceived = 0;
   private lastAudioDiagnosticAt = 0;
+  private toolCallQueue: Promise<void> = Promise.resolve();
+  private recentCommands = new Map<string, number>();
+  private sessionGeneration = 0;
+  private microphoneResumeAt = 0;
 
   constructor() {
     (window as any).crmVoiceDebug = {
@@ -286,6 +290,8 @@ For any request outside these supported CRM capabilities, always respond politel
 - English: "I'm sorry, I can't do this."
 - Bengali: "দুঃখিত, আমি এটি করতে পারি না।"
 Do not silently ignore any request; always give a spoken response.
+Treat one user utterance as exactly one question. If duplicate tool calls represent the same request,
+use the first tool result and give only one spoken answer. Never repeat an answer in the same turn.
 
 Current sales executive performance data:
 ${JSON.stringify(this.executives)}`,
@@ -405,7 +411,8 @@ ${JSON.stringify(this.executives)}`,
       if (
         !this.setupComplete ||
         !this.session ||
-        this.voiceState === 'processing'
+        this.voiceState === 'processing' ||
+        performance.now() < this.microphoneResumeAt
       ) {
         return;
       }
@@ -463,7 +470,7 @@ ${JSON.stringify(this.executives)}`,
 
     if (message.toolCall?.functionCalls) {
       this.serverTurnComplete = false;
-      void this.handleToolCalls(message.toolCall.functionCalls);
+      this.handleToolCalls(message.toolCall.functionCalls);
     }
 
     if (message.serverContent?.turnComplete) {
@@ -472,13 +479,42 @@ ${JSON.stringify(this.executives)}`,
     }
   }
 
-  private async handleToolCalls(functionCalls: any[]): Promise<void> {
+  private handleToolCalls(functionCalls: any[]): void {
+    // Live API messages may overlap. Serialize them so two matching commands
+    // cannot both pass the duplicate check before either one starts executing.
+    const generation = this.sessionGeneration;
+    this.toolCallQueue = this.toolCallQueue
+      .then(() => this.processToolCalls(functionCalls, generation))
+      .catch((error) => this.debugError('Tool call processing failed.', error));
+  }
+
+  private async processToolCalls(functionCalls: any[], generation: number): Promise<void> {
+    if (generation !== this.sessionGeneration || !this.session) return;
+
     const responses = [];
     for (const call of functionCalls) {
       this.debug('Executing Gemini tool call.', { name: call.name, args: call.args });
       let result = 'Unsupported action.';
+      const commandKey = this.commandKey(call.name, call.args);
+      const now = Date.now();
+      const lastExecutedAt = this.recentCommands.get(commandKey) || 0;
+      const isDuplicate = now - lastExecutedAt < 2500;
 
-      if (call.name === 'open_sales_executive_performance') {
+      this.removeExpiredCommands(now);
+
+      if (isDuplicate) {
+        result = 'Duplicate command ignored. The action was already completed. Do not repeat the spoken answer.';
+        this.debug('Duplicate Gemini tool call ignored.', {
+          name: call.name,
+          args: call.args,
+          elapsedMs: now - lastExecutedAt
+        });
+      } else {
+        // Reserve the command before awaiting navigation or an API call. This
+        // guarantees at-most-once execution even when duplicate calls overlap.
+        this.recentCommands.set(commandKey, now);
+
+        if (call.name === 'open_sales_executive_performance') {
         const executiveId = Number(call.args?.executiveId);
         const executive = this.executives.find((item) => item.id === executiveId);
         if (executive) {
@@ -562,6 +598,7 @@ ${JSON.stringify(this.executives)}`,
         } catch {
           result = `Opened collections filtered by ${criteria || 'all records'}.`;
         }
+        }
       }
 
       responses.push({
@@ -571,7 +608,8 @@ ${JSON.stringify(this.executives)}`,
       });
     }
 
-    this.session?.sendToolResponse({ functionResponses: responses });
+    if (generation !== this.sessionGeneration || !this.session) return;
+    this.session.sendToolResponse({ functionResponses: responses });
     this.debug('Tool response sent to Gemini.', {
       responses: responses.map((item) => ({
         id: item.id,
@@ -579,6 +617,56 @@ ${JSON.stringify(this.executives)}`,
         result: item.response.result
       }))
     });
+  }
+
+  private commandKey(name: unknown, args: unknown): string {
+    const commandName = String(name || '');
+    const values = (args && typeof args === 'object')
+      ? args as Record<string, unknown>
+      : {};
+    let normalizedArgs: Record<string, unknown> = values;
+
+    if (
+      commandName === 'open_sales_executive_performance' ||
+      commandName === 'open_sales_executive_followups' ||
+      commandName === 'open_sales_executive_leads'
+    ) {
+      normalizedArgs = { executiveId: Number(values['executiveId']) };
+    } else if (commandName === 'open_crm_page') {
+      normalizedArgs = { route: String(values['route'] || '').trim().toLowerCase() };
+    } else if (commandName === 'filter_collections') {
+      normalizedArgs = {
+        status: String(values['status'] || 'all').toLowerCase(),
+        period: String(values['period'] || 'overall').toLowerCase(),
+        from: String(values['from'] || ''),
+        to: String(values['to'] || ''),
+        salesExecutiveName: String(values['salesExecutiveName'] || '').trim().toLowerCase(),
+        search: String(values['search'] || '').trim().toLowerCase()
+      };
+    }
+
+    return `${commandName}:${this.stableJson(normalizedArgs)}`;
+  }
+
+  private stableJson(value: unknown): string {
+    if (Array.isArray(value)) {
+      return `[${value.map((item) => this.stableJson(item)).join(',')}]`;
+    }
+    if (value && typeof value === 'object') {
+      return `{${Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => `${JSON.stringify(key)}:${this.stableJson(item)}`)
+        .join(',')}}`;
+    }
+    return JSON.stringify(value) ?? String(value);
+  }
+
+  private removeExpiredCommands(now: number): void {
+    for (const [key, executedAt] of this.recentCommands) {
+      if (now - executedAt >= 10000) {
+        this.recentCommands.delete(key);
+      }
+    }
   }
 
   private findExecutive(id: number): SalesExecutiveContext | undefined {
@@ -693,6 +781,9 @@ ${JSON.stringify(this.executives)}`,
   }
 
   private closeSession(): void {
+    this.sessionGeneration++;
+    this.recentCommands.clear();
+    this.microphoneResumeAt = 0;
     this.setupComplete = false;
     this.resetVoiceDetection();
     if (this.processingTimeout !== null) {
@@ -843,6 +934,9 @@ ${JSON.stringify(this.executives)}`,
     }
     this.processingSubject.next(false);
     this.debug('Gemini turn and audio playback completed; listening resumed.');
+    // Avoid treating the tail of speaker playback as another user question on
+    // devices with weak acoustic echo cancellation.
+    this.microphoneResumeAt = performance.now() + 600;
     this.resetVoiceDetection();
     if (this.explicitlyStarted && this.setupComplete) {
       this.listeningSubject.next(true);
