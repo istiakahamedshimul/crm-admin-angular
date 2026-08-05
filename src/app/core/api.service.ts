@@ -24,7 +24,7 @@ import {
   SalesExecutiveDetail,
   SubGroup,
   UserSummary, UpdateSalesExecutiveRequest,
-  VehicleBooking, Vehicle
+  VehicleBooking, Vehicle, LiveEmployeeLocation, TravelHistory
 } from '../models/crm.models';
 
 @Injectable({ providedIn: 'root' })
@@ -182,4 +182,9 @@ export class ApiService {
   updateVehicle(id: number, request: Omit<Vehicle, 'id'>) { return this.http.put(`${this.baseUrl}/vehicles/${id}`, request, this.options()); }
   setVehicleStatus(id: number, isActive: boolean) { return this.http.patch(`${this.baseUrl}/vehicles/${id}/status`, isActive, this.options()); }
   createAdminVisit(request: Record<string, unknown>) { return this.http.post(`${this.baseUrl}/vehicle-bookings/admin`, request, this.options()); }
+  liveLocations() { return this.http.get<LiveEmployeeLocation[]>(`${this.baseUrl}/locations/live`, this.options()); }
+  travelHistory(employeeId: number, date: string) {
+    const offset = -new Date().getTimezoneOffset();
+    return this.http.get<TravelHistory>(`${this.baseUrl}/locations/history/${employeeId}?date=${date}&timezoneOffsetMinutes=${offset}`, this.options());
+  }
 }
