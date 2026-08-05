@@ -267,3 +267,12 @@ export type VehicleBooking = {
 };
 
 export type Vehicle = { id: number; registrationNumber: string; vehicleType: string; brand: string; model: string; color?: string; seatingCapacity: number; isActive: boolean; };
+
+export type LocationPoint = { latitude: number; longitude: number; accuracyMeters: number; speedMetersPerSecond?: number | null; isMocked: boolean; recordedAtUtc: string; };
+export type LiveEmployeeLocation = LocationPoint & { employeeId: number; fullName: string; phone: string; isOnline: boolean; };
+export type TravelHistory = {
+  employee: { id: number; fullName: string; phone: string };
+  date: string;
+  points: LocationPoint[];
+  summary: { pointCount: number; distanceKm: number; startedAtUtc?: string | null; endedAtUtc?: string | null };
+};

@@ -81,6 +81,11 @@ import { VoiceService } from './core/voice.service';
               Reports
             </a>
 
+            <a routerLink="/employee-locations" routerLinkActive="active">
+              <span>⌖</span>
+              Field Locations
+            </a>
+
           </nav>
 
           <a

@@ -14,6 +14,7 @@ import { ReportsComponent } from './pages/reports/reports.component';
 import { VehicleBookingsComponent } from './pages/vehicle-bookings/vehicle-bookings.component';
 import { ScheduleVisitComponent } from './pages/vehicle-bookings/schedule-visit.component';
 import { VehiclesComponent } from './pages/vehicle-bookings/vehicles.component';
+import { EmployeeLocationsComponent } from './pages/employee-locations/employee-locations.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -32,6 +33,7 @@ export const routes: Routes = [
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard] },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
+  { path: 'employee-locations', component: EmployeeLocationsComponent, canActivate: [authGuard] },
   { path: 'vehicle-bookings', redirectTo: 'transport/requests', pathMatch: 'full' },
   { path: 'transport/requests', component: VehicleBookingsComponent, canActivate: [authGuard] },
   { path: 'transport/schedule', component: ScheduleVisitComponent, canActivate: [authGuard] },
