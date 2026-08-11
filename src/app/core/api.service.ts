@@ -170,6 +170,8 @@ export class ApiService {
   createPermissionGroup(request:any){return this.http.post(`${this.baseUrl}/access-control/groups`,request,this.options());}
   createPermission(request:any){return this.http.post(`${this.baseUrl}/access-control/permissions`,request,this.options());}
   setRolePermissions(id:number,ids:number[]){return this.http.put(`${this.baseUrl}/access-control/roles/${id}/permissions`,{ids},this.options());}
+  setUserPermissions(id:number,ids:number[]){return this.http.put(`${this.baseUrl}/access-control/users/${id}/permissions`,{ids},this.options());}
+  createAdminUser(request:any){return this.http.post(`${this.baseUrl}/users`,request,this.options());}
   adminNotifications(){return this.http.get<any>(`${this.baseUrl}/notifications/admin`,this.options());}
   notificationSettings(){return this.http.get<any>(`${this.baseUrl}/notification-settings`,this.options());}
   saveNotificationSettings(request:any){return this.http.put(`${this.baseUrl}/notification-settings`,request,this.options());}
