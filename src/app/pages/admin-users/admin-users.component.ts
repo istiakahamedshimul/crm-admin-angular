@@ -20,7 +20,7 @@ import { ApiService } from '../../core/api.service';
 })
 export class AdminUsersComponent{
   private api=inject(ApiService);users:any[]=[];permissions:any[]=[];search='';roleFilter='';editing=false;saving=false;error='';message='';
-  roles=[{value:'Admin',label:'Admin'},{value:'CS',label:'CS Department'},{value:'CA',label:'CA Department'},{value:'VehicleDepartment',label:'Vehicle Department'}];
+  roles=[{value:'Admin',label:'Admin'},{value:'SubAdmin',label:'Sub Admin'},{value:'CS',label:'CS Department'},{value:'CA',label:'CA Department'},{value:'VehicleDepartment',label:'Vehicle Department'}];
   form:any={};constructor(){this.load()}
   get filteredUsers(){const q=this.search.trim().toLowerCase();return this.users.filter(x=>(!this.roleFilter||x.role===this.roleFilter)&&(!q||`${x.fullName} ${x.email} ${x.phone} ${x.role}`.toLowerCase().includes(q)))}
   roleLabel(value:string){return this.roles.find(x=>x.value===value)?.label??value}

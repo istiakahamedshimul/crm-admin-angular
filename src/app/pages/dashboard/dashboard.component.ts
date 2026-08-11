@@ -3,8 +3,9 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
-import { DashboardSummary, Commission, Payment } from '../../models/crm.models';
+import { DashboardSummary } from '../../models/crm.models';
 import { money } from '../../shared/format';
+import { AuthService } from '../../core/auth.service';
 
 @Component({
   standalone: true,
@@ -44,7 +45,8 @@ import { money } from '../../shared/format';
     <section class="quick-shortcuts-panel">
       <span class="section-tag">Quick Actions</span>
       <div class="shortcuts-grid">
-        <a routerLink="/leads" class="shortcut-card">
+        <a *ngIf="auth.hasPermission('reports.view')" routerLink="/daily-work-reports" class="shortcut-card"><div class="shortcut-icon-bg leads-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"/></svg></div><div class="shortcut-info"><strong>Daily Work Reports</strong><span>Review today’s employee reports</span></div></a>
+        <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/leads" class="shortcut-card">
           <div class="shortcut-icon-bg leads-bg">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
@@ -55,7 +57,7 @@ import { money } from '../../shared/format';
             <span>Add a new lead to the CRM</span>
           </div>
         </a>
-        <a routerLink="/properties/projects" class="shortcut-card">
+        <a *ngIf="auth.hasRole('SuperAdmin','Admin')" routerLink="/properties/projects" class="shortcut-card">
           <div class="shortcut-icon-bg projects-bg">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.203 0-4.361.152-6.475.445V21M3 21h18M12 11.25H12.008v.008H12v-.008Z" />
@@ -66,7 +68,7 @@ import { money } from '../../shared/format';
             <span>Create property listings</span>
           </div>
         </a>
-        <a routerLink="/payments" class="shortcut-card">
+        <a *ngIf="auth.hasPermission('payments.view')" routerLink="/payments" class="shortcut-card">
           <div class="shortcut-icon-bg collections-bg">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
@@ -77,7 +79,7 @@ import { money } from '../../shared/format';
             <span>Review payment receipts</span>
           </div>
         </a>
-        <a routerLink="/transport/schedule" class="shortcut-card">
+        <a *ngIf="auth.hasPermission('transportation.manage')" routerLink="/transport/schedule" class="shortcut-card">
           <div class="shortcut-icon-bg transport-bg">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125a1.125 1.125 0 0 0 1.125-1.125V9.75M8.25 4.5h8.25a8.967 8.967 0 0 1 7.305 3.75M8.25 4.5 1.5 12m7.5-7.5v3.75M22.5 12h-9m9 0a8.967 8.967 0 0 1-4.5 7.75M12.75 12h-9m0 0 7.5 6.75M12.75 12v3.75m0 0H8.25m4.5 0h4.5" />
@@ -107,7 +109,7 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Total Leads</span>
+          <span class="card-label">{{auth.hasRole('VehicleDepartment')?'Transport Requests':'Leads'}} ({{ periodLabel }})</span>
           <strong class="card-val">{{ summary.leads || 0 }}</strong>
         </div>
       </article>
@@ -120,39 +122,39 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Booked Customers</span>
+          <span class="card-label">{{auth.hasRole('VehicleDepartment')?'Scheduled Visits':'Booked Customers'}} ({{ periodLabel }})</span>
           <strong class="card-val">{{ summary.customers || 0 }}</strong>
         </div>
       </article>
 
       <!-- Active Projects -->
-      <article class="dashboard-metric-card">
+      <article class="dashboard-metric-card" *ngIf="auth.hasRole('VehicleDepartment') || auth.hasPermission('payments.view')">
         <div class="icon-wrapper projects-theme">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.203 0-4.361.152-6.475.445V21M3 21h18M12 11.25H12.008v.008H12v-.008Z" />
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Active Projects</span>
-          <strong class="card-val">{{ summary.projects || 0 }}</strong>
+          <span class="card-label">{{auth.hasRole('VehicleDepartment')?'Active Vehicles':'Approved Collections'}} ({{ periodLabel }})</span>
+          <strong class="card-val">{{ auth.hasRole('VehicleDepartment')?(summary.projects||0):(summary.collectionCount||0) }}</strong>
         </div>
       </article>
 
       <!-- Pending Collections (Shown as "Collection" amount) -->
-      <article class="dashboard-metric-card">
+      <article class="dashboard-metric-card" *ngIf="auth.hasPermission('payments.view')">
         <div class="icon-wrapper pending-collections-theme">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.708.282.115-.03a.5.5 0 0 0 .277-.61l-.424-1.272a.5.5 0 0 0-.61-.277l-.708.282m3.056.818.708-.282.115.03a.5.5 0 0 1 .277.61l-.424 1.272a.5.5 0 0 1-.61.277l-.708-.282m0-3.056a1.5 1.5 0 0 0-2.029 2.029l.708-.282m0-1.747-.708.282M12 6.75V18.75m0-12H9.75M12 6.75h2.25M12 18.75v-1.125" />
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Collection</span>
-          <strong class="card-val">{{ formatMoney(pendingCollectionsSum) }}</strong>
+          <span class="card-label">Pending Collection ({{ periodLabel }})</span>
+          <strong class="card-val">{{ formatMoney(summary.pendingCollection) }}</strong>
         </div>
       </article>
 
       <!-- This Month Collection (Clickable Card Linked to payments/collections) -->
-      <a routerLink="/payments" class="dashboard-metric-card clickable-card">
+      <a *ngIf="auth.hasPermission('payments.view')" routerLink="/payments" class="dashboard-metric-card clickable-card">
         <div class="icon-wrapper collections-theme">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75m-.75-1.5h1.5m-1.5 15h1.5m-1.5-1.5v1.5m15-15h1.5m-1.5 0v1.5m-1.5 15h1.5m0-1.5v1.5M6 7.5h12M6 12h12m-9 4.5h6" />
@@ -168,22 +170,22 @@ import { money } from '../../shared/format';
       </a>
 
       <!-- Commission (This Month) -->
-      <article class="dashboard-metric-card">
+      <article class="dashboard-metric-card" *ngIf="auth.hasPermission('payments.view')">
         <div class="icon-wrapper commissions-theme">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Commission (This Month)</span>
-          <strong class="card-val text-success">{{ formatMoney(commissionThisMonth) }}</strong>
+          <span class="card-label">Commission ({{ periodLabel }})</span>
+          <strong class="card-val text-success">{{ formatMoney(summary.totalCommission) }}</strong>
         </div>
       </article>
     </section>
 
     <!-- Detail Progress Charts Section -->
     <section class="two-column">
-      <article class="panel">
+      <article class="panel" *ngIf="auth.hasPermission('leads.manage')">
         <h2>Funnel Conversion</h2>
         <p class="panel-desc">Visualizing conversion of manual and automated leads into closed customers.</p>
         
@@ -203,7 +205,7 @@ import { money } from '../../shared/format';
         </div>
       </article>
 
-      <article class="panel">
+      <article class="panel" *ngIf="auth.hasPermission('payments.view')">
         <h2>Collections Control</h2>
         <p class="panel-desc">Distribution of submitted and verified collections.</p>
 
@@ -661,9 +663,8 @@ import { money } from '../../shared/format';
 })
 export class DashboardComponent implements OnInit {
   private api = inject(ApiService);
+  auth=inject(AuthService);
   summary: DashboardSummary = {};
-  commissionsList: Commission[] = [];
-  paymentsList: Payment[] = [];
   formatMoney = money;
   period:'month'|'week'|'year'|'custom'='month';
   collectionFrom='';collectionTo='';
@@ -684,24 +685,6 @@ export class DashboardComponent implements OnInit {
     return total ? Math.round((approved / total) * 100) : 0;
   }
 
-  get commissionThisMonth(): number {
-    const now = new Date();
-    return this.commissionsList
-      .filter(c => {
-        const date = new Date(c.createdAt);
-        return c.status !== 2 &&
-               date.getFullYear() === now.getFullYear() &&
-               date.getMonth() === now.getMonth();
-      })
-      .reduce((sum, c) => sum + (c.amount || 0), 0);
-  }
-
-  get pendingCollectionsSum(): number {
-    return this.paymentsList
-      .filter(p => p.status === 0)
-      .reduce((sum, p) => sum + Math.abs(p.amount || 0), 0);
-  }
-
   ngOnInit() {
     this.load();
   }
@@ -709,12 +692,6 @@ export class DashboardComponent implements OnInit {
   load() {
     this.api.dashboard(this.collectionFrom,this.collectionTo).subscribe((data: any) => {
       this.summary = data;
-    });
-    this.api.commissions().subscribe((data: Commission[]) => {
-      this.commissionsList = data;
-    });
-    this.api.payments().subscribe((data: Payment[]) => {
-      this.paymentsList = data;
     });
   }
   setPeriod(period:'month'|'week'|'year'){this.period=period;this.setPeriodDates(period);this.load()}

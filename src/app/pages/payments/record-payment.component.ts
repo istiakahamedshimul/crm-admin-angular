@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 
 @Component({
@@ -45,6 +45,7 @@ import { ApiService } from '../../core/api.service';
 })
 export class RecordPaymentComponent {
   private api=inject(ApiService);
+  private router=inject(Router);
   customers:any[]=[];selectedCustomer:any;summary:any;history:any;customerSearch='';message='';isError=false;saving=false;
   methods=['Cash','Bank transfer','Cheque','Mobile banking','Card machine','Online gateway','Other'];
   purposes=[{value:0,label:'Booking Amount'},{value:1,label:'Down Payment'},{value:2,label:'EMI Installment'},{value:3,label:'Full Payment'},{value:4,label:'Other'}];
@@ -56,7 +57,7 @@ export class RecordPaymentComponent {
   purposeChanged(){this.form.installmentId=null;if(this.form.purpose===3)this.form.amount=this.summary?.outstandingBalance??null;else if(this.form.purpose===0)this.form.amount=this.remainingPurposeAmount(0,this.history?.agreement?.bookingAmount);else if(this.form.purpose===1)this.form.amount=this.remainingPurposeAmount(1,this.history?.agreement?.downPaymentAmount);else this.form.amount=null}
   remainingPurposeAmount(purpose:number,expected:any){const paid=(this.history?.payments??[]).filter((x:any)=>x.purpose===purpose&&!x.isReversed&&x.status===1).reduce((sum:number,x:any)=>sum+Number(x.amount),0);return Math.max(0,(Number(expected)||0)-paid)||null}
   installmentChanged(){const installment=this.availableInstallments.find((x:any)=>x.id===this.form.installmentId);if(installment)this.form.amount=installment.expectedAmount-installment.paidAmount}
-  record(){if(!this.form.customerId){this.showError('Select a customer account first.');return}if(this.form.purpose===null){this.showError('Select the payment type.');return}if(this.form.purpose===2&&!this.form.installmentId){this.showError('Select the EMI installment month.');return}if(this.summary&&this.form.amount>this.summary.outstandingBalance){this.showError('Payment cannot exceed the outstanding balance.');return}this.saving=true;this.message='';this.api.recordPayment({...this.form,paymentDate:new Date(`${this.form.paymentDate}T12:00:00`).toISOString()},crypto.randomUUID()).subscribe({next:()=>{this.saving=false;this.showSuccess('Payment recorded successfully.');const customer=this.selectedCustomer;this.selectCustomer(customer)},error:e=>{this.saving=false;this.showError(e.error?.message||'Could not record payment.')}})}
+  record(){if(!this.form.customerId){this.showError('Select a customer account first.');return}if(this.form.purpose===null){this.showError('Select the payment type.');return}if(this.form.purpose===2&&!this.form.installmentId){this.showError('Select the EMI installment month.');return}if(this.summary&&this.form.amount>this.summary.outstandingBalance){this.showError('Payment cannot exceed the outstanding balance.');return}this.saving=true;this.message='';this.api.recordPayment({...this.form,paymentDate:new Date(`${this.form.paymentDate}T12:00:00`).toISOString()},crypto.randomUUID()).subscribe({next:(response:any)=>{this.saving=false;this.router.navigate(['/payments'],{queryParams:{saved:'1',collection:response?.id??''}})},error:e=>{this.saving=false;this.showError(e.error?.message||'Could not record payment.')}})}
   showSuccess(message:string){this.message=message;this.isError=false}
   showError(message:string){this.message=message;this.isError=true}
 }
