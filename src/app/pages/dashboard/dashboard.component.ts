@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { DashboardSummary, Commission, Payment } from '../../models/crm.models';
 import { money } from '../../shared/format';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
     <section class="page-head">
       <div>
@@ -90,6 +91,12 @@ import { money } from '../../shared/format';
       </div>
     </section>
 
+    <section class="collection-filter panel">
+      <div><strong>Collection period</strong><small>Approved collections from {{ collectionFrom | date }} to {{ collectionTo | date }}</small></div>
+      <div class="period-buttons"><button type="button" [class.active]="period==='month'" (click)="setPeriod('month')">This month</button><button type="button" [class.active]="period==='week'" (click)="setPeriod('week')">This week</button><button type="button" [class.active]="period==='year'" (click)="setPeriod('year')">This year</button><button type="button" [class.active]="period==='custom'" (click)="period='custom'">Custom</button></div>
+      <div class="custom-dates" *ngIf="period==='custom'"><input type="date" [(ngModel)]="collectionFrom"><input type="date" [(ngModel)]="collectionTo"><button type="button" (click)="load()">Apply</button></div>
+    </section>
+
     <!-- Visual Dashboard Metrics Cards -->
     <section class="metric-grid-dashboard">
       <!-- Total Leads -->
@@ -153,7 +160,7 @@ import { money } from '../../shared/format';
         </div>
         <div class="body-wrapper">
           <div class="label-with-hint">
-            <span class="card-label">Collection (This Month)</span>
+            <span class="card-label">Collection ({{ periodLabel }})</span>
             <span class="hint-badge">Click to Filter</span>
           </div>
           <strong class="card-val text-brand">{{ formatMoney(summary.totalCollection) }}</strong>
@@ -227,6 +234,7 @@ import { money } from '../../shared/format';
       align-items: center;
       gap: 6px;
     }
+    .collection-filter{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.collection-filter>div:first-child{display:flex;flex-direction:column;gap:3px}.collection-filter small{color:var(--muted)}.period-buttons{display:flex;gap:7px;flex-wrap:wrap}.period-buttons button{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;padding:8px 12px}.period-buttons button.active{background:var(--brand);color:#fff}.custom-dates{display:flex;gap:8px;align-items:center}.custom-dates input{width:auto}@media(max-width:900px){.collection-filter{align-items:stretch;flex-direction:column}.custom-dates{flex-wrap:wrap}}
 
     .refresh-icon {
       width: 16px;
@@ -657,6 +665,11 @@ export class DashboardComponent implements OnInit {
   commissionsList: Commission[] = [];
   paymentsList: Payment[] = [];
   formatMoney = money;
+  period:'month'|'week'|'year'|'custom'='month';
+  collectionFrom='';collectionTo='';
+
+  constructor(){this.setPeriodDates('month')}
+  get periodLabel(){return this.period==='month'?'This Month':this.period==='week'?'This Week':this.period==='year'?'This Year':'Custom Range'}
 
   get conversionRate() {
     const leads = this.summary.leads || 0;
@@ -694,7 +707,7 @@ export class DashboardComponent implements OnInit {
   }
 
   load() {
-    this.api.dashboard().subscribe((data: any) => {
+    this.api.dashboard(this.collectionFrom,this.collectionTo).subscribe((data: any) => {
       this.summary = data;
     });
     this.api.commissions().subscribe((data: Commission[]) => {
@@ -704,4 +717,7 @@ export class DashboardComponent implements OnInit {
       this.paymentsList = data;
     });
   }
+  setPeriod(period:'month'|'week'|'year'){this.period=period;this.setPeriodDates(period);this.load()}
+  private setPeriodDates(period:'month'|'week'|'year'){const now=new Date();let start=new Date(now);if(period==='month')start=new Date(now.getFullYear(),now.getMonth(),1);if(period==='year')start=new Date(now.getFullYear(),0,1);if(period==='week'){const day=(now.getDay()+6)%7;start=new Date(now.getFullYear(),now.getMonth(),now.getDate()-day)}this.collectionFrom=this.localDate(start);this.collectionTo=this.localDate(now)}
+  private localDate(value:Date){const offset=value.getTimezoneOffset()*60000;return new Date(value.getTime()-offset).toISOString().slice(0,10)}
 }
