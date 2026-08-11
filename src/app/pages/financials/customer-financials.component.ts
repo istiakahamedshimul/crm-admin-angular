@@ -54,12 +54,13 @@ import { AuthService } from '../../core/auth.service';
           <form *ngIf="canEditAgreement" class="panel agreement" (ngSubmit)="saveAgreement()">
             <div class="section-title"><div><h2>Financial agreement</h2><p>Authoritative collection amount and payment schedule.</p></div></div>
             <div class="fields">
-              <label>Total agreed amount<input type="number" min="0.01" step="0.01" name="total" [(ngModel)]="agreement.totalAgreedAmount" required></label>
-              <label>Booking amount<input type="number" min="0" step="0.01" name="booking" [(ngModel)]="agreement.bookingAmount"></label>
+              <label>Total agreed amount<input type="number" min="0.01" step="0.01" name="total" [(ngModel)]="agreement.totalAgreedAmount" (ngModelChange)="recalculateEmi()" required></label>
+              <label>Booking amount<input type="number" min="0" step="0.01" name="booking" [(ngModel)]="agreement.bookingAmount" (ngModelChange)="recalculateEmi()"></label>
               <label>Payment plan<select name="plan" [(ngModel)]="agreement.paymentPlan"><option [ngValue]="0">Full payment</option><option [ngValue]="1">EMI</option></select></label>
+              <label *ngIf="agreement.paymentPlan === 1">Down payment amount<input type="number" min="0" step="0.01" name="downPayment" [(ngModel)]="agreement.downPaymentAmount" (ngModelChange)="recalculateEmi()"></label>
               <label>Start / due date<input type="date" name="start" [(ngModel)]="agreement.emiStartDate" [required]="agreement.paymentPlan === 1"></label>
-              <label *ngIf="agreement.paymentPlan === 1">Monthly EMI<input type="number" min="0.01" step="0.01" name="monthly" [(ngModel)]="agreement.monthlyEmiAmount" required></label>
-              <label *ngIf="agreement.paymentPlan === 1">Installments<input type="number" min="1" name="count" [(ngModel)]="agreement.installmentCount" required></label>
+              <label *ngIf="agreement.paymentPlan === 1">Monthly EMI<input type="number" min="0.01" step="0.01" name="monthly" [(ngModel)]="agreement.monthlyEmiAmount" (ngModelChange)="calculateCountFromEmi()" required></label>
+              <label *ngIf="agreement.paymentPlan === 1">Installments<input type="number" min="1" name="count" [(ngModel)]="agreement.installmentCount" (ngModelChange)="calculateEmiFromCount()" required></label>
               <label class="wide">Remarks<textarea rows="3" name="remarks" [(ngModel)]="agreement.remarks"></textarea></label>
             </div>
             <button type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save agreement & schedule' }}</button>
@@ -87,7 +88,7 @@ export class CustomerFinancialsComponent {
   private api = inject(ApiService); auth = inject(AuthService);
   customers:any[]=[]; customerId=0; selectedCustomer:any; summary:any; history:any; search=''; fileId=''; message=''; isError=false; saving=false; view:'accounts'|'assign'='accounts';
   statuses=['Upcoming','Due','Partially Paid','Paid','Overdue'];
-  agreement:any={totalAgreedAmount:0,bookingAmount:0,paymentPlan:0,emiStartDate:'',monthlyEmiAmount:null,installmentCount:null,remarks:''};
+  agreement:any={totalAgreedAmount:0,bookingAmount:0,downPaymentAmount:0,paymentPlan:0,emiStartDate:'',monthlyEmiAmount:null,installmentCount:null,remarks:''};
   constructor(){this.reloadCustomers()}
   get canAssignFile(){return this.auth.hasRole('SuperAdmin','Admin','CA')}
   get canEditAgreement(){return this.auth.hasRole('SuperAdmin','Admin','CS')}
@@ -98,7 +99,11 @@ export class CustomerFinancialsComponent {
   setView(view:'accounts'|'assign'){this.view=view;this.search='';this.clearSelection()}
   reloadCustomers(selectId?:number){this.api.customers().subscribe({next:rows=>{this.customers=rows;if(selectId){const customer=this.customers.find(x=>x.id===selectId);if(customer)this.openCustomer(customer)}},error:e=>this.showError(e.error?.message||'Could not load customers.')})}
   clearSelection(){this.customerId=0;this.selectedCustomer=null;this.summary=null;this.history=null;this.fileId=''}
-  openCustomer(customer:any){this.customerId=customer.id;this.selectedCustomer=customer;this.fileId=customer.fileId??'';this.message='';this.api.financialSummary(customer.id).subscribe({next:x=>this.summary=x,error:e=>this.showError(e.error?.message||'Could not load summary.')});this.api.financialHistory(customer.id).subscribe({next:x=>{this.history=x;this.agreement=x.agreement?{...x.agreement,emiStartDate:x.agreement.emiStartDate?.slice(0,10)}:{totalAgreedAmount:0,bookingAmount:0,paymentPlan:0,emiStartDate:'',monthlyEmiAmount:null,installmentCount:null,remarks:''}},error:e=>this.showError(e.error?.message||'Could not load history.')})}
+  openCustomer(customer:any){this.customerId=customer.id;this.selectedCustomer=customer;this.fileId=customer.fileId??'';this.message='';this.api.financialSummary(customer.id).subscribe({next:x=>this.summary=x,error:e=>this.showError(e.error?.message||'Could not load summary.')});this.api.financialHistory(customer.id).subscribe({next:x=>{this.history=x;this.agreement=x.agreement?{...x.agreement,downPaymentAmount:x.agreement.downPaymentAmount??0,emiStartDate:x.agreement.emiStartDate?.slice(0,10)}:{totalAgreedAmount:0,bookingAmount:0,downPaymentAmount:0,paymentPlan:0,emiStartDate:'',monthlyEmiAmount:null,installmentCount:null,remarks:''}},error:e=>this.showError(e.error?.message||'Could not load history.')})}
+  get emiBalance(){return Math.max(0,(Number(this.agreement.totalAgreedAmount)||0)-(Number(this.agreement.bookingAmount)||0)-(Number(this.agreement.downPaymentAmount)||0))}
+  recalculateEmi(){if(this.agreement.paymentPlan===1&&this.agreement.installmentCount)this.calculateEmiFromCount()}
+  calculateEmiFromCount(){const count=Number(this.agreement.installmentCount)||0;if(count>0)this.agreement.monthlyEmiAmount=Math.ceil((this.emiBalance/count)*100)/100}
+  calculateCountFromEmi(){const monthly=Number(this.agreement.monthlyEmiAmount)||0;if(monthly>0)this.agreement.installmentCount=Math.ceil(this.emiBalance/monthly)}
   saveFile(){if(!this.fileId.trim()||!this.customerId)return;this.saving=true;this.api.setFileId(this.customerId,this.fileId.trim()).subscribe({next:()=>{const id=this.customerId;this.saving=false;this.view='accounts';this.showSuccess('File ID assigned successfully.');this.reloadCustomers(id)},error:e=>{this.saving=false;this.showError(e.error?.message||'Could not assign file ID.')}})}
   saveAgreement(){this.saving=true;this.api.saveAgreement(this.customerId,{...this.agreement,emiStartDate:this.agreement.emiStartDate||null}).subscribe({next:()=>{this.saving=false;this.showSuccess('Financial agreement saved.');this.openCustomer(this.selectedCustomer)},error:e=>{this.saving=false;this.showError(e.error?.message||'Could not save agreement.')}})}
   showSuccess(message:string){this.message=message;this.isError=false}
