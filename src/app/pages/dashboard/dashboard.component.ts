@@ -3,7 +3,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
-import { DashboardSummary, Commission, Payment } from '../../models/crm.models';
+import { DashboardSummary } from '../../models/crm.models';
 import { money } from '../../shared/format';
 
 @Component({
@@ -107,7 +107,7 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Total Leads</span>
+          <span class="card-label">Leads ({{ periodLabel }})</span>
           <strong class="card-val">{{ summary.leads || 0 }}</strong>
         </div>
       </article>
@@ -120,7 +120,7 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Booked Customers</span>
+          <span class="card-label">Booked Customers ({{ periodLabel }})</span>
           <strong class="card-val">{{ summary.customers || 0 }}</strong>
         </div>
       </article>
@@ -133,8 +133,8 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Active Projects</span>
-          <strong class="card-val">{{ summary.projects || 0 }}</strong>
+          <span class="card-label">Approved Collections ({{ periodLabel }})</span>
+          <strong class="card-val">{{ summary.collectionCount || 0 }}</strong>
         </div>
       </article>
 
@@ -146,8 +146,8 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Collection</span>
-          <strong class="card-val">{{ formatMoney(pendingCollectionsSum) }}</strong>
+          <span class="card-label">Pending Collection ({{ periodLabel }})</span>
+          <strong class="card-val">{{ formatMoney(summary.pendingCollection) }}</strong>
         </div>
       </article>
 
@@ -175,8 +175,8 @@ import { money } from '../../shared/format';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">Commission (This Month)</span>
-          <strong class="card-val text-success">{{ formatMoney(commissionThisMonth) }}</strong>
+          <span class="card-label">Commission ({{ periodLabel }})</span>
+          <strong class="card-val text-success">{{ formatMoney(summary.totalCommission) }}</strong>
         </div>
       </article>
     </section>
@@ -662,8 +662,6 @@ import { money } from '../../shared/format';
 export class DashboardComponent implements OnInit {
   private api = inject(ApiService);
   summary: DashboardSummary = {};
-  commissionsList: Commission[] = [];
-  paymentsList: Payment[] = [];
   formatMoney = money;
   period:'month'|'week'|'year'|'custom'='month';
   collectionFrom='';collectionTo='';
@@ -684,24 +682,6 @@ export class DashboardComponent implements OnInit {
     return total ? Math.round((approved / total) * 100) : 0;
   }
 
-  get commissionThisMonth(): number {
-    const now = new Date();
-    return this.commissionsList
-      .filter(c => {
-        const date = new Date(c.createdAt);
-        return c.status !== 2 &&
-               date.getFullYear() === now.getFullYear() &&
-               date.getMonth() === now.getMonth();
-      })
-      .reduce((sum, c) => sum + (c.amount || 0), 0);
-  }
-
-  get pendingCollectionsSum(): number {
-    return this.paymentsList
-      .filter(p => p.status === 0)
-      .reduce((sum, p) => sum + Math.abs(p.amount || 0), 0);
-  }
-
   ngOnInit() {
     this.load();
   }
@@ -709,12 +689,6 @@ export class DashboardComponent implements OnInit {
   load() {
     this.api.dashboard(this.collectionFrom,this.collectionTo).subscribe((data: any) => {
       this.summary = data;
-    });
-    this.api.commissions().subscribe((data: Commission[]) => {
-      this.commissionsList = data;
-    });
-    this.api.payments().subscribe((data: Payment[]) => {
-      this.paymentsList = data;
     });
   }
   setPeriod(period:'month'|'week'|'year'){this.period=period;this.setPeriodDates(period);this.load()}
