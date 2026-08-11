@@ -21,6 +21,7 @@ import { CustomerFinancialsComponent } from './pages/financials/customer-financi
 import { NotificationsComponent } from './pages/notifications/notifications.component';
 import { roleGuard } from './core/role.guard';
 import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
+import { DailyWorkReportsComponent } from './pages/daily-work-reports/daily-work-reports.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -44,6 +45,7 @@ export const routes: Routes = [
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CA']} },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
+  { path: 'daily-work-reports', component: DailyWorkReportsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','SubAdmin','Manager']} },
   { path: 'employee-locations', component: EmployeeLocationsComponent, canActivate: [authGuard] },
   { path: 'vehicle-bookings', redirectTo: 'transport/requests', pathMatch: 'full' },
   { path: 'transport/requests', component: VehicleBookingsComponent, canActivate: [authGuard] },

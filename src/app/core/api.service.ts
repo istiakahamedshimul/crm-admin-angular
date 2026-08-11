@@ -186,6 +186,7 @@ export class ApiService {
   reports() {
     return this.http.get<ReportSummary>(`${this.baseUrl}/reports/basic`, this.options());
   }
+  dailyWorkReports(from:string,to:string,salesExecutiveId?:number|null){const params=new URLSearchParams({from,to});if(salesExecutiveId)params.set('salesExecutiveId',String(salesExecutiveId));return this.http.get<any>(`${this.baseUrl}/daily-work-reports?${params}`,this.options());}
 
   vehicleBookings() {
     return this.http.get<VehicleBooking[]>(`${this.baseUrl}/vehicle-bookings`, this.options());

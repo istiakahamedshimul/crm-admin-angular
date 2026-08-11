@@ -88,6 +88,7 @@ import { VoiceService } from './core/voice.service';
               <span>R</span>
               Reports
             </a>
+            <a *ngIf="auth.hasPermission('reports.view')" routerLink="/daily-work-reports" routerLinkActive="active"><span>D</span>Daily Work Reports</a>
 
             <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/employee-locations" routerLinkActive="active">
               <span>⌖</span>

@@ -45,6 +45,7 @@ import { AuthService } from '../../core/auth.service';
     <section class="quick-shortcuts-panel">
       <span class="section-tag">Quick Actions</span>
       <div class="shortcuts-grid">
+        <a *ngIf="auth.hasPermission('reports.view')" routerLink="/daily-work-reports" class="shortcut-card"><div class="shortcut-icon-bg leads-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"/></svg></div><div class="shortcut-info"><strong>Daily Work Reports</strong><span>Review today’s employee reports</span></div></a>
         <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/leads" class="shortcut-card">
           <div class="shortcut-icon-bg leads-bg">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
