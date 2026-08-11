@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import {
@@ -147,7 +148,7 @@ export class ApiService {
   }
 
   payments() {
-    return this.http.get<Payment[]>(`${this.baseUrl}/payments`, this.options());
+    return this.http.get<{items: Payment[]}>(`${this.baseUrl}/payments`, this.options()).pipe(map(x => x.items));
   }
 
   approvePayment(id: number) {
@@ -155,8 +156,22 @@ export class ApiService {
   }
 
   rejectPayment(id: number, reason: string) {
-    return this.http.post(`${this.baseUrl}/payments/${id}/reject`, { reason }, this.options());
+    return this.http.post(`${this.baseUrl}/payments/${id}/reverse`, { reason }, this.options());
   }
+
+  financialSummary(customerId:number){return this.http.get<any>(`${this.baseUrl}/customers/${customerId}/financial/summary`,this.options());}
+  financialHistory(customerId:number){return this.http.get<any>(`${this.baseUrl}/customers/${customerId}/financial/history`,this.options());}
+  saveAgreement(customerId:number,request:any){return this.http.put(`${this.baseUrl}/customers/${customerId}/financial/agreement`,request,this.options());}
+  setFileId(customerId:number,fileId:string){return this.http.put(`${this.baseUrl}/customers/${customerId}/file-id`,{fileId},this.options());}
+  recordPayment(request:any,idempotencyKey:string){return this.http.post(`${this.baseUrl}/payments`,request,{headers:new HttpHeaders({Authorization:`Bearer ${this.auth.token()}`,'Idempotency-Key':idempotencyKey})});}
+  accessControl(){return this.http.get<any>(`${this.baseUrl}/access-control`,this.options());}
+  createRole(request:any){return this.http.post(`${this.baseUrl}/access-control/roles`,request,this.options());}
+  createPermissionGroup(request:any){return this.http.post(`${this.baseUrl}/access-control/groups`,request,this.options());}
+  createPermission(request:any){return this.http.post(`${this.baseUrl}/access-control/permissions`,request,this.options());}
+  setRolePermissions(id:number,ids:number[]){return this.http.put(`${this.baseUrl}/access-control/roles/${id}/permissions`,{ids},this.options());}
+  adminNotifications(){return this.http.get<any>(`${this.baseUrl}/notifications/admin`,this.options());}
+  notificationSettings(){return this.http.get<any>(`${this.baseUrl}/notification-settings`,this.options());}
+  saveNotificationSettings(request:any){return this.http.put(`${this.baseUrl}/notification-settings`,request,this.options());}
 
   commissions() {
     return this.http.get<Commission[]>(`${this.baseUrl}/commissions`, this.options());

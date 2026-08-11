@@ -31,10 +31,11 @@ import { VoiceService } from './core/voice.service';
               Dashboard
             </a>
 
-            <a routerLink="/users" routerLinkActive="active">
+            <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/users" routerLinkActive="active">
               <span>S</span>
               Sales Accounts
             </a>
+            <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/access-control" routerLinkActive="active"><span>A</span>Access Control</a>
 
             <a routerLink="/leads" routerLinkActive="active">
               <span>L</span>
@@ -50,26 +51,28 @@ import { VoiceService } from './core/voice.service';
               <span>C</span>
               Customers
             </a>
+            <a *ngIf="auth.hasRole('SuperAdmin','Admin','CS','CA')" routerLink="/financials" routerLinkActive="active"><span>F</span>Financials</a>
 
             <a routerLink="/properties/projects" routerLinkActive="active">
               <span>P</span>
               Projects
             </a>
 
-            <a routerLink="/transport/requests" routerLinkActive="active">
+            <a *ngIf="auth.hasRole('SuperAdmin','Admin','VehicleDepartment')" routerLink="/transport/requests" routerLinkActive="active">
               <span>V</span>
               Transport
             </a>
-            <div class="sidebar-subnav">
+            <div *ngIf="auth.hasRole('SuperAdmin','Admin','VehicleDepartment')" class="sidebar-subnav">
               <a routerLink="/transport/requests" routerLinkActive="active">Requests</a>
               <a routerLink="/transport/schedule" routerLinkActive="active">Schedule Visit</a>
               <a routerLink="/transport/vehicles" routerLinkActive="active">Vehicles</a>
             </div>
 
-            <a routerLink="/payments" routerLinkActive="active">
+            <a *ngIf="auth.hasRole('SuperAdmin','Admin','CA')" routerLink="/payments" routerLinkActive="active">
               <span>M</span>
               Collections
             </a>
+            <a *ngIf="auth.hasRole('SuperAdmin','Admin')" routerLink="/notifications" routerLinkActive="active"><span>N</span>Notifications</a>
 
             <a routerLink="/commissions" routerLinkActive="active">
               <span>W</span>
