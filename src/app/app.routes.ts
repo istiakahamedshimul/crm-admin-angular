@@ -38,8 +38,8 @@ export const routes: Routes = [
         component: ProjectsComponent,
         canActivate: [authGuard]
     },
-  { path: 'payments', component: PaymentsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CA']} },
   { path: 'payments/record', component: RecordPaymentComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CA']} },
+  { path: 'payments', component: PaymentsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CA']} },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
   { path: 'employee-locations', component: EmployeeLocationsComponent, canActivate: [authGuard] },
