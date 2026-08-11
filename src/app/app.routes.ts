@@ -16,7 +16,7 @@ import { VehicleBookingsComponent } from './pages/vehicle-bookings/vehicle-booki
 import { ScheduleVisitComponent } from './pages/vehicle-bookings/schedule-visit.component';
 import { VehiclesComponent } from './pages/vehicle-bookings/vehicles.component';
 import { EmployeeLocationsComponent } from './pages/employee-locations/employee-locations.component';
-import { AccessControlComponent } from './pages/access-control/access-control.component';
+import { RolePermissionsComponent } from './pages/role-permissions.component';
 import { CustomerFinancialsComponent } from './pages/financials/customer-financials.component';
 import { NotificationsComponent } from './pages/notifications/notifications.component';
 import { roleGuard } from './core/role.guard';
@@ -31,7 +31,7 @@ export const routes: Routes = [
   { path: 'followups', component: FollowupsComponent, canActivate: [authGuard] },
   { path: 'customers', component: CustomersComponent, canActivate: [authGuard] },
   { path: 'financials', component: CustomerFinancialsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CS','CA']} },
-  { path: 'access-control', component: AccessControlComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
+  { path: 'access-control', component: RolePermissionsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
   { path: 'admin-users', component: AdminUsersComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
   { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','SubAdmin','CS']} },
  
