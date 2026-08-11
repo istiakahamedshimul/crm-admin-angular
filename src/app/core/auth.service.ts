@@ -12,6 +12,7 @@ export class AuthService {
   isLoggedIn() {
     return this.token().length > 0;
   }
+  hasRole(...roles: string[]) { return roles.includes(this.user()?.role ?? ''); }
 
   setSession(response: AuthResponse) {
     localStorage.setItem(tokenKey, response.token);
