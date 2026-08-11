@@ -36,6 +36,7 @@ import { VoiceService } from './core/voice.service';
               Sales Accounts
             </a>
             <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/access-control" routerLinkActive="active"><span>A</span>Access Control</a>
+            <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/admin-users" routerLinkActive="active"><span>U</span>Admin Users</a>
 
             <a routerLink="/leads" routerLinkActive="active">
               <span>L</span>

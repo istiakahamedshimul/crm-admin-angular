@@ -20,6 +20,7 @@ import { AccessControlComponent } from './pages/access-control/access-control.co
 import { CustomerFinancialsComponent } from './pages/financials/customer-financials.component';
 import { NotificationsComponent } from './pages/notifications/notifications.component';
 import { roleGuard } from './core/role.guard';
+import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -31,6 +32,7 @@ export const routes: Routes = [
   { path: 'customers', component: CustomersComponent, canActivate: [authGuard] },
   { path: 'financials', component: CustomerFinancialsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CS','CA']} },
   { path: 'access-control', component: AccessControlComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
+  { path: 'admin-users', component: AdminUsersComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
   { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin']} },
  
     {

@@ -46,8 +46,9 @@ export class ApiService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/auth/login`, { email, password });
   }
 
-  dashboard() {
-    return this.http.get<DashboardSummary>(`${this.baseUrl}/dashboard`, this.options());
+  dashboard(from?:string,to?:string) {
+    const query=from&&to?`?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`:'';
+    return this.http.get<DashboardSummary>(`${this.baseUrl}/dashboard${query}`, this.options());
   }
 
   users() {
@@ -172,6 +173,8 @@ export class ApiService {
   setRolePermissions(id:number,ids:number[]){return this.http.put(`${this.baseUrl}/access-control/roles/${id}/permissions`,{ids},this.options());}
   setUserPermissions(id:number,ids:number[]){return this.http.put(`${this.baseUrl}/access-control/users/${id}/permissions`,{ids},this.options());}
   createAdminUser(request:any){return this.http.post(`${this.baseUrl}/users`,request,this.options());}
+  adminAccounts(){return this.http.get<any[]>(`${this.baseUrl}/users/admin-accounts`,this.options());}
+  updateAdminUser(id:number,request:any){return this.http.put(`${this.baseUrl}/users/${id}`,request,this.options());}
   adminNotifications(){return this.http.get<any>(`${this.baseUrl}/notifications/admin`,this.options());}
   notificationSettings(){return this.http.get<any>(`${this.baseUrl}/notification-settings`,this.options());}
   saveNotificationSettings(request:any){return this.http.put(`${this.baseUrl}/notification-settings`,request,this.options());}
