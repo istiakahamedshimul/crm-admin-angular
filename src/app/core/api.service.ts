@@ -156,8 +156,9 @@ export class ApiService {
   }
 
   rejectPayment(id: number, reason: string) {
-    return this.http.post(`${this.baseUrl}/payments/${id}/reverse`, { reason }, this.options());
+    return this.http.post(`${this.baseUrl}/payments/${id}/reject`, { reason }, this.options());
   }
+  reversePayment(id: number, reason: string) { return this.http.post(`${this.baseUrl}/payments/${id}/reverse`, { reason }, this.options()); }
 
   financialSummary(customerId:number){return this.http.get<any>(`${this.baseUrl}/customers/${customerId}/financial/summary`,this.options());}
   financialHistory(customerId:number){return this.http.get<any>(`${this.baseUrl}/customers/${customerId}/financial/history`,this.options());}

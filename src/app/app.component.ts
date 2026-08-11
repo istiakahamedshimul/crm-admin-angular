@@ -72,6 +72,10 @@ import { VoiceService } from './core/voice.service';
               <span>M</span>
               Collections
             </a>
+            <div *ngIf="auth.hasRole('SuperAdmin','Admin','CA')" class="sidebar-subnav">
+              <a routerLink="/payments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Collection Dashboard</a>
+              <a routerLink="/payments/record" routerLinkActive="active">Add Payment</a>
+            </div>
             <a *ngIf="auth.hasRole('SuperAdmin','Admin')" routerLink="/notifications" routerLinkActive="active"><span>N</span>Notifications</a>
 
             <a routerLink="/commissions" routerLinkActive="active">
