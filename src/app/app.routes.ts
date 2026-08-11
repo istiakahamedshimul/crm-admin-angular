@@ -9,6 +9,7 @@ import { FollowupsComponent } from './pages/followups/followups.component';
 import { CustomersComponent } from './pages/customers/customers.component';
 import { ProjectsComponent } from './pages/properties/projects/projects.component';
 import { PaymentsComponent } from './pages/payments/payments.component';
+import { RecordPaymentComponent } from './pages/payments/record-payment.component';
 import { CommissionsComponent } from './pages/commissions/commissions.component';
 import { ReportsComponent } from './pages/reports/reports.component';
 import { VehicleBookingsComponent } from './pages/vehicle-bookings/vehicle-bookings.component';
@@ -38,6 +39,7 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CA']} },
+  { path: 'payments/record', component: RecordPaymentComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CA']} },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
   { path: 'employee-locations', component: EmployeeLocationsComponent, canActivate: [authGuard] },
