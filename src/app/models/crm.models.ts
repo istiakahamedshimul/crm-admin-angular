@@ -4,6 +4,7 @@ export type AuthResponse = {
   fullName: string;
   email: string;
   role: string;
+  permissions?: string[];
 };
 
 export type DashboardSummary = {

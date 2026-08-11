@@ -33,7 +33,7 @@ export const routes: Routes = [
   { path: 'financials', component: CustomerFinancialsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','CS','CA']} },
   { path: 'access-control', component: AccessControlComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
   { path: 'admin-users', component: AdminUsersComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
-  { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin']} },
+  { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Admin','SubAdmin','CS']} },
  
     {
         path: 'properties/projects',

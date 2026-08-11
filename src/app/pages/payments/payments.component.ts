@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { VoiceService } from '../../core/voice.service';
 import { Payment } from '../../models/crm.models';
@@ -23,6 +23,7 @@ import { label, money, paymentStatus } from '../../shared/format';
         <span>Refresh</span>
       </button></div>
     </section>
+    <div class="saved-notice" *ngIf="successMessage">{{successMessage}} <button type="button" (click)="dismissSuccess()">×</button></div>
 
     <!-- Metrics Summary Cards -->
     <div class="metrics-row">
@@ -226,6 +227,7 @@ import { label, money, paymentStatus } from '../../shared/format';
     </div>
   `,
   styles: [`
+    .saved-notice{display:flex;justify-content:space-between;align-items:center;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-weight:700}.saved-notice button{background:transparent;color:#047857;box-shadow:none;padding:0;font-size:22px}
     .metrics-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -747,6 +749,7 @@ import { label, money, paymentStatus } from '../../shared/format';
 export class PaymentsComponent implements OnInit {
   private api = inject(ApiService);
   private voiceService = inject(VoiceService);
+  private route=inject(ActivatedRoute);private router=inject(Router);
   payments: Payment[] = [];
   label = label;
   money = money;
@@ -757,6 +760,7 @@ export class PaymentsComponent implements OnInit {
   rejectError = '';
   actionError = '';
   rejecting = false;
+  successMessage='';
 
   // Search & Filter state
   searchQuery = '';
@@ -849,6 +853,7 @@ export class PaymentsComponent implements OnInit {
   }
 
   ngOnInit() {
+    if(this.route.snapshot.queryParamMap.get('saved')==='1')this.successMessage='Payment recorded successfully and added to collections.';
     this.voiceService.collectionFilter$.subscribe(filter => {
       if (!filter) return;
       this.activeTab = filter.status || 'all';
@@ -861,6 +866,7 @@ export class PaymentsComponent implements OnInit {
     });
     this.load();
   }
+  dismissSuccess(){this.successMessage='';this.router.navigate([], {relativeTo:this.route,queryParams:{saved:null,collection:null},queryParamsHandling:'merge',replaceUrl:true})}
 
   load() {
     this.api.payments().subscribe(data => this.payments = data);

@@ -38,58 +38,58 @@ import { VoiceService } from './core/voice.service';
             <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/access-control" routerLinkActive="active"><span>A</span>Access Control</a>
             <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/admin-users" routerLinkActive="active"><span>U</span>Admin Users</a>
 
-            <a routerLink="/leads" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/leads" routerLinkActive="active">
               <span>L</span>
               Leads
             </a>
 
-            <a routerLink="/followups" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/followups" routerLinkActive="active">
               <span>F</span>
               Follow-ups
             </a>
 
-            <a routerLink="/customers" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('customers.view')" routerLink="/customers" routerLinkActive="active">
               <span>C</span>
               Customers
             </a>
-            <a *ngIf="auth.hasRole('SuperAdmin','Admin','CS','CA')" routerLink="/financials" routerLinkActive="active"><span>F</span>Financials</a>
+            <a *ngIf="auth.hasPermission('agreements.manage','payments.view')" routerLink="/financials" routerLinkActive="active"><span>F</span>Financials</a>
 
-            <a routerLink="/properties/projects" routerLinkActive="active">
+            <a *ngIf="auth.hasRole('SuperAdmin','Admin')" routerLink="/properties/projects" routerLinkActive="active">
               <span>P</span>
               Projects
             </a>
 
-            <a *ngIf="auth.hasRole('SuperAdmin','Admin','VehicleDepartment')" routerLink="/transport/requests" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('transportation.manage')" routerLink="/transport/requests" routerLinkActive="active">
               <span>V</span>
               Transport
             </a>
-            <div *ngIf="auth.hasRole('SuperAdmin','Admin','VehicleDepartment')" class="sidebar-subnav">
+            <div *ngIf="auth.hasPermission('transportation.manage')" class="sidebar-subnav">
               <a routerLink="/transport/requests" routerLinkActive="active">Requests</a>
               <a routerLink="/transport/schedule" routerLinkActive="active">Schedule Visit</a>
               <a routerLink="/transport/vehicles" routerLinkActive="active">Vehicles</a>
             </div>
 
-            <a *ngIf="auth.hasRole('SuperAdmin','Admin','CA')" routerLink="/payments" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('payments.view')" routerLink="/payments" routerLinkActive="active">
               <span>M</span>
               Collections
             </a>
-            <div *ngIf="auth.hasRole('SuperAdmin','Admin','CA')" class="sidebar-subnav">
+            <div *ngIf="auth.hasPermission('payments.view')" class="sidebar-subnav">
               <a routerLink="/payments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Collection Dashboard</a>
-              <a routerLink="/payments/record" routerLinkActive="active">Add Payment</a>
+              <a *ngIf="auth.hasPermission('payments.record')" routerLink="/payments/record" routerLinkActive="active">Add Payment</a>
             </div>
-            <a *ngIf="auth.hasRole('SuperAdmin','Admin')" routerLink="/notifications" routerLinkActive="active"><span>N</span>Notifications</a>
+            <a *ngIf="auth.hasPermission('notifications.manage')" routerLink="/notifications" routerLinkActive="active"><span>N</span>Notifications</a>
 
-            <a routerLink="/commissions" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('payments.view')" routerLink="/commissions" routerLinkActive="active">
               <span>W</span>
               Commissions
             </a>
 
-            <a routerLink="/reports" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('reports.view')" routerLink="/reports" routerLinkActive="active">
               <span>R</span>
               Reports
             </a>
 
-            <a routerLink="/employee-locations" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/employee-locations" routerLinkActive="active">
               <span>⌖</span>
               Field Locations
             </a>
