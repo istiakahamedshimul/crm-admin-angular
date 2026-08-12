@@ -109,6 +109,19 @@ export type UpdateSalesExecutiveRequest = {
   phone: string;
   isActive: boolean;
   password?: string | null;
+  minimumSalesUnits: number;
+  minimumCollectionAmount: number;
+  targetMonth?: string | null;
+};
+
+export type TargetProgress = {
+  month: string;
+  salesUnitTarget: number;
+  salesUnitsAchieved: number;
+  salesUnitVariance: number;
+  collectionTarget: number;
+  collectionAchieved: number;
+  collectionVariance: number;
 };
 
 export type SalesExecutiveDetail = {
@@ -119,6 +132,8 @@ export type SalesExecutiveDetail = {
   isActive: boolean;
   createdAt: string;
   lastLoginAt?: string | null;
+  currentTarget: TargetProgress;
+  targetHistory: TargetProgress[];
   metrics: {
     totalAssignedLeads: number;
     returnedLeads: number;

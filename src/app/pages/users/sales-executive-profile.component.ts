@@ -46,6 +46,21 @@ import { label, leadStatus, money } from '../../shared/format';
         </article>
       </section>
 
+      <section class="panel" style="margin-bottom:18px">
+        <h2>Monthly target report</h2>
+        <div style="overflow:auto">
+          <table><thead><tr><th>Month</th><th>Sales units</th><th>Unit result</th><th>Collection</th><th>Collection result</th></tr></thead>
+          <tbody><tr *ngFor="let row of detail.targetHistory">
+            <td>{{ row.month | date:'MMMM yyyy' }}</td>
+            <td>{{ row.salesUnitsAchieved }} / {{ row.salesUnitTarget }} units</td>
+            <td [style.color]="row.salesUnitVariance >= 0 ? '#067647' : '#b42318'">{{ variance(row.salesUnitVariance, 'units') }}</td>
+            <td>{{ formatMoney(row.collectionAchieved) }} / {{ formatMoney(row.collectionTarget) }}</td>
+            <td [style.color]="row.collectionVariance >= 0 ? '#067647' : '#b42318'">{{ moneyVariance(row.collectionVariance) }}</td>
+          </tr></tbody></table>
+          <div *ngIf="!detail.targetHistory.length" class="empty-card">No monthly targets have been set.</div>
+        </div>
+      </section>
+
       <section style="display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:18px">
         <form class="panel form-panel" (ngSubmit)="save()" style="margin:0">
           <h2>Edit account</h2>
@@ -53,6 +68,9 @@ import { label, leadStatus, money } from '../../shared/format';
           <label>Email<input name="editEmail" type="email" [(ngModel)]="editForm.email" required></label>
           <label>Phone<input name="editPhone" [(ngModel)]="editForm.phone" required></label>
           <label>New password (optional)<input name="editPassword" type="password" [(ngModel)]="editForm.password"></label>
+          <label>Target month<input name="targetMonth" type="month" [(ngModel)]="editForm.targetMonth" required></label>
+          <label>Minimum sales units<input name="minimumSalesUnits" type="number" min="0" step="1" [(ngModel)]="editForm.minimumSalesUnits" required></label>
+          <label>Minimum collection target<input name="minimumCollectionAmount" type="number" min="0" step="0.01" [(ngModel)]="editForm.minimumCollectionAmount" required></label>
           <label style="display:flex;align-items:center;gap:8px">
             <input name="editActive" type="checkbox" [(ngModel)]="editForm.isActive"> Active account
           </label>
@@ -94,6 +112,7 @@ export class SalesExecutiveProfileComponent implements OnInit {
     phone: '',
     isActive: true,
     password: ''
+    ,minimumSalesUnits: 0, minimumCollectionAmount: 0, targetMonth: ''
   };
   error = '';
   message = '';
@@ -140,6 +159,9 @@ export class SalesExecutiveProfileComponent implements OnInit {
           phone: detail.phone,
           isActive: detail.isActive,
           password: ''
+          ,minimumSalesUnits: detail.currentTarget.salesUnitTarget,
+          minimumCollectionAmount: detail.currentTarget.collectionTarget,
+          targetMonth: detail.currentTarget.month.substring(0, 7)
         };
       },
       error: err => {
@@ -154,7 +176,8 @@ export class SalesExecutiveProfileComponent implements OnInit {
     this.saving = true;
     this.message = '';
     this.saveError = '';
-    this.api.updateSalesExecutive(this.detail.id, this.editForm).subscribe({
+    const request = { ...this.editForm, targetMonth: this.editForm.targetMonth?.length === 7 ? `${this.editForm.targetMonth}-01` : this.editForm.targetMonth };
+    this.api.updateSalesExecutive(this.detail.id, request).subscribe({
       next: () => {
         this.saving = false;
         this.message = 'Sales executive updated.';
@@ -178,4 +201,7 @@ export class SalesExecutiveProfileComponent implements OnInit {
   initials(name: string): string {
     return name.split(' ').filter(Boolean).map(part => part[0]).join('').substring(0, 2).toUpperCase() || 'SE';
   }
+
+  variance(value: number, unit: string): string { return `${value >= 0 ? 'Over by' : 'Short by'} ${Math.abs(value)} ${unit}`; }
+  moneyVariance(value: number): string { return `${value >= 0 ? 'Over by' : 'Short by'} ${this.formatMoney(Math.abs(value))}`; }
 }

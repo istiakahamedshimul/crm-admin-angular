@@ -118,7 +118,7 @@ export class UsersComponent implements OnInit {
   private voiceService = inject(VoiceService);
   users: UserSummary[] = [];
   detail: SalesExecutiveDetail | null = null;
-  editForm: UpdateSalesExecutiveRequest = { fullName: '', email: '', phone: '', isActive: true, password: '' };
+  editForm: UpdateSalesExecutiveRequest = { fullName: '', email: '', phone: '', isActive: true, password: '', minimumSalesUnits: 0, minimumCollectionAmount: 0, targetMonth: '' };
   message = '';
   error = '';
   detailMessage = '';
