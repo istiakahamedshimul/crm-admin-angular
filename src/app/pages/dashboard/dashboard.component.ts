@@ -109,7 +109,7 @@ import { AuthService } from '../../core/auth.service';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">{{auth.hasRole('VehicleDepartment')?'Transport Requests':'Leads'}} ({{ periodLabel }})</span>
+          <span class="card-label">{{auth.hasRole('Transportation')?'Transport Requests':'Leads'}} ({{ periodLabel }})</span>
           <strong class="card-val">{{ summary.leads || 0 }}</strong>
         </div>
       </article>
@@ -122,21 +122,21 @@ import { AuthService } from '../../core/auth.service';
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">{{auth.hasRole('VehicleDepartment')?'Scheduled Visits':'Booked Customers'}} ({{ periodLabel }})</span>
+          <span class="card-label">{{auth.hasRole('Transportation')?'Scheduled Visits':'Booked Customers'}} ({{ periodLabel }})</span>
           <strong class="card-val">{{ summary.customers || 0 }}</strong>
         </div>
       </article>
 
       <!-- Active Projects -->
-      <article class="dashboard-metric-card" *ngIf="auth.hasRole('VehicleDepartment') || auth.hasPermission('payments.view')">
+      <article class="dashboard-metric-card" *ngIf="auth.hasRole('Transportation') || auth.hasPermission('payments.view')">
         <div class="icon-wrapper projects-theme">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.203 0-4.361.152-6.475.445V21M3 21h18M12 11.25H12.008v.008H12v-.008Z" />
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">{{auth.hasRole('VehicleDepartment')?'Active Vehicles':'Approved Collections'}} ({{ periodLabel }})</span>
-          <strong class="card-val">{{ auth.hasRole('VehicleDepartment')?(summary.projects||0):(summary.collectionCount||0) }}</strong>
+          <span class="card-label">{{auth.hasRole('Transportation')?'Active Vehicles':'Approved Collections'}} ({{ periodLabel }})</span>
+          <strong class="card-val">{{ auth.hasRole('Transportation')?(summary.projects||0):(summary.collectionCount||0) }}</strong>
         </div>
       </article>
 

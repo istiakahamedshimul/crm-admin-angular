@@ -29,6 +29,7 @@ import { label, leadStatus, money } from '../../shared/format';
           </div>
           <div style="flex:1">
             <h2 style="margin:0">{{ detail.fullName }}</h2>
+            <p style="margin:3px 0;color:var(--brand);font-weight:700">{{ detail.designation }}</p>
             <p style="margin:4px 0 0;color:var(--muted)">{{ detail.email }} · {{ detail.phone }}</p>
           </div>
           <span class="status-pill" [class.approved]="detail.isActive" [class.rejected]="!detail.isActive">
@@ -66,6 +67,7 @@ import { label, leadStatus, money } from '../../shared/format';
           <label>Full name<input name="editFullName" [(ngModel)]="editForm.fullName" required></label>
           <label>Email<input name="editEmail" type="email" [(ngModel)]="editForm.email" required></label>
           <label>Phone<input name="editPhone" [(ngModel)]="editForm.phone" required></label>
+          <label>Designation<input name="editDesignation" [(ngModel)]="editForm.designation" required></label>
           <label>New password (optional)<input name="editPassword" type="password" [(ngModel)]="editForm.password"></label>
           <label>Target month<input name="targetMonth" type="month" [(ngModel)]="editForm.targetMonth" required></label>
           <label>Minimum sales units<input name="minimumSalesUnits" type="number" min="0" step="1" [(ngModel)]="editForm.minimumSalesUnits" required></label>
@@ -109,6 +111,7 @@ export class SalesExecutiveProfileComponent implements OnInit {
     fullName: '',
     email: '',
     phone: '',
+    designation: '',
     isActive: true,
     password: ''
     ,minimumSalesUnits: 0, minimumCollectionAmount: 0, targetMonth: ''
@@ -174,6 +177,7 @@ export class SalesExecutiveProfileComponent implements OnInit {
           fullName: detail.fullName,
           email: detail.email,
           phone: detail.phone,
+          designation: detail.designation,
           isActive: detail.isActive,
           password: ''
           ,minimumSalesUnits: detail.currentTarget.salesUnitTarget,

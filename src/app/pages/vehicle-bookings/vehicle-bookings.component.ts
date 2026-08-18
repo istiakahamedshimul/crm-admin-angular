@@ -125,6 +125,7 @@ import { TransportNavComponent } from './transport-nav.component';
           <label class="field">
             <span>Driver name</span>
             <input [(ngModel)]="driver" [disabled]="submitting" placeholder="e.g. Michael Cooper">
+            <span>Driver phone number</span><input [(ngModel)]="driverPhone" [disabled]="submitting" placeholder="Driver mobile number">
           </label>
           <label class="field">
             <span>Admin internal remarks</span>
@@ -148,7 +149,7 @@ import { TransportNavComponent } from './transport-nav.component';
 export class VehicleBookingsComponent implements OnInit {
   private api=inject(ApiService);
   bookings:VehicleBooking[]=[];vehicles:Vehicle[]=[];selected?:VehicleBooking;
-  vehicleId=0;driver='';remarks='';message='';error='';submitting=false;
+  vehicleId=0;driver='';driverPhone='';remarks='';message='';error='';submitting=false;
   statuses=['Pending','Approved','Rejected','Cancelled'];
   get active(){return this.vehicles.filter(v=>v.isActive)}
   ngOnInit(){this.load()}
@@ -159,13 +160,13 @@ export class VehicleBookingsComponent implements OnInit {
     })
   }
   count(s:number){return this.bookings.filter(x=>x.status===s).length}
-  open(b:VehicleBooking){this.selected=b;this.vehicleId=b.vehicleId||0;this.driver=b.driver||'';this.remarks=b.adminRemarks||'';this.error='';this.message=''}
+  open(b:VehicleBooking){this.selected=b;this.vehicleId=b.vehicleId||0;this.driver=b.driver||'';this.driverPhone=b.driverPhone||'';this.remarks=b.adminRemarks||'';this.error='';this.message=''}
   approve(){
     if(!this.selected)return;
     const vehicle=this.active.find(v=>v.id===this.vehicleId);
     if(!vehicle){this.error='Select an active vehicle before approving this request.';return}
     this.error='';this.message='';this.submitting=true;
-    this.api.approveVehicleBooking(this.selected.id,this.vehicleId,this.driver.trim(),this.remarks.trim()).pipe(finalize(()=>this.submitting=false)).subscribe({
+    this.api.approveVehicleBooking(this.selected.id,this.vehicleId,this.driver.trim(),this.driverPhone.trim(),this.remarks.trim()).pipe(finalize(()=>this.submitting=false)).subscribe({
       next:()=>{this.selected=undefined;this.message='Vehicle request approved successfully.';this.load()},
       error:e=>this.error=this.errorMessage(e,'Unable to approve the vehicle request.')
     })

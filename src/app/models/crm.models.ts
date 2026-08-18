@@ -29,6 +29,7 @@ export type UserSummary = {
   fullName: string;
   email: string;
   phone: string;
+  designation?: string | null;
   role: string;
   isActive: boolean;
 };
@@ -100,6 +101,7 @@ export type CreateSalesExecutiveRequest = {
   fullName: string;
   email: string;
   phone: string;
+  designation: string;
   password: string;
 };
 
@@ -107,6 +109,7 @@ export type UpdateSalesExecutiveRequest = {
   fullName: string;
   email: string;
   phone: string;
+  designation: string;
   isActive: boolean;
   password?: string | null;
   minimumSalesUnits: number;
@@ -142,6 +145,7 @@ export type SalesExecutiveDetail = {
   fullName: string;
   email: string;
   phone: string;
+  designation: string;
   isActive: boolean;
   createdAt: string;
   lastLoginAt?: string | null;
@@ -296,7 +300,7 @@ export type VehicleBooking = {
   visitPlace: string;
   pickupPlace: string;
   purpose: string; additionalInformation?: string | null;
-  vehicleId?: number | null; vehicle?: string | null; driver?: string | null;
+  vehicleId?: number | null; vehicle?: string | null; driver?: string | null; driverPhone?: string | null;
   status: number;
   adminRemarks?: string | null;
   createdAt: string;
