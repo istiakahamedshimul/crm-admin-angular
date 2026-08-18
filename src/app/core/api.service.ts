@@ -198,8 +198,8 @@ export class ApiService {
     return this.http.get<VehicleBooking[]>(`${this.baseUrl}/vehicle-bookings`, this.options());
   }
 
-  approveVehicleBooking(id: number, vehicleId: number, driver?: string, remarks?: string) {
-    return this.http.post(`${this.baseUrl}/vehicle-bookings/${id}/approve`, { vehicleId, driver, remarks }, this.options());
+  approveVehicleBooking(id: number, vehicleId: number, driver?: string, driverPhone?: string, remarks?: string) {
+    return this.http.post(`${this.baseUrl}/vehicle-bookings/${id}/approve`, { vehicleId, driver, driverPhone, remarks }, this.options());
   }
 
   rejectVehicleBooking(id: number, remarks: string) {

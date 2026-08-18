@@ -90,8 +90,8 @@ export class CustomerFinancialsComponent {
   statuses=['Upcoming','Due','Partially Paid','Paid','Overdue'];
   agreement:any={totalAgreedAmount:0,bookingAmount:0,downPaymentAmount:0,paymentPlan:0,emiStartDate:'',monthlyEmiAmount:null,installmentCount:null,remarks:''};
   constructor(){this.reloadCustomers()}
-  get canAssignFile(){return this.auth.hasRole('SuperAdmin','Admin','CA')}
-  get canEditAgreement(){return this.auth.hasRole('SuperAdmin','Admin','CS')}
+  get canAssignFile(){return this.auth.hasRole('SuperAdmin','CA')}
+  get canEditAgreement(){return this.auth.hasRole('SuperAdmin','CA')}
   get canAccessUnfiled(){return this.canAssignFile||this.canEditAgreement}
   get customersWithoutFile(){return this.customers.filter(x=>!x.fileId)}
   get visibleCustomers(){const source=this.view==='assign'?this.customersWithoutFile:this.customers.filter(x=>!!x.fileId);const q=this.search.trim().toLowerCase();return !q?source:source.filter(x=>`${x.fileId??''} ${x.name} ${x.phone} ${x.id}`.toLowerCase().includes(q))}

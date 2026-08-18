@@ -35,7 +35,6 @@ import { VoiceService } from './core/voice.service';
               <span>S</span>
               Sales Accounts
             </a>
-            <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/access-control" routerLinkActive="active"><span>A</span>Access Control</a>
             <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/admin-users" routerLinkActive="active"><span>U</span>Admin Users</a>
 
             <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/leads" routerLinkActive="active">
@@ -54,7 +53,7 @@ import { VoiceService } from './core/voice.service';
             </a>
             <a *ngIf="auth.hasPermission('agreements.manage','payments.view')" routerLink="/financials" routerLinkActive="active"><span>F</span>Financials</a>
 
-            <a *ngIf="auth.hasRole('SuperAdmin','Admin')" routerLink="/properties/projects" routerLinkActive="active">
+            <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/properties/projects" routerLinkActive="active">
               <span>P</span>
               Projects
             </a>

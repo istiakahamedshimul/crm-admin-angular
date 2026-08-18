@@ -27,6 +27,7 @@ import { VoiceService } from '../../core/voice.service';
         <label>Full name<input name="fullName" [(ngModel)]="form.fullName" required></label>
         <label>Email<input name="email" type="email" [(ngModel)]="form.email" required></label>
         <label>Phone<input name="phone" [(ngModel)]="form.phone" required></label>
+        <label>Designation<input name="designation" [(ngModel)]="form.designation" placeholder="e.g. Senior Sales Executive" required></label>
         <label>Password<input name="password" [(ngModel)]="form.password" type="password" required></label>
         <button type="submit">Create Account</button>
         <p class="success" *ngIf="message">{{ message }}</p>
@@ -47,6 +48,7 @@ import { VoiceService } from '../../core/voice.service';
               </div>
               <div style="min-width:0">
                 <strong style="display:block">{{ user.fullName }}</strong>
+                <span style="display:block;font-size:12px;color:var(--brand);font-weight:700">{{ user.designation || 'Sales Executive' }}</span>
                 <span style="font-size:12px;color:var(--muted)">{{ user.email }}</span>
               </div>
             </div>
@@ -118,14 +120,14 @@ export class UsersComponent implements OnInit {
   private voiceService = inject(VoiceService);
   users: UserSummary[] = [];
   detail: SalesExecutiveDetail | null = null;
-  editForm: UpdateSalesExecutiveRequest = { fullName: '', email: '', phone: '', isActive: true, password: '', minimumSalesUnits: 0, minimumCollectionAmount: 0, targetMonth: '' };
+  editForm: UpdateSalesExecutiveRequest = { fullName: '', email: '', phone: '', designation: '', isActive: true, password: '', minimumSalesUnits: 0, minimumCollectionAmount: 0, targetMonth: '' };
   message = '';
   error = '';
   detailMessage = '';
   detailError = '';
   saving = false;
   formatMoney = money;
-  form: CreateSalesExecutiveRequest = { fullName: '', email: '', phone: '', password: 'Sales@12345' };
+  form: CreateSalesExecutiveRequest = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345' };
   pendingAutoSelectId: number | null = null;
 
   get salesUsers() {
@@ -219,7 +221,7 @@ export class UsersComponent implements OnInit {
     this.api.createSalesExecutive(this.form).subscribe({
       next: () => {
         this.message = 'Sales executive created.';
-        this.form = { fullName: '', email: '', phone: '', password: 'Sales@12345' };
+        this.form = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345' };
         this.load();
       },
       error: err => this.error = err.error?.message || 'Could not create sales executive.'

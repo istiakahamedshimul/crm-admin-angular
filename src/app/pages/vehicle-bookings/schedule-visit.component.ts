@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { Customer, Project, Vehicle } from '../../models/crm.models';
+import { Customer, Lead, Project, Vehicle } from '../../models/crm.models';
 import { TransportNavComponent } from './transport-nav.component';
 
 @Component({
@@ -34,11 +34,12 @@ import { TransportNavComponent } from './transport-nav.component';
       <div class="form-grid">
         <label class="field">
           <span>Customer *</span>
-          <select [(ngModel)]="visit.customerId">
+          <select [(ngModel)]="visit.customerId" (ngModelChange)="visit.leadId=0">
             <option [ngValue]="0">Select customer</option>
             <option *ngFor="let c of customers" [ngValue]="c.id">{{c.name}} · {{c.phone}}</option>
           </select>
         </label>
+        <label class="field"><span>Or lead</span><select [(ngModel)]="visit.leadId" (ngModelChange)="visit.customerId=0"><option [ngValue]="0">Select lead</option><option *ngFor="let lead of leads" [ngValue]="lead.id">{{lead.customerName}} · {{lead.phone}}</option></select></label>
         <label class="field">
           <span>Project *</span>
           <select [(ngModel)]="visit.projectId">
@@ -94,6 +95,7 @@ import { TransportNavComponent } from './transport-nav.component';
           <span>Driver</span>
           <input [(ngModel)]="visit.driver" placeholder="Driver name">
         </label>
+        <label class="field"><span>Driver phone number</span><input [(ngModel)]="visit.driverPhone" placeholder="Driver mobile number"></label>
         <label class="field full-width">
           <span>Additional information</span>
           <textarea [(ngModel)]="visit.additionalInformation" placeholder="Special instructions, contact details, or notes..."></textarea>
@@ -113,6 +115,7 @@ export class ScheduleVisitComponent implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
   customers: Customer[] = [];
+  leads: Lead[] = [];
   projects: Project[] = [];
   vehicles: Vehicle[] = [];
   error = '';
@@ -126,11 +129,12 @@ export class ScheduleVisitComponent implements OnInit {
     forkJoin([
       this.api.customers(),
       this.api.projects(),
-      this.api.vehicles()
-    ]).subscribe(([c, p, v]) => {
+      this.api.vehicles(), this.api.leads()
+    ]).subscribe(([c, p, v, leads]) => {
       this.customers = c;
       this.projects = p;
       this.vehicles = v;
+      this.leads = leads;
     });
     this.reset();
   }
@@ -138,6 +142,7 @@ export class ScheduleVisitComponent implements OnInit {
   reset() {
     this.visit = {
       customerId: 0,
+      leadId: 0,
       projectId: 0,
       visitDate: '',
       visitTime: '',
@@ -147,13 +152,14 @@ export class ScheduleVisitComponent implements OnInit {
       additionalInformation: '',
       vehicleId: 0,
       driver: '',
+      driverPhone: '',
       remarks: ''
     };
     this.error = '';
   }
 
   schedule() {
-    if (!this.visit.customerId || !this.visit.projectId || !this.visit.visitDate || !this.visit.visitTime || !this.visit.pickupPlace.trim() || !this.visit.vehicleId) {
+    if ((!this.visit.customerId && !this.visit.leadId) || !this.visit.projectId || !this.visit.visitDate || !this.visit.visitTime || !this.visit.pickupPlace.trim() || !this.visit.vehicleId) {
       this.error = 'Please complete all required fields.';
       return;
     }
