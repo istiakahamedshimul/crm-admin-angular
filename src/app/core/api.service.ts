@@ -23,6 +23,7 @@ import {
   ReturnedLead,
   SalesExecutive,
   SalesExecutiveDetail,
+  SalesPerformanceReport,
   SubGroup,
   UserSummary, UpdateSalesExecutiveRequest,
   VehicleBooking, Vehicle, LiveEmployeeLocation, TravelHistory
@@ -61,6 +62,11 @@ export class ApiService {
 
   salesExecutiveDetail(id: number) {
     return this.http.get<SalesExecutiveDetail>(`${this.baseUrl}/users/sales-executives/${id}`, this.options());
+  }
+
+  salesPerformanceReport(id: number, from: string, to: string) {
+    const params = new URLSearchParams({ salesExecutiveId: String(id), from, to });
+    return this.http.get<SalesPerformanceReport>(`${this.baseUrl}/dashboard/sales-report?${params}`, this.options());
   }
 
   updateSalesExecutive(id: number, request: UpdateSalesExecutiveRequest) {
