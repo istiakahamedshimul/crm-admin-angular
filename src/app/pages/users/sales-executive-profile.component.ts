@@ -39,9 +39,9 @@ import { label, leadStatus, money } from '../../shared/format';
 
       <section class="panel" style="margin-bottom:18px">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
-          <div><h2 style="margin:0">Detailed performance report</h2><p style="margin:4px 0 0;color:var(--muted)">Monthly wins, losses, every lead status, targets and collections.</p></div>
+          <div><h2 style="margin:0">Performance period</h2><p style="margin:4px 0 0;color:var(--muted)">Filter the profile metrics or print the complete A4 report.</p></div>
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-            <label style="margin:0">Period<select [(ngModel)]="reportPeriod" (ngModelChange)="applyPeriod()"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option><option value="custom">Custom range</option></select></label>
+            <label style="margin:0">Period<select [(ngModel)]="reportPeriod" (ngModelChange)="applyPeriod()"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option><option value="overall">Overall</option><option value="custom">Custom range</option></select></label>
             <label style="margin:0">From<input type="date" [(ngModel)]="reportFrom" [disabled]="reportPeriod !== 'custom'"></label>
             <label style="margin:0">To<input type="date" [(ngModel)]="reportTo" [disabled]="reportPeriod !== 'custom'"></label>
             <button type="button" class="ghost-button" (click)="loadReport()">Filter</button>
@@ -49,11 +49,6 @@ import { label, leadStatus, money } from '../../shared/format';
           </div>
         </div>
         <p class="error" *ngIf="reportError">{{ reportError }}</p>
-        <div style="overflow:auto;margin-top:14px" *ngIf="report">
-          <table><thead><tr><th>Month</th><th>Win</th><th>Lost</th><th>Units / target</th><th>Unit result</th><th>Collection / target</th><th>Collection result</th></tr></thead><tbody>
-            <tr *ngFor="let row of report.months"><td>{{ row.month | date:'MMMM yyyy' }}</td><td>{{ row.wins }}</td><td>{{ row.lost }}</td><td>{{ row.unitsAchieved }} / {{ row.unitTarget }}</td><td>{{ variance(row.unitVariance, 'units') }}</td><td>{{ formatMoney(row.collectionAchieved) }} / {{ formatMoney(row.collectionTarget) }}</td><td>{{ moneyVariance(row.collectionVariance) }}</td></tr>
-          </tbody></table>
-        </div>
       </section>
 
       <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px">
@@ -63,21 +58,6 @@ import { label, leadStatus, money } from '../../shared/format';
             {{ metric.money ? formatMoney(metric.value) : metric.value }}
           </strong>
         </article>
-      </section>
-
-      <section class="panel" style="margin-bottom:18px">
-        <h2>Monthly target report</h2>
-        <div style="overflow:auto">
-          <table><thead><tr><th>Month</th><th>Sales units</th><th>Unit result</th><th>Collection</th><th>Collection result</th></tr></thead>
-          <tbody><tr *ngFor="let row of detail.targetHistory">
-            <td>{{ row.month | date:'MMMM yyyy' }}</td>
-            <td>{{ row.salesUnitsAchieved }} / {{ row.salesUnitTarget }} units</td>
-            <td [style.color]="row.salesUnitVariance >= 0 ? '#067647' : '#b42318'">{{ variance(row.salesUnitVariance, 'units') }}</td>
-            <td>{{ formatMoney(row.collectionAchieved) }} / {{ formatMoney(row.collectionTarget) }}</td>
-            <td [style.color]="row.collectionVariance >= 0 ? '#067647' : '#b42318'">{{ moneyVariance(row.collectionVariance) }}</td>
-          </tr></tbody></table>
-          <div *ngIf="!detail.targetHistory.length" class="empty-card">No monthly targets have been set.</div>
-        </div>
       </section>
 
       <section style="display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:18px">
@@ -138,7 +118,7 @@ export class SalesExecutiveProfileComponent implements OnInit {
   saveError = '';
   saving = false;
   report: SalesPerformanceReport | null = null;
-  reportPeriod: 'monthly' | 'quarterly' | 'yearly' | 'custom' = 'monthly';
+  reportPeriod: 'monthly' | 'quarterly' | 'yearly' | 'overall' | 'custom' = 'monthly';
   reportFrom = '';
   reportTo = '';
   reportError = '';
@@ -158,6 +138,18 @@ export class SalesExecutiveProfileComponent implements OnInit {
 
   get detailMetrics() {
     if (!this.detail) return [];
+    if (this.report) return [
+      { label: 'Total assigned leads', value: this.report.assignedLeads },
+      { label: 'Returned leads', value: this.report.returnedLeads },
+      { label: 'Assigned stage', value: this.report.assignedStage },
+      { label: 'Following up', value: this.report.followingUp },
+      { label: 'Win', value: this.report.bookedClients },
+      { label: 'Lost', value: this.report.lost },
+      { label: 'Not interested', value: this.report.notInterested },
+      { label: 'Accepted collections', value: this.report.totalCollection, money: true },
+      { label: 'Collection count', value: this.report.collectionCount },
+      { label: 'Commission', value: this.report.totalCommission, money: true }
+    ];
     const metrics = this.detail.metrics;
     return [
       { label: 'Total assigned leads', value: metrics.totalAssignedLeads },
@@ -233,7 +225,8 @@ export class SalesExecutiveProfileComponent implements OnInit {
   applyPeriod(): void {
     if (this.reportPeriod === 'custom') return;
     const now = new Date(); let from: Date; let to: Date;
-    if (this.reportPeriod === 'yearly') { from = new Date(now.getFullYear(), 0, 1); to = new Date(now.getFullYear(), 11, 31); }
+    if (this.reportPeriod === 'overall') { from = new Date(2020, 0, 1); to = now; }
+    else if (this.reportPeriod === 'yearly') { from = new Date(now.getFullYear(), 0, 1); to = new Date(now.getFullYear(), 11, 31); }
     else if (this.reportPeriod === 'quarterly') { const m = Math.floor(now.getMonth() / 3) * 3; from = new Date(now.getFullYear(), m, 1); to = new Date(now.getFullYear(), m + 3, 0); }
     else { from = new Date(now.getFullYear(), now.getMonth(), 1); to = new Date(now.getFullYear(), now.getMonth() + 1, 0); }
     this.reportFrom = this.dateValue(from); this.reportTo = this.dateValue(to); this.loadReport();

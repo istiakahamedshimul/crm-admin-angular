@@ -127,12 +127,14 @@ export type TargetProgress = {
 export type SalesPerformanceMonth = {
   month: string; wins: number; lost: number; statusCounts: Record<string, number>;
   unitTarget: number; unitsAchieved: number; unitVariance: number;
-  collectionTarget: number; collectionAchieved: number; collectionVariance: number;
+  collectionTarget: number; collectionAchieved: number; collectionVariance: number; commission: number;
 };
 
 export type SalesPerformanceReport = {
   employee: { fullName: string; email: string };
-  from: string; to: string; generatedAt: string; months: SalesPerformanceMonth[];
+  from: string; to: string; generatedAt: string; assignedLeads: number; returnedLeads: number;
+  assignedStage: number; followingUp: number; bookedClients: number; lost: number; notInterested: number;
+  totalCollection: number; collectionCount: number; totalCommission: number; months: SalesPerformanceMonth[];
 };
 
 export type SalesExecutiveDetail = {
