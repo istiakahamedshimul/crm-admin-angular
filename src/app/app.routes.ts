@@ -18,36 +18,38 @@ import { VehiclesComponent } from './pages/vehicle-bookings/vehicles.component';
 import { EmployeeLocationsComponent } from './pages/employee-locations/employee-locations.component';
 import { CustomerFinancialsComponent } from './pages/financials/customer-financials.component';
 import { NotificationsComponent } from './pages/notifications/notifications.component';
-import { roleGuard } from './core/role.guard';
+import { permissionGuard } from './core/permission.guard';
 import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
 import { DailyWorkReportsComponent } from './pages/daily-work-reports/daily-work-reports.component';
+import { AccessControlComponent } from './pages/access-control/access-control.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: '', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'users', component: UsersComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
-  { path: 'users/:id', component: SalesExecutiveProfileComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','BrandAndIT']} },
-  { path: 'leads', component: LeadsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','BrandAndIT']} },
-  { path: 'followups', component: FollowupsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','BrandAndIT']} },
-  { path: 'customers', component: CustomersComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','SubAdmin','CA','Transportation','BrandAndIT']} },
-  { path: 'financials', component: CustomerFinancialsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','CA']} },
-  { path: 'admin-users', component: AdminUsersComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']} },
-  { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','BrandAndIT']} },
+  { path: 'users', component: UsersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage']} },
+  { path: 'users/:id', component: SalesExecutiveProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','leads.manage']} },
+  { path: 'leads', component: LeadsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
+  { path: 'followups', component: FollowupsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
+  { path: 'customers', component: CustomersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['customers.view']} },
+  { path: 'financials', component: CustomerFinancialsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['agreements.manage','payments.view']} },
+  { path: 'admin-users', component: AdminUsersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage']} },
+  { path: 'access-control', component: AccessControlComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['permissions.manage']} },
+  { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['notifications.manage']} },
  
     {
         path: 'properties/projects',
         component: ProjectsComponent,
-        canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin']}
+        canActivate: [authGuard,permissionGuard], data:{permissions:['bookings.manage']}
     },
-  { path: 'payments/record', component: RecordPaymentComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','CA']} },
-  { path: 'payments', component: PaymentsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','CA']} },
-  { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','CA']} },
-  { path: 'reports', component: ReportsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','SubAdmin','CA','BrandAndIT']} },
-  { path: 'daily-work-reports', component: DailyWorkReportsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','BrandAndIT']} },
-  { path: 'employee-locations', component: EmployeeLocationsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','BrandAndIT']} },
+  { path: 'payments/record', component: RecordPaymentComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['payments.record']} },
+  { path: 'payments', component: PaymentsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['payments.view']} },
+  { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['payments.view']} },
+  { path: 'reports', component: ReportsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['reports.view']} },
+  { path: 'daily-work-reports', component: DailyWorkReportsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['reports.view']} },
+  { path: 'employee-locations', component: EmployeeLocationsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'vehicle-bookings', redirectTo: 'transport/requests', pathMatch: 'full' },
-  { path: 'transport/requests', component: VehicleBookingsComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Transportation']} },
-  { path: 'transport/schedule', component: ScheduleVisitComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Transportation']} },
-  { path: 'transport/vehicles', component: VehiclesComponent, canActivate: [authGuard,roleGuard], data:{roles:['SuperAdmin','Transportation']} },
+  { path: 'transport/requests', component: VehicleBookingsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['transportation.manage']} },
+  { path: 'transport/schedule', component: ScheduleVisitComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['transportation.manage']} },
+  { path: 'transport/vehicles', component: VehiclesComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['transportation.manage']} },
   { path: '**', redirectTo: '' }
 ];
