@@ -46,6 +46,10 @@ export type Lead = {
   budgetRange?: string | null;
   preferredLocation?: string | null;
   source: number;
+  referrerName?: string | null;
+  referrerPhone?: string | null;
+  referrerEmail?: string | null;
+  previousCustomerId?: number | null;
   status: number;
   assignedToId?: number;
   assignedToName?: string;
@@ -89,12 +93,17 @@ export type CreateLeadRequest = {
   source: number;
   assignedToId: number | null;
   remarks?: string | null;
+  referrerName?: string | null;
+  referrerPhone?: string | null;
+  referrerEmail?: string | null;
 };
 
 export type AvailableLeadCustomer = Pick<Customer, 'id' | 'name' | 'phone' | 'email'> & {
   alternativePhone?: string | null;
   address?: string | null;
   projectId?: number | null;
+  assignedToId?: number | null;
+  assignedToName?: string | null;
 };
 
 export type CreateSalesExecutiveRequest = {
