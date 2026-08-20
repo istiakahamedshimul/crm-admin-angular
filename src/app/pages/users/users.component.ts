@@ -145,7 +145,6 @@ export class UsersComponent implements OnInit {
       { label: 'Lost', value: metrics.lost },
       { label: 'Not interested', value: metrics.notInterested },
       { label: 'Accepted collections', value: metrics.approvedCollectionAmount, money: true },
-      { label: 'Collection count', value: metrics.approvedCollectionCount },
       { label: 'Commission', value: metrics.commission, money: true }
     ];
   }

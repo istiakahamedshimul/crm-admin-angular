@@ -773,7 +773,6 @@ export class SalesExecutiveProfileComponent implements OnInit {
       { label: 'Lost', value: this.report.lost, icon: 'lost', color: 'red' },
       { label: 'Not interested', value: this.report.notInterested, icon: 'not-interested', color: 'gray' },
       { label: 'Accepted collections', value: this.report.totalCollection, money: true, icon: 'collection', color: 'teal' },
-      { label: 'Collection count', value: this.report.collectionCount, icon: 'count', color: 'cyan' },
       { label: 'Commission', value: this.report.totalCommission, money: true, icon: 'commission', color: 'emerald' }
     ];
     const metrics = this.detail.metrics;
@@ -785,7 +784,6 @@ export class SalesExecutiveProfileComponent implements OnInit {
       { label: 'Lost', value: metrics.lost, icon: 'lost', color: 'red' },
       { label: 'Not interested', value: metrics.notInterested, icon: 'not-interested', color: 'gray' },
       { label: 'Accepted collections', value: metrics.approvedCollectionAmount, money: true, icon: 'collection', color: 'teal' },
-      { label: 'Collection count', value: metrics.approvedCollectionCount, icon: 'count', color: 'cyan' },
       { label: 'Commission', value: metrics.commission, money: true, icon: 'commission', color: 'emerald' }
     ];
   }
