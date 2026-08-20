@@ -768,26 +768,22 @@ export class SalesExecutiveProfileComponent implements OnInit {
     if (this.report) return [
       { label: 'Total assigned leads', value: this.report.assignedLeads, icon: 'leads', color: 'blue' },
       { label: 'Returned leads', value: this.report.returnedLeads, icon: 'returned', color: 'orange' },
-      { label: 'Assigned stage', value: this.report.assignedStage, icon: 'stage', color: 'indigo' },
       { label: 'Following up', value: this.report.followingUp, icon: 'followup', color: 'purple' },
       { label: 'Win', value: this.report.bookedClients, icon: 'win', color: 'green' },
       { label: 'Lost', value: this.report.lost, icon: 'lost', color: 'red' },
       { label: 'Not interested', value: this.report.notInterested, icon: 'not-interested', color: 'gray' },
       { label: 'Accepted collections', value: this.report.totalCollection, money: true, icon: 'collection', color: 'teal' },
-      { label: 'Collection count', value: this.report.collectionCount, icon: 'count', color: 'cyan' },
       { label: 'Commission', value: this.report.totalCommission, money: true, icon: 'commission', color: 'emerald' }
     ];
     const metrics = this.detail.metrics;
     return [
       { label: 'Total assigned leads', value: metrics.totalAssignedLeads, icon: 'leads', color: 'blue' },
       { label: 'Returned leads', value: metrics.returnedLeads, icon: 'returned', color: 'orange' },
-      { label: 'Assigned stage', value: metrics.assignedStage, icon: 'stage', color: 'indigo' },
       { label: 'Following up', value: metrics.followingUp, icon: 'followup', color: 'purple' },
       { label: 'Win', value: metrics.positiveCustomers, icon: 'win', color: 'green' },
       { label: 'Lost', value: metrics.lost, icon: 'lost', color: 'red' },
       { label: 'Not interested', value: metrics.notInterested, icon: 'not-interested', color: 'gray' },
       { label: 'Accepted collections', value: metrics.approvedCollectionAmount, money: true, icon: 'collection', color: 'teal' },
-      { label: 'Collection count', value: metrics.approvedCollectionCount, icon: 'count', color: 'cyan' },
       { label: 'Commission', value: metrics.commission, money: true, icon: 'commission', color: 'emerald' }
     ];
   }

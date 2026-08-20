@@ -274,6 +274,13 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
                 <span style="color: var(--muted); font-size: 12px;">Executive:</span>
                 <strong style="color: var(--text-dark); margin-left: auto;">{{ lead.assignedToName || 'Unassigned' }}</strong>
               </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="color:var(--muted);font-size:12px">Source:</span>
+                <strong style="margin-left:auto">{{ sourceLabel(lead.source) }}</strong>
+              </div>
+              <div *ngIf="lead.source === 5 && lead.referrerName" style="font-size:11px;color:var(--muted);text-align:right">
+                Referred by {{ lead.referrerName }} · {{ lead.referrerPhone }}<span *ngIf="lead.referrerEmail"> · {{ lead.referrerEmail }}</span>
+              </div>
             </div>
             
             <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 4px; font-size: 12px;">
@@ -295,6 +302,7 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
               <button type="button" class="ghost-button" (click)="openLeadEditor(lead)"
                 style="min-height:36px;padding:0 12px">Edit</button>
             </div>
+            <button *ngIf="directoryTab === 'assigned'" type="button" class="ghost-button" (click)="openLeadEditor(lead)">View / Edit lead profile</button>
           </div>
         </div>
         
@@ -377,6 +385,16 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
               <option *ngFor="let option of leadStatusOptions" [ngValue]="option.value">{{ option.label }}</option>
             </select>
           </label>
+          <label>Lead source
+            <select name="editSource" [(ngModel)]="editLeadForm.source">
+              <option [ngValue]="11">Company</option><option [ngValue]="12">Self</option><option [ngValue]="5">Referral</option>
+            </select>
+          </label>
+          <ng-container *ngIf="editLeadForm.source === 5">
+            <label>Referrer name<input name="editReferrerName" [(ngModel)]="editLeadForm.referrerName"></label>
+            <label>Referrer phone<input name="editReferrerPhone" [(ngModel)]="editLeadForm.referrerPhone"></label>
+            <label>Referrer email<input name="editReferrerEmail" type="email" [(ngModel)]="editLeadForm.referrerEmail"></label>
+          </ng-container>
           <label style="grid-column:1/-1">Remarks
             <textarea name="editRemarks" rows="4" [(ngModel)]="editLeadForm.remarks"></textarea>
           </label>
@@ -435,7 +453,7 @@ export class LeadsComponent implements OnInit {
     budgetRange: null,
     preferredLocation: null,
     projectId: null,
-    source: leadSource.indexOf('Manual'),
+    source: leadSource.indexOf('Company'),
     assignedToId: null,
     remarks: null
   };
@@ -530,6 +548,10 @@ export class LeadsComponent implements OnInit {
       projectId: lead.projectId ?? null,
       assignedToId: lead.assignedToId ?? null,
       status: lead.status,
+      source: lead.source,
+      referrerName: lead.referrerName ?? null,
+      referrerPhone: lead.referrerPhone ?? null,
+      referrerEmail: lead.referrerEmail ?? null,
       remarks: lead.remarks ?? null
     };
   }
@@ -608,8 +630,11 @@ export class LeadsComponent implements OnInit {
     this.form.alternativePhone = customer?.alternativePhone ?? null;
     this.form.email = customer?.email ?? null;
     this.form.address = customer?.address ?? null;
-    if (customer?.projectId) this.form.projectId = customer.projectId;
+    this.form.projectId = null;
+    this.form.assignedToId = customer?.assignedToId ?? null;
   }
+
+  sourceLabel(source: number) { return source === 12 ? 'Self' : source === 5 ? 'Referral' : 'Company'; }
 
   load() {
     this.api.leads().subscribe(data => this.leads = data);
