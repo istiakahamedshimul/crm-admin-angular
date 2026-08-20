@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { VoiceService } from '../../core/voice.service';
 import { AvailableLeadCustomer, CreateLeadRequest, Lead, LeadAutomationSettings, Project, ReturnedLead, SalesExecutive } from '../../models/crm.models';
@@ -410,6 +411,7 @@ import { label, leadSource, leadStatus, projectType } from '../../shared/format'
 })
 export class LeadsComponent implements OnInit {
   private api = inject(ApiService);
+  private router = inject(Router);
   private voiceService = inject(VoiceService);
   leads: Lead[] = [];
   returnedLeads: ReturnedLead[] = [];
@@ -535,25 +537,7 @@ export class LeadsComponent implements OnInit {
   }
 
   openLeadEditor(lead: Lead) {
-    this.editingLead = lead;
-    this.leadEditorError = '';
-    this.editLeadForm = {
-      customerName: lead.customerName,
-      phone: lead.phone,
-      alternativePhone: lead.alternativePhone ?? null,
-      email: lead.email ?? null,
-      address: lead.address ?? null,
-      preferredLocation: lead.preferredLocation ?? null,
-      budgetRange: lead.budgetRange ?? null,
-      projectId: lead.projectId ?? null,
-      assignedToId: lead.assignedToId ?? null,
-      status: lead.status,
-      source: lead.source,
-      referrerName: lead.referrerName ?? null,
-      referrerPhone: lead.referrerPhone ?? null,
-      referrerEmail: lead.referrerEmail ?? null,
-      remarks: lead.remarks ?? null
-    };
+    this.router.navigate(['/leads', lead.id]);
   }
 
   closeLeadEditor() {
