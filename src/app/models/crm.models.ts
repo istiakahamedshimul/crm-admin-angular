@@ -311,6 +311,7 @@ export type Vehicle = { id: number; registrationNumber: string; vehicleType: str
 export type LocationPoint = { latitude: number; longitude: number; accuracyMeters: number; speedMetersPerSecond?: number | null; isMocked: boolean; recordedAtUtc: string; };
 export type LiveEmployeeLocation = {
   employeeId: number; fullName: string; phone: string; isOnline: boolean; hasLocation: boolean;
+  trackingEnabled: boolean; trackingChangedAtUtc?: string | null;
   latitude?: number | null; longitude?: number | null; accuracyMeters?: number | null;
   speedMetersPerSecond?: number | null; isMocked: boolean; recordedAtUtc?: string | null;
 };
