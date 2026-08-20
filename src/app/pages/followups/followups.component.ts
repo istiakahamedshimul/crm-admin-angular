@@ -14,12 +14,13 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
   styles: [`
     .followup-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}.followup-toolbar h2{margin:0}.back-btn{background:var(--brand-light);color:var(--brand-dark)}
     .table-wrap{overflow-x:auto}.executive-link{padding:0;background:none;color:var(--brand);min-height:auto;text-align:left;text-decoration:underline;text-underline-offset:3px}
-    .proof-list{display:flex;flex-wrap:wrap;gap:7px;min-width:150px}.proof-chip{min-height:30px;padding:0 10px;background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe;border-radius:6px;font-size:12px;display:inline-flex;align-items:center}
-    .audio-proof{width:220px;height:36px}.muted{color:var(--muted)}.summary-cell{min-width:190px}.customer-cell{min-width:145px}.view-all{white-space:nowrap}
+    .proof-list{display:flex;flex-direction:column;align-items:flex-end;gap:9px;min-width:150px}.proof-chip{min-height:30px;padding:0 10px;background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe;border-radius:6px;font-size:12px;display:inline-flex;align-items:center}
+    .proof-gallery{display:flex;align-items:center;gap:7px}.proof-thumb{position:relative;width:68px;height:54px;padding:0;min-height:0;border-radius:8px;overflow:hidden;border:1px solid #cbd5e1;background:#f8fafc}.proof-thumb img{width:100%;height:100%;object-fit:cover}.proof-count{position:absolute;right:4px;bottom:4px;padding:2px 5px;border-radius:99px;background:rgba(15,23,42,.82);color:#fff;font-size:10px;font-weight:800}.audio-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid #dbeafe;border-radius:9px;background:#f8fbff}.audio-item span{font-size:11px;font-weight:800;color:#1d4ed8}.audio-proof{width:220px;height:36px}.muted{color:var(--muted)}.summary-cell{min-width:190px}.customer-cell{min-width:145px}.view-all{white-space:nowrap}
     .proof-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(9,13,22,.8);backdrop-filter:blur(8px)}
     .proof-viewer{position:relative;width:min(1000px,96vw);max-height:92vh;padding:24px;border-radius:16px;background:#fff;box-shadow:0 30px 60px rgba(0,0,0,0.3)}
-    .proof-viewer img{display:block;max-width:100%;max-height:74vh;margin:auto;border-radius:8px;object-fit:contain}.proof-caption{margin:16px 48px 0 0;font-weight:700;color:var(--text-dark)}
+    .proof-viewer img{display:block;max-width:100%;height:min(68vh,700px);width:100%;margin:auto;border-radius:8px;object-fit:contain;background:#0f172a}.proof-caption{margin:16px 48px 0 0;font-weight:700;color:var(--text-dark)}
     .close-proof{position:absolute;right:18px;top:18px;width:38px;padding:0;border-radius:50%;background:#f1f5f9;color:#475569;font-size:24px;border:1px solid #e2e8f0}
+    .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;background:rgba(255,255,255,.92);color:#0f172a;border:1px solid #cbd5e1;font-size:26px;box-shadow:0 5px 18px rgba(15,23,42,.2)}.gallery-prev{left:34px}.gallery-next{right:34px}.gallery-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 48px 0 0}.gallery-meta .proof-caption{margin:0}.gallery-meta small{color:var(--muted);font-weight:700}@media(max-width:640px){.proof-list{align-items:flex-start}.audio-item{width:100%;align-items:flex-start;flex-direction:column}.audio-proof{width:100%}.proof-viewer{padding:14px}.gallery-prev{left:20px}.gallery-next{right:20px}.gallery-meta{margin-right:44px}}
   `],
   template: `
     <section class="page-head">
@@ -81,10 +82,16 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
               <!-- Proofs section -->
               <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="proof-list" *ngIf="item.proofs?.length">
+                  <div class="proof-gallery" *ngIf="imageProofs(item).length">
+                    <button class="proof-thumb" type="button" *ngFor="let proof of imageProofs(item) | slice:0:4; let imageIndex=index" (click)="openGallery(item,imageIndex)" title="View proof photo">
+                      <img [src]="proofUrl(proof)" alt="Follow-up proof photo" loading="lazy">
+                      <span class="proof-count" *ngIf="imageIndex===3 && imageProofs(item).length>4">+{{imageProofs(item).length-4}}</span>
+                    </button>
+                  </div>
                   <ng-container *ngFor="let proof of item.proofs">
-                    <audio *ngIf="isAudio(proof); else proofButton" class="audio-proof" controls preload="metadata" [src]="proofUrl(proof)"></audio>
+                    <div class="audio-item" *ngIf="isAudio(proof); else proofButton"><span>Audio proof</span><audio class="audio-proof" controls preload="metadata" [src]="proofUrl(proof)"></audio></div>
                     <ng-template #proofButton>
-                      <button class="proof-chip" type="button" (click)="openProof(proof)">
+                      <button *ngIf="!isImage(proof)" class="proof-chip" type="button" (click)="openProof(proof)">
                         📁 {{ proofLabel(proof.proofType) }}
                       </button>
                     </ng-template>
@@ -110,7 +117,9 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
       <div class="proof-viewer" (click)="$event.stopPropagation()"><button class="close-proof" type="button" (click)="selectedProof=undefined">×</button>
         <img [src]="proofUrl(selectedProof)" [alt]="proofLabel(selectedProof.proofType)" (error)="proofError=true">
         <p class="error" *ngIf="proofError">The image could not be loaded. Confirm that the API uploads folder contains this file.</p>
-        <p class="proof-caption">{{ proofLabel(selectedProof.proofType) }}</p>
+        <button *ngIf="selectedGallery.length>1" class="gallery-nav gallery-prev" type="button" (click)="previousProof()" aria-label="Previous photo">‹</button>
+        <button *ngIf="selectedGallery.length>1" class="gallery-nav gallery-next" type="button" (click)="nextProof()" aria-label="Next photo">›</button>
+        <div class="gallery-meta"><p class="proof-caption">Photo proof</p><small *ngIf="selectedGallery.length>1">{{selectedGalleryIndex+1}} of {{selectedGallery.length}}</small></div>
       </div>
     </div>
   `
@@ -122,6 +131,8 @@ export class FollowupsComponent implements OnInit {
   selectedExecutive?: string;
   selectedCustomer?: CustomerGroup;
   selectedProof?: FollowUpProof;
+  selectedGallery: FollowUpProof[] = [];
+  selectedGalleryIndex = 0;
   proofError = false;
   private pendingVoiceExecutive?: string;
   private followUpsLoaded = false;
@@ -174,11 +185,17 @@ export class FollowupsComponent implements OnInit {
   openExecutive(name: string) { this.selectedExecutive = name; this.selectedCustomer = undefined; }
   openCustomer(item: FollowUp) { this.selectedCustomer = this.executiveCustomers.find(x => x.key === (item.customerId ? `customer-${item.customerId}` : `lead-${item.leadId}`)); }
   back() { if (this.selectedCustomer) this.selectedCustomer=undefined; else this.selectedExecutive=undefined; }
-  openProof(proof: FollowUpProof) { if (this.isImage(proof)) { this.proofError=false; this.selectedProof=proof; } else window.open(this.proofUrl(proof), '_blank', 'noopener'); }
+  openProof(proof: FollowUpProof) { if (this.isImage(proof)) { this.openGalleryProofs([proof], 0); } else window.open(this.proofUrl(proof), '_blank', 'noopener'); }
+  openGallery(item: FollowUp, index: number) { this.openGalleryProofs(this.imageProofs(item), index); }
+  private openGalleryProofs(proofs: FollowUpProof[], index: number) { this.selectedGallery=proofs;this.selectedGalleryIndex=index;this.proofError=false;this.selectedProof=proofs[index]; }
+  previousProof() { this.showGalleryProof(this.selectedGalleryIndex-1); }
+  nextProof() { this.showGalleryProof(this.selectedGalleryIndex+1); }
+  private showGalleryProof(index:number) { if(!this.selectedGallery.length)return;this.selectedGalleryIndex=(index+this.selectedGallery.length)%this.selectedGallery.length;this.selectedProof=this.selectedGallery[this.selectedGalleryIndex];this.proofError=false; }
   proofUrl(proof: FollowUpProof) { return this.api.proofUrl(proof.fileUrl); }
   extension(proof: FollowUpProof) { return this.proofUrl(proof).split('?')[0].split('.').pop()?.toLowerCase() ?? ''; }
-  isAudio(proof: FollowUpProof) { return proof.proofType === 1 || ['mp3','m4a','wav','ogg','aac'].includes(this.extension(proof)); }
+  isAudio(proof: FollowUpProof) { return proof.proofType === 1 || ['mp3','mpeg','m4a','mp4','wav','ogg','aac','webm','opus','3gp','amr'].includes(this.extension(proof)); }
   isImage(proof: FollowUpProof) { return ['jpg','jpeg','png','gif','webp','bmp'].includes(this.extension(proof)); }
+  imageProofs(item: FollowUp) { return (item.proofs ?? []).filter(proof => this.isImage(proof)); }
   typeLabel(value: number) { return followUpTypes[value] ?? String(value); }
-  proofLabel(value: number) { return proofTypes[value] ?? 'Proof'; }
+  proofLabel(value: number) { return value === 4 ? 'Proof' : (proofTypes[value] ?? 'Proof'); }
 }
