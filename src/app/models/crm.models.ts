@@ -268,6 +268,7 @@ export type FollowUp = {
   lead: string;
   salesExecutive: string;
   type: number;
+  resultingStatus?: number | null;
   summary: string;
   nextFollowUpAt?: string;
   createdAt: string;

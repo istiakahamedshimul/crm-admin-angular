@@ -5,6 +5,7 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { UsersComponent } from './pages/users/users.component';
 import { SalesExecutiveProfileComponent } from './pages/users/sales-executive-profile.component';
 import { LeadsComponent } from './pages/leads/leads.component';
+import { LeadProfileComponent } from './pages/leads/lead-profile.component';
 import { FollowupsComponent } from './pages/followups/followups.component';
 import { CustomersComponent } from './pages/customers/customers.component';
 import { ProjectsComponent } from './pages/properties/projects/projects.component';
@@ -29,6 +30,7 @@ export const routes: Routes = [
   { path: 'users', component: UsersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage']} },
   { path: 'users/:id', component: SalesExecutiveProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','leads.manage']} },
   { path: 'leads', component: LeadsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
+  { path: 'leads/:id', component: LeadProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'followups', component: FollowupsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'customers', component: CustomersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['customers.view']} },
   { path: 'financials', component: CustomerFinancialsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['agreements.manage','payments.view']} },
