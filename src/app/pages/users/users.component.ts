@@ -140,7 +140,6 @@ export class UsersComponent implements OnInit {
     return [
       { label: 'Total assigned leads', value: metrics.totalAssignedLeads },
       { label: 'Returned leads', value: metrics.returnedLeads },
-      { label: 'Assigned stage', value: metrics.assignedStage },
       { label: 'Following up', value: metrics.followingUp },
       { label: 'Positive customers', value: metrics.positiveCustomers },
       { label: 'Lost', value: metrics.lost },
