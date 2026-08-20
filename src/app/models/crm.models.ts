@@ -22,6 +22,7 @@ export type DashboardSummary = {
   totalOutstanding?: number;
   totalDue?: number;
   totalOverdue?: number;
+  salesTargetProgress?: { month: string; unitTarget: number; unitsCompleted: number; unitVariance: number; collectionTarget: number; collectionCompleted: number; collectionVariance: number };
 };
 
 export type UserSummary = {
@@ -312,6 +313,8 @@ export type VehicleBooking = {
   vehicleId?: number | null; vehicle?: string | null; driver?: string | null; driverPhone?: string | null;
   status: number;
   adminRemarks?: string | null;
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
   createdAt: string;
 };
 

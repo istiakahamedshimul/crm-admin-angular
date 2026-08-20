@@ -68,13 +68,14 @@ import { TransportNavComponent } from './transport-nav.component';
                 </span>
               </td>
               <td>
-                <span class="status-pill" [class.pending]="b.status===0" [class.approved]="b.status===1" [class.rejected]="b.status===2">
+                <span class="status-pill" [class.pending]="b.status===0" [class.approved]="b.status===1" [class.rejected]="b.status===2||b.status===3">
                   {{statuses[b.status]}}
                 </span>
+                <small *ngIf="b.status===3&&b.cancellationReason" class="cancel-summary">{{b.cancellationReason}}</small>
               </td>
               <td style="text-align: right;">
                 <button class="view-btn" (click)="open(b)" style="min-height: 32px; font-size: 13px; padding: 0 12px; border-radius: 6px;">
-                  Verify & Assign
+                  {{b.status===0?'Verify & Assign':'View Details'}}
                 </button>
               </td>
             </tr>
@@ -113,6 +114,12 @@ import { TransportNavComponent } from './transport-nav.component';
           <p>{{selected.additionalInformation||'No additional information provided.'}}</p>
         </div>
 
+        <div *ngIf="selected.status===3" class="note-box cancellation-box">
+          <span>Cancelled by sales executive</span>
+          <p>{{selected.cancellationReason}}</p>
+          <small *ngIf="selected.cancelledAt">Cancelled {{selected.cancelledAt|date:'dd MMM yyyy, h:mm a'}}</small>
+        </div>
+
         <!-- Approval / Assignment Form -->
         <div *ngIf="selected.status===0" class="approval-form">
           <label class="field">
@@ -138,13 +145,17 @@ import { TransportNavComponent } from './transport-nav.component';
         </div>
         
         <!-- Info when already processed -->
-        <div *ngIf="selected.status!==0" class="note-box" style="border-color: var(--success); background: var(--success-bg); color: var(--success-dark);">
+        <div *ngIf="selected.status===1" class="note-box" style="border-color: var(--success); background: var(--success-bg); color: var(--success-dark);">
           <span>Assigned Transport Details</span>
           <p style="font-weight: 700;">{{selected.vehicle||'Not assigned'}} <ng-container *ngIf="selected.driver">· Driver: {{selected.driver}}</ng-container></p>
         </div>
       </article>
     </div>
-  `
+  `,
+  styles: [`
+    .cancel-summary{display:block;max-width:180px;margin-top:5px;color:#9f1239;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cancellation-box{margin-bottom:20px;border-color:#fecdd3;background:#fff1f2;color:#9f1239}.cancellation-box p{font-weight:700;margin-bottom:5px}.cancellation-box small{color:#be123c}
+  `]
 })
 export class VehicleBookingsComponent implements OnInit {
   private api=inject(ApiService);

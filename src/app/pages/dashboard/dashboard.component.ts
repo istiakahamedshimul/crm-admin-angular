@@ -140,19 +140,6 @@ import { AuthService } from '../../core/auth.service';
         </div>
       </article>
 
-      <!-- Pending Collections (Shown as "Collection" amount) -->
-      <article class="dashboard-metric-card" *ngIf="auth.hasPermission('payments.view')">
-        <div class="icon-wrapper pending-collections-theme">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.708.282.115-.03a.5.5 0 0 0 .277-.61l-.424-1.272a.5.5 0 0 0-.61-.277l-.708.282m3.056.818.708-.282.115.03a.5.5 0 0 1 .277.61l-.424 1.272a.5.5 0 0 1-.61.277l-.708-.282m0-3.056a1.5 1.5 0 0 0-2.029 2.029l.708-.282m0-1.747-.708.282M12 6.75V18.75m0-12H9.75M12 6.75h2.25M12 18.75v-1.125" />
-          </svg>
-        </div>
-        <div class="body-wrapper">
-          <span class="card-label">Pending Collection ({{ periodLabel }})</span>
-          <strong class="card-val">{{ formatMoney(summary.pendingCollection) }}</strong>
-        </div>
-      </article>
-
       <!-- This Month Collection (Clickable Card Linked to payments/collections) -->
       <a *ngIf="auth.hasPermission('payments.view')" routerLink="/payments" class="dashboard-metric-card clickable-card">
         <div class="icon-wrapper collections-theme">
@@ -205,23 +192,19 @@ import { AuthService } from '../../core/auth.service';
         </div>
       </article>
 
-      <article class="panel" *ngIf="auth.hasPermission('payments.view')">
-        <h2>Collections Control</h2>
-        <p class="panel-desc">Distribution of submitted and verified collections.</p>
-
-        <div class="pipeline-progress">
-          <div class="progress-info">
-            <span>Collection Approval Rate</span>
-            <strong>{{ paymentApprovalRate }}%</strong>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill success" [style.width.%]="paymentApprovalRate"></div>
-          </div>
-        </div>
-
-        <div class="pipeline">
-          <div><span>Pending Approvals</span><strong>{{ summary.pendingPayments || 0 }}</strong></div>
-          <div><span>Approved Count</span><strong>{{ summary.approvedPayments || 0 }}</strong></div>
+      <article class="panel target-control" *ngIf="auth.hasPermission('payments.view') && summary.salesTargetProgress as target">
+        <div class="target-head"><div><p class="eyebrow">Monthly performance</p><h2>Sales Target Control</h2><p class="panel-desc">Team target progress for {{ target.month | date:'MMMM yyyy' }}.</p></div><span class="target-period">Current month</span></div>
+        <div class="target-grid">
+          <section class="target-card unit-target">
+            <div class="target-title"><span>Target Units</span><strong>{{ target.unitsCompleted }} / {{ target.unitTarget }}</strong></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" [style.width.%]="targetPercent(target.unitsCompleted,target.unitTarget)"></div></div>
+            <div class="target-details"><div><span>Given</span><b>{{ target.unitTarget }}</b></div><div><span>Completed</span><b>{{ target.unitsCompleted }}</b></div><div [class.positive]="target.unitVariance>=0" [class.negative]="target.unitVariance<0"><span>{{ target.unitVariance>=0?'Overachievement':'Shortage' }}</span><b>{{ abs(target.unitVariance) }}</b></div></div>
+          </section>
+          <section class="target-card collection-target">
+            <div class="target-title"><span>Collection Target</span><strong>{{ formatMoney(target.collectionCompleted) }} / {{ formatMoney(target.collectionTarget) }}</strong></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill success" [style.width.%]="targetPercent(target.collectionCompleted,target.collectionTarget)"></div></div>
+            <div class="target-details"><div><span>Given</span><b>{{ formatMoney(target.collectionTarget) }}</b></div><div><span>Completed</span><b>{{ formatMoney(target.collectionCompleted) }}</b></div><div [class.positive]="target.collectionVariance>=0" [class.negative]="target.collectionVariance<0"><span>{{ target.collectionVariance>=0?'Overachievement':'Shortage' }}</span><b>{{ formatMoney(abs(target.collectionVariance)) }}</b></div></div>
+          </section>
         </div>
       </article>
     </section>
@@ -237,6 +220,7 @@ import { AuthService } from '../../core/auth.service';
       gap: 6px;
     }
     .collection-filter{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.collection-filter>div:first-child{display:flex;flex-direction:column;gap:3px}.collection-filter small{color:var(--muted)}.period-buttons{display:flex;gap:7px;flex-wrap:wrap}.period-buttons button{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;padding:8px 12px}.period-buttons button.active{background:var(--brand);color:#fff}.custom-dates{display:flex;gap:8px;align-items:center}.custom-dates input{width:auto}@media(max-width:900px){.collection-filter{align-items:stretch;flex-direction:column}.custom-dates{flex-wrap:wrap}}
+    .target-control{background:linear-gradient(145deg,#fff,#f8fafc)}.target-head{display:flex;justify-content:space-between;gap:16px;align-items:start}.target-head h2{margin:2px 0 4px}.target-period{padding:6px 10px;border-radius:99px;background:#ecfdf3;color:#047857;font-size:11px;font-weight:800}.target-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.target-card{padding:18px;border:1px solid var(--line);border-radius:14px;background:#fff}.target-title{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}.target-title span{font-weight:800;color:#475569}.target-title strong{text-align:right;color:#0f172a}.target-details{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.target-details div{padding:10px;border-radius:10px;background:#f8fafc}.target-details span,.target-details b{display:block}.target-details span{font-size:10px;color:var(--muted);margin-bottom:4px}.target-details b{font-size:14px;color:#0f172a}.target-details .positive{background:#ecfdf3}.target-details .positive b{color:#047857}.target-details .negative{background:#fef2f2}.target-details .negative b{color:#b42318}@media(max-width:900px){.target-grid{grid-template-columns:1fr}}@media(max-width:520px){.target-details{grid-template-columns:1fr}.target-title{flex-direction:column}.target-title strong{text-align:left}}
 
     .refresh-icon {
       width: 16px;
@@ -684,6 +668,8 @@ export class DashboardComponent implements OnInit {
     const total = approved + pending;
     return total ? Math.round((approved / total) * 100) : 0;
   }
+  targetPercent(completed:number,target:number){return target>0?Math.min(100,Math.round(completed/target*100)):0}
+  abs(value:number){return Math.abs(value)}
 
   ngOnInit() {
     this.load();
