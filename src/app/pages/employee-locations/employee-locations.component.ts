@@ -62,6 +62,7 @@ import * as L from 'leaflet';
 })
 export class EmployeeLocationsComponent implements OnInit, AfterViewInit, OnDestroy {
   private api = inject(ApiService); auth = inject(AuthService); private map?: L.Map; private layer = L.layerGroup(); private timer?: ReturnType<typeof setInterval>;
+  private readonly projectHouse = L.latLng(23.6612777, 90.3656087);
   live: LiveEmployeeLocation[] = []; selected?: LiveEmployeeLocation; history?: TravelHistory; loading = false;
   historyEmployeeId: number | null = null; historyDate = new Date().toISOString().slice(0, 10);
   get canViewHistory() { return this.auth.user()?.role === 'SuperAdmin'; }
@@ -69,9 +70,9 @@ export class EmployeeLocationsComponent implements OnInit, AfterViewInit, OnDest
   get reportingCount() { return this.live.filter(x => x.hasLocation).length; }
   get directionsUrl() { return this.selected ? `https://www.google.com/maps/dir/?api=1&destination=${this.selected.latitude},${this.selected.longitude}` : '#'; }
   ngOnInit() { this.loadLive(); this.timer = setInterval(() => this.loadLive(false), 30000); }
-  ngAfterViewInit() { this.map = L.map('employee-map', { zoomControl: false }).setView([23.8103, 90.4125], 11); L.control.zoom({ position: 'bottomright' }).addTo(this.map); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(this.map); this.layer.addTo(this.map); }
+  ngAfterViewInit() { this.map = L.map('employee-map', { zoomControl: false }).setView(this.projectHouse, 17); L.control.zoom({ position: 'bottomright' }).addTo(this.map); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(this.map); L.circleMarker(this.projectHouse, { radius: 12, color: '#fff', weight: 4, fillColor: '#e11d48', fillOpacity: 1 }).bindTooltip('<b>RC Maya Kanon Project House</b>', { permanent: true, direction: 'top', offset: [0, -12] }).addTo(this.map); this.layer.addTo(this.map); }
   ngOnDestroy() { if (this.timer) clearInterval(this.timer); this.map?.remove(); }
-  loadLive(show = true) { if (show) this.loading = true; this.api.liveLocations().subscribe({ next: data => { this.live = data; if (!this.selected && data.length) this.select(data[0]); else { this.selected = data.find(x => x.employeeId === this.selected?.employeeId) || this.selected; this.drawLive(); } this.loading = false; }, error: () => this.loading = false }); }
+  loadLive(show = true) { if (show) this.loading = true; this.api.liveLocations().subscribe({ next: data => { this.live = data; if (!this.selected && data.length) { this.selected = data[0]; this.historyEmployeeId = data[0].employeeId; } else this.selected = data.find(x => x.employeeId === this.selected?.employeeId) || this.selected; this.drawLive(); this.loading = false; }, error: () => this.loading = false }); }
   select(item: LiveEmployeeLocation) { this.selected = item; this.historyEmployeeId = item.employeeId; this.drawLive(); if (item.latitude != null && item.longitude != null) this.map?.flyTo([item.latitude, item.longitude], 15, { duration: .8 }); }
   loadHistory() { if (!this.historyEmployeeId || !this.canViewHistory) return; this.api.travelHistory(this.historyEmployeeId, this.historyDate).subscribe(data => { this.history = data; this.drawRoute(data.points); }); }
   initials(name: string) { return name.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); }
