@@ -61,6 +61,18 @@ import { label, leadStatus, money } from '../../shared/format';
         </article>
       </section>
 
+      <section class="panel" style="margin-bottom:18px">
+        <h2 style="margin-top:0">Current month target progress</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Target units</span><strong style="display:block;font-size:20px;margin-top:5px">{{ detail.currentTarget.salesUnitTarget }}</strong></article>
+          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Completed units</span><strong style="display:block;font-size:20px;margin-top:5px">{{ detail.currentTarget.salesUnitsAchieved }}</strong></article>
+          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Unit shortage / over</span><strong style="display:block;font-size:20px;margin-top:5px">{{ variance(detail.currentTarget.salesUnitVariance, 'units') }}</strong></article>
+          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Collection target</span><strong style="display:block;font-size:20px;margin-top:5px">{{ formatMoney(detail.currentTarget.collectionTarget) }}</strong></article>
+          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Collection completed</span><strong style="display:block;font-size:20px;margin-top:5px">{{ formatMoney(detail.currentTarget.collectionAchieved) }}</strong></article>
+          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Collection shortage / over</span><strong style="display:block;font-size:20px;margin-top:5px">{{ moneyVariance(detail.currentTarget.collectionVariance) }}</strong></article>
+        </div>
+      </section>
+
       <section style="display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:18px">
         <form class="panel form-panel" (ngSubmit)="save()" style="margin:0">
           <h2>Edit account</h2>
