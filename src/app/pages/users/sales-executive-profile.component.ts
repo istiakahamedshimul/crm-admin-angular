@@ -21,97 +21,635 @@ import { label, leadStatus, money } from '../../shared/format';
 
     <p class="error" *ngIf="error">{{ error }}</p>
 
-    <ng-container *ngIf="detail">
-      <section class="panel" style="margin-bottom:18px">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <div style="width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--brand),#06b6d4);font-weight:800;font-size:18px">
-            {{ initials(detail.fullName) }}
+    <div class="profile-grid" *ngIf="detail">
+      <!-- Left Column -->
+      <div class="sidebar-col">
+        <!-- Profile Header Panel -->
+        <section class="profile-header-panel">
+          <div class="avatar-wrapper">
+            <div class="profile-avatar">
+              {{ initials(detail.fullName) }}
+            </div>
           </div>
-          <div style="flex:1">
-            <h2 style="margin:0">{{ detail.fullName }}</h2>
-            <p style="margin:3px 0;color:var(--brand);font-weight:700">{{ detail.designation }}</p>
-            <p style="margin:4px 0 0;color:var(--muted)">{{ detail.email }} · {{ detail.phone }}</p>
+          <div class="profile-name-section">
+            <h2 class="profile-name">{{ detail.fullName }}</h2>
+            <p class="profile-designation">{{ detail.designation }}</p>
+            <span class="status-pill" [class.approved]="detail.isActive" [class.rejected]="!detail.isActive">
+              {{ detail.isActive ? 'Active' : 'Inactive' }}
+            </span>
           </div>
-          <span class="status-pill" [class.approved]="detail.isActive" [class.rejected]="!detail.isActive">
-            {{ detail.isActive ? 'Active' : 'Inactive' }}
-          </span>
-        </div>
-      </section>
-
-      <section class="panel" style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
-          <div><h2 style="margin:0">Performance period</h2><p style="margin:4px 0 0;color:var(--muted)">Filter the profile metrics or print the complete A4 report.</p></div>
-          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-            <label style="margin:0">Period<select [(ngModel)]="reportPeriod" (ngModelChange)="applyPeriod()"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option><option value="overall">Overall</option><option value="custom">Custom range</option></select></label>
-            <label style="margin:0">From<input type="date" [(ngModel)]="reportFrom" [disabled]="reportPeriod !== 'custom'"></label>
-            <label style="margin:0">To<input type="date" [(ngModel)]="reportTo" [disabled]="reportPeriod !== 'custom'"></label>
-            <button type="button" class="ghost-button" (click)="loadReport()">Filter</button>
-            <button type="button" (click)="printReport()" [disabled]="!report">Print A4 PDF</button>
+          <div class="contact-info-list">
+            <div class="contact-info-item">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              <span>{{ detail.email }}</span>
+            </div>
+            <div class="contact-info-item">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              <span>{{ detail.phone }}</span>
+            </div>
           </div>
-        </div>
-        <p class="error" *ngIf="reportError">{{ reportError }}</p>
-      </section>
+        </section>
 
-      <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px">
-        <article *ngFor="let metric of detailMetrics" class="panel" style="margin:0;padding:16px">
-          <span style="display:block;color:var(--muted);font-size:12px">{{ metric.label }}</span>
-          <strong style="display:block;margin-top:5px;font-size:20px">
-            {{ metric.money ? formatMoney(metric.value) : metric.value }}
-          </strong>
-        </article>
-      </section>
-
-      <section class="panel" style="margin-bottom:18px">
-        <h2 style="margin-top:0">Current month target progress</h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
-          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Target units</span><strong style="display:block;font-size:20px;margin-top:5px">{{ detail.currentTarget.salesUnitTarget }}</strong></article>
-          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Completed units</span><strong style="display:block;font-size:20px;margin-top:5px">{{ detail.currentTarget.salesUnitsAchieved }}</strong></article>
-          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Unit shortage / over</span><strong style="display:block;font-size:20px;margin-top:5px">{{ variance(detail.currentTarget.salesUnitVariance, 'units') }}</strong></article>
-          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Collection target</span><strong style="display:block;font-size:20px;margin-top:5px">{{ formatMoney(detail.currentTarget.collectionTarget) }}</strong></article>
-          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Collection completed</span><strong style="display:block;font-size:20px;margin-top:5px">{{ formatMoney(detail.currentTarget.collectionAchieved) }}</strong></article>
-          <article style="padding:14px;border:1px solid var(--line);border-radius:12px"><span style="color:var(--muted);font-size:12px">Collection shortage / over</span><strong style="display:block;font-size:20px;margin-top:5px">{{ moneyVariance(detail.currentTarget.collectionVariance) }}</strong></article>
-        </div>
-      </section>
-
-      <section style="display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:18px">
-        <form class="panel form-panel" (ngSubmit)="save()" style="margin:0">
-          <h2>Edit account</h2>
-          <label>Full name<input name="editFullName" [(ngModel)]="editForm.fullName" required></label>
-          <label>Email<input name="editEmail" type="email" [(ngModel)]="editForm.email" required></label>
-          <label>Phone<input name="editPhone" [(ngModel)]="editForm.phone" required></label>
-          <label>Designation<input name="editDesignation" [(ngModel)]="editForm.designation" required></label>
-          <label>New password (optional)<input name="editPassword" type="password" [(ngModel)]="editForm.password"></label>
-          <label>Target month<input name="targetMonth" type="month" [(ngModel)]="editForm.targetMonth" required></label>
-          <label>Minimum sales units<input name="minimumSalesUnits" type="number" min="0" step="1" [(ngModel)]="editForm.minimumSalesUnits" required></label>
-          <label>Minimum collection target<input name="minimumCollectionAmount" type="number" min="0" step="0.01" [(ngModel)]="editForm.minimumCollectionAmount" required></label>
-          <label style="display:flex;align-items:center;gap:8px">
-            <input name="editActive" type="checkbox" [(ngModel)]="editForm.isActive"> Active account
-          </label>
-          <button type="submit" [disabled]="saving">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
-          <p class="success" *ngIf="message">{{ message }}</p>
-          <p class="error" *ngIf="saveError">{{ saveError }}</p>
-        </form>
-
-        <article class="panel" style="margin:0;max-height:620px;overflow:auto">
-          <h2>Recent assigned leads</h2>
-          <div *ngFor="let lead of detail.recentLeads"
-            style="display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)">
-            <div>
-              <strong style="display:block">{{ lead.customerName }}</strong>
-              <span style="font-size:12px;color:var(--muted)">
-                {{ lead.phone }} · {{ lead.project || 'No project' }}
-              </span>
-              <span *ngIf="lead.nextFollowUpAt" style="display:block;font-size:11px;color:#b54708">
-                Follow-up: {{ lead.nextFollowUpAt | date:'medium' }}
+        <!-- Current Month Target Progress -->
+        <section class="progress-card">
+          <div class="progress-header">
+            <h3>Target Progress</h3>
+            <span class="progress-month-badge">{{ getMonthLabel(detail.currentTarget.month) }}</span>
+          </div>
+          <div class="tracker-group">
+            <!-- Units Target -->
+            <div class="tracker-item">
+              <div class="tracker-info">
+                <span class="tracker-label">Sales Units</span>
+                <span class="tracker-values">
+                  {{ detail.currentTarget.salesUnitsAchieved }} <span>/ {{ detail.currentTarget.salesUnitTarget }} units</span>
+                </span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" [style.width.%]="unitsProgress" [class.success]="unitsProgress >= 100" [class.warning]="unitsProgress < 50" [class.brand]="unitsProgress >= 50 && unitsProgress < 100"></div>
+              </div>
+              <span class="variance-pill" [class.over]="detail.currentTarget.salesUnitVariance >= 0" [class.short]="detail.currentTarget.salesUnitVariance < 0">
+                {{ variance(detail.currentTarget.salesUnitVariance, 'units') }}
               </span>
             </div>
-            <span class="status-pill">{{ statusLabel(lead.status) }}</span>
+
+            <!-- Collection Target -->
+            <div class="tracker-item" style="border-top: 1px solid var(--line); padding-top: 16px; margin-top: 4px;">
+              <div class="tracker-info">
+                <span class="tracker-label">Collection Target</span>
+                <span class="tracker-values">
+                  {{ formatMoney(detail.currentTarget.collectionAchieved) }} <span>/ {{ formatMoney(detail.currentTarget.collectionTarget) }}</span>
+                </span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" [style.width.%]="collectionProgress" [class.success]="collectionProgress >= 100" [class.warning]="collectionProgress < 50" [class.brand]="collectionProgress >= 50 && collectionProgress < 100"></div>
+              </div>
+              <span class="variance-pill" [class.over]="detail.currentTarget.collectionVariance >= 0" [class.short]="detail.currentTarget.collectionVariance < 0">
+                {{ moneyVariance(detail.currentTarget.collectionVariance) }}
+              </span>
+            </div>
           </div>
-          <div *ngIf="!detail.recentLeads.length" class="empty-card">No assigned leads.</div>
-        </article>
-      </section>
-    </ng-container>
-  `
+        </section>
+
+        <!-- Edit Profile Form -->
+        <form class="edit-account-panel" (ngSubmit)="save()">
+          <h3>Edit Account</h3>
+          <div class="modern-form">
+            <label>Full name<input name="editFullName" [(ngModel)]="editForm.fullName" required></label>
+            <label>Email<input name="editEmail" type="email" [(ngModel)]="editForm.email" required></label>
+            <label>Phone<input name="editPhone" [(ngModel)]="editForm.phone" required></label>
+            <label>Designation<input name="editDesignation" [(ngModel)]="editForm.designation" required></label>
+            <label>New password (optional)<input name="editPassword" type="password" [(ngModel)]="editForm.password" placeholder="••••••••"></label>
+            <label>Target month<input name="targetMonth" type="month" [(ngModel)]="editForm.targetMonth" required></label>
+            <label>Minimum sales units<input name="minimumSalesUnits" type="number" min="0" step="1" [(ngModel)]="editForm.minimumSalesUnits" required></label>
+            <label>Minimum collection target<input name="minimumCollectionAmount" type="number" min="0" step="0.01" [(ngModel)]="editForm.minimumCollectionAmount" required></label>
+            
+            <label class="active-toggle-label">
+              <input name="editActive" type="checkbox" [(ngModel)]="editForm.isActive"> Active account
+            </label>
+            
+            <button type="submit" [disabled]="saving" style="margin-top: 8px;">
+              {{ saving ? 'Saving...' : 'Save Changes' }}
+            </button>
+            <p class="success" *ngIf="message">{{ message }}</p>
+            <p class="error" *ngIf="saveError">{{ saveError }}</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right Column -->
+      <div class="main-col">
+        <!-- Performance period -->
+        <section class="filter-panel">
+          <div class="filter-grid">
+            <div style="flex: 1; min-width: 200px;">
+              <h3 style="margin: 0 0 4px; color: var(--text-dark); font-size: 15px; font-weight: 700;">Performance period</h3>
+              <p style="margin: 0; color: var(--muted); font-size: 12.5px;">Filter performance metrics or print report.</p>
+            </div>
+            
+            <label>Period
+              <select [(ngModel)]="reportPeriod" (ngModelChange)="applyPeriod()">
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+                <option value="overall">Overall</option>
+                <option value="custom">Custom range</option>
+              </select>
+            </label>
+            
+            <label>From
+              <input type="date" [(ngModel)]="reportFrom" [disabled]="reportPeriod !== 'custom'">
+            </label>
+            
+            <label>To
+              <input type="date" [(ngModel)]="reportTo" [disabled]="reportPeriod !== 'custom'">
+            </label>
+            
+            <div class="filter-btn-group">
+              <button type="button" class="ghost-button" (click)="loadReport()">Filter</button>
+              <button type="button" (click)="printReport()" [disabled]="!report">Print A4 PDF</button>
+            </div>
+          </div>
+          <p class="error" *ngIf="reportError" style="margin-top: 10px; margin-bottom: 0;">{{ reportError }}</p>
+        </section>
+
+        <!-- Performance metrics -->
+        <section class="metrics-panel">
+          <div class="metrics-title-row">
+            <h3>Performance Metrics</h3>
+            <span style="font-size: 12px; color: var(--muted);" *ngIf="report">Filtered view</span>
+            <span style="font-size: 12px; color: var(--muted);" *ngIf="!report">Overall history</span>
+          </div>
+          
+          <div class="metrics-grid-layout">
+            <article *ngFor="let metric of detailMetrics" class="metric-card" [class]="metric.color">
+              <div class="metric-icon-wrapper" [innerHTML]="getMetricIcon(metric.icon)"></div>
+              <div>
+                <span class="metric-label">{{ metric.label }}</span>
+                <strong class="metric-value">
+                  {{ metric.money ? formatMoney(metric.value) : metric.value }}
+                </strong>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Recent assigned leads -->
+        <section class="leads-panel">
+          <div class="leads-header">
+            <h3>Recent Assigned Leads</h3>
+            <span style="font-size: 12px; font-weight: 600; color: var(--brand-dark); background: var(--brand-light); padding: 2px 8px; border-radius: 99px;">
+              {{ detail.recentLeads.length }} leads
+            </span>
+          </div>
+          
+          <div class="leads-list-wrapper">
+            <div *ngFor="let lead of detail.recentLeads" class="lead-item-card">
+              <div class="lead-details">
+                <span class="lead-name">{{ lead.customerName }}</span>
+                <span class="lead-meta">
+                  {{ lead.phone }} <span style="opacity: 0.5;">·</span> {{ lead.project || 'No project' }}
+                </span>
+                <span *ngIf="lead.nextFollowUpAt" class="lead-followup">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  Follow-up: {{ lead.nextFollowUpAt | date:'medium' }}
+                </span>
+              </div>
+              <span class="status-pill" [class]="getLeadStatusClass(lead.status)">
+                {{ statusLabel(lead.status) }}
+              </span>
+            </div>
+            <div *ngIf="!detail.recentLeads.length" class="empty-card" style="padding: 40px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; background: var(--bg);">
+              No assigned leads.
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-top: 18px;
+    }
+    @media (max-width: 1024px) {
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .sidebar-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .main-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .profile-header-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .profile-header-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(135deg, var(--brand), #0d9488);
+      opacity: 0.85;
+      z-index: 1;
+    }
+    .avatar-wrapper {
+      position: relative;
+      z-index: 2;
+      margin-top: 20px;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: linear-gradient(135deg, var(--brand), #06b6d4);
+      font-weight: 800;
+      font-size: 26px;
+      border: 4px solid var(--panel);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      margin: 0 auto;
+    }
+    .profile-name-section {
+      position: relative;
+      z-index: 2;
+    }
+    .profile-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 0 0 4px;
+    }
+    .profile-designation {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--brand);
+      margin: 0 0 16px;
+    }
+    .contact-info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+      margin-top: 16px;
+    }
+    .contact-info-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      color: var(--text);
+    }
+    .contact-info-item svg {
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .progress-card {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .progress-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-dark);
+    }
+    .progress-month-badge {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--brand-light);
+      color: var(--brand-dark);
+      padding: 4px 10px;
+      border-radius: 99px;
+    }
+    .tracker-group {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .tracker-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .tracker-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 13px;
+    }
+    .tracker-label {
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .tracker-values {
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+    .tracker-values span {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .progress-bar-container {
+      height: 8px;
+      background: var(--panel-soft);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.6s ease;
+    }
+    .progress-bar-fill.success {
+      background: linear-gradient(90deg, #10b981, #059669);
+    }
+    .progress-bar-fill.warning {
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+    .progress-bar-fill.brand {
+      background: linear-gradient(90deg, var(--brand), #0d9488);
+    }
+    .variance-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+    .variance-pill.over {
+      background: var(--success-bg);
+      color: var(--success-dark);
+    }
+    .variance-pill.short {
+      background: var(--danger-bg);
+      color: var(--danger-dark);
+    }
+    .metrics-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .metrics-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .metrics-title-row h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-dark);
+    }
+    .metrics-grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .metric-card {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+      border-color: var(--brand);
+    }
+    .metric-icon-wrapper {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: white;
+      border: 1px solid var(--line);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .metric-card.blue .metric-icon-wrapper { color: #3b82f6; background: rgba(59,130,246,0.08); }
+    .metric-card.orange .metric-icon-wrapper { color: #f97316; background: rgba(249,115,22,0.08); }
+    .metric-card.indigo .metric-icon-wrapper { color: #6366f1; background: rgba(99,102,241,0.08); }
+    .metric-card.purple .metric-icon-wrapper { color: #a855f7; background: rgba(168,85,247,0.08); }
+    .metric-card.green .metric-icon-wrapper { color: #10b981; background: rgba(16,185,129,0.08); }
+    .metric-card.red .metric-icon-wrapper { color: #ef4444; background: rgba(239,68,68,0.08); }
+    .metric-card.gray .metric-icon-wrapper { color: #64748b; background: rgba(100,116,139,0.08); }
+    .metric-card.teal .metric-icon-wrapper { color: #0d9488; background: rgba(13,148,136,0.08); }
+    .metric-card.cyan .metric-icon-wrapper { color: #06b6d4; background: rgba(6,182,212,0.08); }
+    .metric-card.emerald .metric-icon-wrapper { color: #059669; background: rgba(5,150,105,0.08); }
+    .metric-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .metric-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+    .filter-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+    }
+    .filter-grid {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .filter-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .filter-grid select, .filter-grid input {
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 0 12px;
+      background: var(--bg);
+      min-width: 130px;
+      transition: all 0.2s ease;
+    }
+    .filter-grid select:focus, .filter-grid input:focus {
+      outline: none;
+      border-color: var(--brand);
+      background: var(--panel);
+    }
+    .filter-btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .leads-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .leads-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .leads-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-dark);
+    }
+    .leads-list-wrapper {
+      max-height: 520px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .lead-item-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+      background: var(--panel);
+    }
+    .lead-item-card:hover {
+      border-color: var(--brand);
+      transform: translateX(2px);
+      background: var(--panel-soft);
+    }
+    .lead-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .lead-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-dark);
+    }
+    .lead-meta {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .lead-followup {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--warning-dark);
+      background: var(--warning-bg);
+      padding: 3px 8px;
+      border-radius: 4px;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+    .status-new {
+      background: var(--brand-light);
+      color: var(--brand-dark);
+    }
+    .status-active {
+      background: #eff6ff;
+      color: #1e40af;
+    }
+    .status-pending {
+      background: var(--warning-bg);
+      color: var(--warning-dark);
+    }
+    .edit-account-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .edit-account-panel h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 18px;
+      color: var(--text-dark);
+    }
+    .modern-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modern-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .modern-form input {
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 0 14px;
+      background: var(--bg);
+      transition: all 0.2s ease;
+    }
+    .modern-form input:focus {
+      outline: none;
+      border-color: var(--brand);
+      background: var(--panel);
+      box-shadow: 0 0 0 3px var(--brand-glow);
+    }
+    .active-toggle-label {
+      flex-direction: row !important;
+      align-items: center;
+      gap: 10px !important;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .active-toggle-label input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--brand);
+      cursor: pointer;
+    }
+  `]
 })
 export class SalesExecutiveProfileComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -151,32 +689,106 @@ export class SalesExecutiveProfileComponent implements OnInit {
     });
   }
 
+  get unitsProgress(): number {
+    if (!this.detail || !this.detail.currentTarget.salesUnitTarget) return 0;
+    return Math.min(100, Math.max(0, (this.detail.currentTarget.salesUnitsAchieved / this.detail.currentTarget.salesUnitTarget) * 100));
+  }
+
+  get collectionProgress(): number {
+    if (!this.detail || !this.detail.currentTarget.collectionTarget) return 0;
+    return Math.min(100, Math.max(0, (this.detail.currentTarget.collectionAchieved / this.detail.currentTarget.collectionTarget) * 100));
+  }
+
+  getMonthLabel(monthStr: string | undefined | null): string {
+    if (!monthStr) return 'Current Month';
+    try {
+      const parts = monthStr.split('-');
+      const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } catch {
+      return monthStr;
+    }
+  }
+
+  getLeadStatusClass(status: number): string {
+    const labelStr = this.statusLabel(status);
+    if (!labelStr) return '';
+    switch (labelStr) {
+      case 'New':
+      case 'Assigned':
+        return 'status-new';
+      case 'Contacted':
+      case 'Interested':
+      case 'Follow-up':
+      case 'Site Visit':
+      case 'Visited':
+        return 'status-active';
+      case 'Negotiation':
+      case 'Proposal':
+        return 'status-pending';
+      case 'Booked':
+        return 'approved';
+      case 'Lost':
+      case 'Not Interested':
+        return 'rejected';
+      default:
+        return '';
+    }
+  }
+
+  getMetricIcon(icon: string): string {
+    switch (icon) {
+      case 'leads':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+      case 'returned':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>`;
+      case 'stage':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
+      case 'followup':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+      case 'win':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"></path><path d="M12 2a6 6 0 0 1 6 6v3.5c0 1.63-1.03 3.03-2.5 3.5h-7C7.03 14.53 6 13.13 6 11.5V8a6 6 0 0 1 6-6z"></path></svg>`;
+      case 'lost':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+      case 'not-interested':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`;
+      case 'collection':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>`;
+      case 'count':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`;
+      case 'commission':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><circle cx="16" cy="16" r="3"></circle><line x1="16" y1="8" x2="8" y2="16"></line></svg>`;
+      default:
+        return '';
+    }
+  }
+
   get detailMetrics() {
     if (!this.detail) return [];
     if (this.report) return [
-      { label: 'Total assigned leads', value: this.report.assignedLeads },
-      { label: 'Returned leads', value: this.report.returnedLeads },
-      { label: 'Assigned stage', value: this.report.assignedStage },
-      { label: 'Following up', value: this.report.followingUp },
-      { label: 'Win', value: this.report.bookedClients },
-      { label: 'Lost', value: this.report.lost },
-      { label: 'Not interested', value: this.report.notInterested },
-      { label: 'Accepted collections', value: this.report.totalCollection, money: true },
-      { label: 'Collection count', value: this.report.collectionCount },
-      { label: 'Commission', value: this.report.totalCommission, money: true }
+      { label: 'Total assigned leads', value: this.report.assignedLeads, icon: 'leads', color: 'blue' },
+      { label: 'Returned leads', value: this.report.returnedLeads, icon: 'returned', color: 'orange' },
+      { label: 'Assigned stage', value: this.report.assignedStage, icon: 'stage', color: 'indigo' },
+      { label: 'Following up', value: this.report.followingUp, icon: 'followup', color: 'purple' },
+      { label: 'Win', value: this.report.bookedClients, icon: 'win', color: 'green' },
+      { label: 'Lost', value: this.report.lost, icon: 'lost', color: 'red' },
+      { label: 'Not interested', value: this.report.notInterested, icon: 'not-interested', color: 'gray' },
+      { label: 'Accepted collections', value: this.report.totalCollection, money: true, icon: 'collection', color: 'teal' },
+      { label: 'Collection count', value: this.report.collectionCount, icon: 'count', color: 'cyan' },
+      { label: 'Commission', value: this.report.totalCommission, money: true, icon: 'commission', color: 'emerald' }
     ];
     const metrics = this.detail.metrics;
     return [
-      { label: 'Total assigned leads', value: metrics.totalAssignedLeads },
-      { label: 'Returned leads', value: metrics.returnedLeads },
-      { label: 'Assigned stage', value: metrics.assignedStage },
-      { label: 'Following up', value: metrics.followingUp },
-      { label: 'Win', value: metrics.positiveCustomers },
-      { label: 'Lost', value: metrics.lost },
-      { label: 'Not interested', value: metrics.notInterested },
-      { label: 'Accepted collections', value: metrics.approvedCollectionAmount, money: true },
-      { label: 'Collection count', value: metrics.approvedCollectionCount },
-      { label: 'Commission', value: metrics.commission, money: true }
+      { label: 'Total assigned leads', value: metrics.totalAssignedLeads, icon: 'leads', color: 'blue' },
+      { label: 'Returned leads', value: metrics.returnedLeads, icon: 'returned', color: 'orange' },
+      { label: 'Assigned stage', value: metrics.assignedStage, icon: 'stage', color: 'indigo' },
+      { label: 'Following up', value: metrics.followingUp, icon: 'followup', color: 'purple' },
+      { label: 'Win', value: metrics.positiveCustomers, icon: 'win', color: 'green' },
+      { label: 'Lost', value: metrics.lost, icon: 'lost', color: 'red' },
+      { label: 'Not interested', value: metrics.notInterested, icon: 'not-interested', color: 'gray' },
+      { label: 'Accepted collections', value: metrics.approvedCollectionAmount, money: true, icon: 'collection', color: 'teal' },
+      { label: 'Collection count', value: metrics.approvedCollectionCount, icon: 'count', color: 'cyan' },
+      { label: 'Commission', value: metrics.commission, money: true, icon: 'commission', color: 'emerald' }
     ];
   }
 
