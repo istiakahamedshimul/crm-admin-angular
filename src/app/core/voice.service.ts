@@ -687,24 +687,26 @@ ${JSON.stringify(this.executives)}`,
     const now = new Date();
 
     return payments.filter((payment) => {
-      if (statusValue !== null && payment.status !== statusValue) return false;
+      if (statusValue === 1 && (payment.status !== 1 || payment.isReversed)) return false;
+      if (statusValue === 0 && (payment.status !== 0 || payment.isReversed)) return false;
+      if (statusValue === 2 && payment.status !== 2 && !payment.isReversed) return false;
 
-      const created = new Date(payment.createdAt);
+      const paid = new Date(`${payment.paymentDate.slice(0, 10)}T12:00:00`);
       if (filter.period === 'week') {
         const day = now.getDay();
         const daysSinceMonday = day === 0 ? 6 : day - 1;
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
-        if (created < start) return false;
+        if (paid < start) return false;
       } else if (filter.period === 'month') {
         if (
-          created.getFullYear() !== now.getFullYear() ||
-          created.getMonth() !== now.getMonth()
+          paid.getFullYear() !== now.getFullYear() ||
+          paid.getMonth() !== now.getMonth()
         ) return false;
-      } else if (filter.period === 'year' && created.getFullYear() !== now.getFullYear()) {
+      } else if (filter.period === 'year' && paid.getFullYear() !== now.getFullYear()) {
         return false;
       } else if (filter.period === 'custom') {
-        if (filter.from && created < new Date(`${filter.from}T00:00:00`)) return false;
-        if (filter.to && created > new Date(`${filter.to}T23:59:59.999`)) return false;
+        if (filter.from && paid < new Date(`${filter.from}T00:00:00`)) return false;
+        if (filter.to && paid > new Date(`${filter.to}T23:59:59.999`)) return false;
       }
 
       if (

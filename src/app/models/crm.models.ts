@@ -248,8 +248,11 @@ export type Payment = {
   collectionNumber: string;
   salesExecutive: string;
   amount: number;
+  paymentDate: string;
   method: number;
   status: number;
+  isReversed: boolean;
+  reversalReason?: string;
   proofUrl?: string;
   rejectReason?: string;
   createdAt: string;

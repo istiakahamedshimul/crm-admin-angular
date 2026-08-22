@@ -134,24 +134,24 @@ import { label, money, paymentStatus } from '../../shared/format';
                 <div class="customer-info">
                   <span class="customer-name">{{ payment.customer }}</span>
                   <code class="receipt-number">{{ payment.collectionNumber }}</code>
-                  <span style="display:block;color:var(--muted);font-size:11px;margin-top:3px">{{ payment.createdAt | date:'mediumDate' }}</span>
+                  <span style="display:block;color:var(--muted);font-size:11px;margin-top:3px">{{ payment.paymentDate | date:'mediumDate' }}</span>
                 </div>
-                <div *ngIf="payment.status === 2" class="rejection-reason-inline">
+                <div *ngIf="payment.status === 2 || payment.isReversed" class="rejection-reason-inline">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:12px; height:12px; flex-shrink:0;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                   </svg>
-                  <span><strong>Reason:</strong> {{ payment.rejectReason || 'No reason recorded' }}</span>
+                  <span><strong>Reason:</strong> {{ payment.reversalReason || payment.rejectReason || 'No reason recorded' }}</span>
                 </div>
               </td>
               <td>
                 <span class="exec-name">{{ payment.salesExecutive }}</span>
               </td>
               <td class="text-right">
-                <strong class="amount-value" [class.text-danger]="payment.status === 2">{{ money(payment.amount) }}</strong>
+                <strong class="amount-value" [class.text-danger]="payment.status === 2 || payment.isReversed">{{ money(payment.amount) }}</strong>
               </td>
               <td class="text-center">
-                <span class="status-pill" [class.approved]="payment.status === 1" [class.pending]="payment.status === 0" [class.rejected]="payment.status === 2">
-                  {{ label(paymentStatus, payment.status) }}
+                <span class="status-pill" [class.approved]="payment.status === 1 && !payment.isReversed" [class.pending]="payment.status === 0 && !payment.isReversed" [class.rejected]="payment.status === 2 || payment.isReversed">
+                  {{ payment.isReversed ? 'Reversed' : label(paymentStatus, payment.status) }}
                 </span>
               </td>
               <td class="text-right">
@@ -170,14 +170,14 @@ import { label, money, paymentStatus } from '../../shared/format';
                     <span>Approve</span>
                   </button>
                   
-                  <button *ngIf="payment.status !== 2" type="button" class="action-btn reject-btn" (click)="openReject(payment)">
+                  <button *ngIf="payment.status !== 2 && !payment.isReversed" type="button" class="action-btn reject-btn" (click)="openReject(payment)">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     <span>{{ payment.status === 1 ? 'Reverse' : 'Reject' }}</span>
                   </button>
                   
-                  <span *ngIf="payment.status === 2" class="finalized-label">Finalized</span>
+                  <span *ngIf="payment.status === 2 || payment.isReversed" class="finalized-label">Finalized</span>
                 </div>
               </td>
             </tr>
@@ -771,15 +771,15 @@ export class PaymentsComponent implements OnInit {
   voiceExecutiveFilter = '';
 
   get approvedSum(): number {
-    return this.periodPayments.filter(p => p.status === 1).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
+    return this.periodPayments.filter(p => p.status === 1 && !p.isReversed).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
   }
 
   get pendingCount(): number {
-    return this.periodPayments.filter(p => p.status === 0).length;
+    return this.periodPayments.filter(p => p.status === 0 && !p.isReversed).length;
   }
 
   get rejectedSum(): number {
-    return this.periodPayments.filter(p => p.status === 2).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
+    return this.periodPayments.filter(p => p.status === 2 || p.isReversed).reduce((sum, payment) => sum + Math.abs(payment.amount || 0), 0);
   }
 
   // Count Getters for Tabs
@@ -792,11 +792,11 @@ export class PaymentsComponent implements OnInit {
   }
 
   get countApproved(): number {
-    return this.periodPayments.filter(p => p.status === 1).length;
+    return this.periodPayments.filter(p => p.status === 1 && !p.isReversed).length;
   }
 
   get countRejected(): number {
-    return this.periodPayments.filter(p => p.status === 2).length;
+    return this.periodPayments.filter(p => p.status === 2 || p.isReversed).length;
   }
 
   get periodPayments(): Payment[] {
@@ -820,8 +820,8 @@ export class PaymentsComponent implements OnInit {
     }
 
     return this.payments.filter(payment => {
-      const created = new Date(payment.createdAt);
-      return created >= start && created < end;
+      const paid = new Date(`${payment.paymentDate.slice(0, 10)}T12:00:00`);
+      return paid >= start && paid < end;
     });
   }
 
@@ -829,9 +829,9 @@ export class PaymentsComponent implements OnInit {
   get filteredPayments(): Payment[] {
     return this.periodPayments.filter(p => {
       // 1. Filter by status tab
-      if (this.activeTab === 'pending' && p.status !== 0) return false;
-      if (this.activeTab === 'approved' && p.status !== 1) return false;
-      if (this.activeTab === 'rejected' && p.status !== 2) return false;
+      if (this.activeTab === 'pending' && (p.status !== 0 || p.isReversed)) return false;
+      if (this.activeTab === 'approved' && (p.status !== 1 || p.isReversed)) return false;
+      if (this.activeTab === 'rejected' && p.status !== 2 && !p.isReversed) return false;
 
       // 2. Filter by search query
       if (this.searchQuery.trim()) {
