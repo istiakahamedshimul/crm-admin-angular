@@ -193,7 +193,7 @@ import { AuthService } from '../../core/auth.service';
       </article>
 
       <article class="panel target-control" *ngIf="auth.hasPermission('payments.view') && summary.salesTargetProgress as target">
-        <div class="target-head"><div><p class="eyebrow">Monthly performance</p><h2>Sales Target Control</h2><p class="panel-desc">Team target progress for {{ target.month | date:'MMMM yyyy' }}.</p></div><span class="target-period">Current month</span></div>
+        <div class="target-head"><div><p class="eyebrow">Monthly performance</p><h2>Sales Target Control</h2></div><span class="target-period">Current month</span></div>
         <div class="target-grid">
           <section class="target-card unit-target">
             <div class="target-title"><span>Target Units</span><strong>{{ target.unitsCompleted }} / {{ target.unitTarget }}</strong></div>
