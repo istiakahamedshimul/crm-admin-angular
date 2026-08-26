@@ -75,7 +75,7 @@ import { VoiceService } from './core/voice.service';
             </a>
             <div *ngIf="auth.hasPermission('payments.view')" class="sidebar-subnav">
               <a routerLink="/payments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Collection Dashboard</a>
-              <a *ngIf="auth.hasPermission('payments.record')" routerLink="/payments/record" routerLinkActive="active">Add Payment</a>
+              <a *ngIf="auth.hasPermission('payments.record')" routerLink="/payments/record" routerLinkActive="active">Add Collection / Due</a>
             </div>
             <a *ngIf="auth.hasPermission('notifications.manage')" routerLink="/notifications" routerLinkActive="active"><span>N</span>Notifications</a>
 

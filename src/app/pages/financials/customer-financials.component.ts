@@ -95,7 +95,7 @@ export class CustomerFinancialsComponent {
   get canAccessUnfiled(){return this.canAssignFile||this.canEditAgreement}
   get customersWithoutFile(){return this.customers.filter(x=>!x.fileId)}
   get visibleCustomers(){const source=this.view==='assign'?this.customersWithoutFile:this.customers.filter(x=>!!x.fileId);const q=this.search.trim().toLowerCase();return !q?source:source.filter(x=>`${x.fileId??''} ${x.name} ${x.phone} ${x.id}`.toLowerCase().includes(q))}
-  get cards(){return this.summary?[['Total agreed',this.summary.totalAgreedAmount],['Total paid',this.summary.totalPaid],['Current due',this.summary.currentDue],['Overdue',this.summary.overdueAmount],['Outstanding',this.summary.outstandingBalance]]:[]}
+  get cards(){return this.summary?[['Total agreed',this.summary.totalAgreedAmount],['Total paid',this.summary.totalPaid],[`CA dues (${this.summary.dueCount ?? 0} months)`,this.summary.caDueAmount ?? 0],['Current due',this.summary.currentDue],['Overdue',this.summary.overdueAmount],['Outstanding',this.summary.outstandingBalance]]:[]}
   setView(view:'accounts'|'assign'){this.view=view;this.search='';this.clearSelection()}
   reloadCustomers(selectId?:number){this.api.customers().subscribe({next:rows=>{this.customers=rows;if(selectId){const customer=this.customers.find(x=>x.id===selectId);if(customer)this.openCustomer(customer)}},error:e=>this.showError(e.error?.message||'Could not load customers.')})}
   clearSelection(){this.customerId=0;this.selectedCustomer=null;this.summary=null;this.history=null;this.fileId=''}

@@ -172,6 +172,10 @@ export class ApiService {
   saveAgreement(customerId:number,request:any){return this.http.put(`${this.baseUrl}/customers/${customerId}/financial/agreement`,request,this.options());}
   setFileId(customerId:number,fileId:string){return this.http.put(`${this.baseUrl}/customers/${customerId}/file-id`,{fileId},this.options());}
   recordPayment(request:any,idempotencyKey:string){return this.http.post(`${this.baseUrl}/payments`,request,{headers:new HttpHeaders({Authorization:`Bearer ${this.auth.token()}`,'Idempotency-Key':idempotencyKey})});}
+  monthlyCollections(){return this.http.get<any[]>(`${this.baseUrl}/ca/monthly-collections`,this.options());}
+  saveMonthlyCollection(request:any){return this.http.post(`${this.baseUrl}/ca/monthly-collections`,request,this.options());}
+  customerDues(){return this.http.get<any[]>(`${this.baseUrl}/ca/customer-dues`,this.options());}
+  saveCustomerDue(request:any){return this.http.post(`${this.baseUrl}/ca/customer-dues`,request,this.options());}
   accessControl(){return this.http.get<any>(`${this.baseUrl}/access-control`,this.options());}
   createRole(request:any){return this.http.post(`${this.baseUrl}/access-control/roles`,request,this.options());}
   createPermissionGroup(request:any){return this.http.post(`${this.baseUrl}/access-control/groups`,request,this.options());}
