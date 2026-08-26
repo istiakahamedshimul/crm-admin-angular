@@ -23,11 +23,13 @@ import { permissionGuard } from './core/permission.guard';
 import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
 import { DailyWorkReportsComponent } from './pages/daily-work-reports/daily-work-reports.component';
 import { AccessControlComponent } from './pages/access-control/access-control.component';
+import { SalesHierarchyComponent } from './pages/sales-hierarchy/sales-hierarchy.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: '', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'users', component: UsersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage']} },
+  { path: 'sales-hierarchy', component: SalesHierarchyComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','reports.view']} },
   { path: 'users/:id', component: SalesExecutiveProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','leads.manage']} },
   { path: 'leads', component: LeadsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'leads/:id', component: LeadProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },

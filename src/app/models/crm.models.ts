@@ -33,6 +33,9 @@ export type UserSummary = {
   designation?: string | null;
   role: string;
   isActive: boolean;
+  salesTeamId?: number | null;
+  salesTeam?: string | null;
+  salesGroup?: string | null;
 };
 
 export type SalesExecutive = Pick<UserSummary, 'id' | 'fullName' | 'email' | 'phone'>;
@@ -113,6 +116,7 @@ export type CreateSalesExecutiveRequest = {
   phone: string;
   designation: string;
   password: string;
+  salesTeamId?: number | null;
 };
 
 export type UpdateSalesExecutiveRequest = {
@@ -125,6 +129,7 @@ export type UpdateSalesExecutiveRequest = {
   minimumSalesUnits: number;
   minimumCollectionAmount: number;
   targetMonth?: string | null;
+  salesTeamId?: number | null;
 };
 
 export type TargetProgress = {
@@ -152,6 +157,7 @@ export type SalesPerformanceReport = {
 
 export type SalesExecutiveDetail = {
   id: number;
+  salesTeamId?: number | null;
   fullName: string;
   email: string;
   phone: string;

@@ -76,6 +76,13 @@ export class ApiService {
   salesExecutives() {
     return this.http.get<SalesExecutive[]>(`${this.baseUrl}/sales-executives`, this.options());
   }
+  salesHierarchy(){return this.http.get<any[]>(`${this.baseUrl}/sales-hierarchy`,this.options());}
+  createSalesGroup(request:any){return this.http.post(`${this.baseUrl}/sales-hierarchy/groups`,request,this.options());}
+  createSalesTeam(request:any){return this.http.post(`${this.baseUrl}/sales-hierarchy/teams`,request,this.options());}
+  saveSalesGroupTarget(groupId:number,request:any){return this.http.put(`${this.baseUrl}/sales-hierarchy/groups/${groupId}/target`,request,this.options());}
+  saveSalesTeamTarget(teamId:number,request:any){return this.http.put(`${this.baseUrl}/sales-hierarchy/teams/${teamId}/target`,request,this.options());}
+  setSalesTeamLeader(teamId:number,teamLeaderId:number|null){return this.http.put(`${this.baseUrl}/sales-hierarchy/teams/${teamId}/leader`,{teamLeaderId},this.options());}
+  salesGroupReport(groupId:number,month:string){return this.http.get<any>(`${this.baseUrl}/sales-hierarchy/groups/${groupId}/report?month=${month}`,this.options());}
 
   leads() {
     return this.http.get<Lead[]>(`${this.baseUrl}/leads`, this.options());

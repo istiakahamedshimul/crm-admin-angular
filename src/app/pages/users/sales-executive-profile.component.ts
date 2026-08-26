@@ -802,7 +802,8 @@ export class SalesExecutiveProfileComponent implements OnInit {
           password: ''
           ,minimumSalesUnits: detail.currentTarget.salesUnitTarget,
           minimumCollectionAmount: detail.currentTarget.collectionTarget,
-          targetMonth: detail.currentTarget.month.substring(0, 7)
+          targetMonth: detail.currentTarget.month.substring(0, 7),
+          salesTeamId: detail.salesTeamId
         };
       },
       error: err => {

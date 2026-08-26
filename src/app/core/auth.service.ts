@@ -33,5 +33,5 @@ export class AuthService {
     const raw = localStorage.getItem(userKey);
     return raw ? JSON.parse(raw) as AuthResponse : null;
   }
-  private defaultPermissions(role?:string){const map:Record<string,string[]>={SuperAdmin:['*'],SubAdmin:['customers.view','reports.view'],CA:['customers.view','agreements.manage','emi.manage','payments.view','payments.record','payments.approve','payments.reverse','reports.view'],Transportation:['transportation.manage','customers.view'],BrandAndIT:['leads.manage','bookings.manage','customers.view','notifications.manage','reports.view'],SalesExecutive:['customers.view']};return map[role??'']??[]}
+  private defaultPermissions(role?:string){const map:Record<string,string[]>={SuperAdmin:['*'],SubAdmin:['customers.view','reports.view'],GroupLeader:['users.manage','reports.view'],CA:['customers.view','agreements.manage','emi.manage','payments.view','payments.record','payments.approve','payments.reverse','reports.view'],Transportation:['transportation.manage','customers.view'],BrandAndIT:['leads.manage','bookings.manage','customers.view','notifications.manage','reports.view'],SalesExecutive:['customers.view']};return map[role??'']??[]}
 }
