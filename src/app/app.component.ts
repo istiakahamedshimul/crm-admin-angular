@@ -35,7 +35,8 @@ import { VoiceService } from './core/voice.service';
               <span>S</span>
               Sales Accounts
             </a>
-            <a *ngIf="auth.hasPermission('users.manage')" routerLink="/admin-users" routerLinkActive="active"><span>U</span>Admin Users</a>
+            <a *ngIf="auth.hasPermission('users.manage','reports.view')" routerLink="/sales-hierarchy" routerLinkActive="active"><span>G</span>Sales Groups</a>
+            <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/admin-users" routerLinkActive="active"><span>U</span>Admin Users</a>
             <a *ngIf="auth.hasPermission('permissions.manage')" routerLink="/access-control" routerLinkActive="active"><span>A</span>Roles & Permissions</a>
 
             <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/leads" routerLinkActive="active">
@@ -84,11 +85,11 @@ import { VoiceService } from './core/voice.service';
               Commissions
             </a>
 
-            <a *ngIf="auth.hasPermission('reports.view')" routerLink="/reports" routerLinkActive="active">
+            <a *ngIf="auth.hasPermission('reports.view') && !auth.hasRole('GroupLeader')" routerLink="/reports" routerLinkActive="active">
               <span>R</span>
               Reports
             </a>
-            <a *ngIf="auth.hasPermission('reports.view')" routerLink="/daily-work-reports" routerLinkActive="active"><span>D</span>Daily Work Reports</a>
+            <a *ngIf="auth.hasPermission('reports.view') && !auth.hasRole('GroupLeader')" routerLink="/daily-work-reports" routerLinkActive="active"><span>D</span>Daily Work Reports</a>
 
             <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/employee-locations" routerLinkActive="active">
               <span>⌖</span>

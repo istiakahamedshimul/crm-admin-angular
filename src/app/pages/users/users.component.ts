@@ -28,6 +28,7 @@ import { VoiceService } from '../../core/voice.service';
         <label>Email<input name="email" type="email" [(ngModel)]="form.email" required></label>
         <label>Phone<input name="phone" [(ngModel)]="form.phone" required></label>
         <label>Designation<input name="designation" [(ngModel)]="form.designation" placeholder="e.g. Senior Sales Executive" required></label>
+        <label>Team / sub-team<select name="salesTeamId" [(ngModel)]="form.salesTeamId" required><option [ngValue]="null">Select team</option><optgroup *ngFor="let group of hierarchy" [label]="group.name"><option *ngFor="let team of group.teams" [ngValue]="team.id">{{team.parentTeamId ? '↳ ' : ''}}{{team.name}}</option></optgroup></select></label>
         <label>Password<input name="password" [(ngModel)]="form.password" type="password" required></label>
         <button type="submit">Create Account</button>
         <p class="success" *ngIf="message">{{ message }}</p>
@@ -50,6 +51,7 @@ import { VoiceService } from '../../core/voice.service';
                 <strong style="display:block">{{ user.fullName }}</strong>
                 <span style="display:block;font-size:12px;color:var(--brand);font-weight:700">{{ user.designation || 'Sales Executive' }}</span>
                 <span style="font-size:12px;color:var(--muted)">{{ user.email }}</span>
+                <span style="font-size:11px;color:var(--muted)">{{ user.salesGroup || 'No group' }} · {{ user.salesTeam || 'No team' }}</span>
               </div>
             </div>
             <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
@@ -127,7 +129,8 @@ export class UsersComponent implements OnInit {
   detailError = '';
   saving = false;
   formatMoney = money;
-  form: CreateSalesExecutiveRequest = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345' };
+  form: CreateSalesExecutiveRequest = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345', salesTeamId:null };
+  hierarchy:any[]=[];
   pendingAutoSelectId: number | null = null;
 
   get salesUsers() {
@@ -151,6 +154,7 @@ export class UsersComponent implements OnInit {
 
   ngOnInit() {
     this.load();
+    this.api.salesHierarchy().subscribe({next:x=>this.hierarchy=x,error:()=>this.hierarchy=[]});
     this.voiceService.autoSelectSalesExecutive$.subscribe(id => {
       if (id) {
         const user = this.salesUsers.find(u => u.id === id);
@@ -219,7 +223,7 @@ export class UsersComponent implements OnInit {
     this.api.createSalesExecutive(this.form).subscribe({
       next: () => {
         this.message = 'Sales executive created.';
-        this.form = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345' };
+        this.form = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345', salesTeamId:null };
         this.load();
       },
       error: err => this.error = err.error?.message || 'Could not create sales executive.'
