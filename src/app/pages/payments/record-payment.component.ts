@@ -24,6 +24,7 @@ import { ApiService } from '../../core/api.service';
       <h2>Customer monthly due</h2>
       <label>Customer file number<input name="fileId" [(ngModel)]="due.fileId" list="customer-files" placeholder="Enter file number" required><datalist id="customer-files"><option *ngFor="let customer of customers" [value]="customer.fileId"></option></datalist></label>
       <label>Due month<input type="month" name="dueMonth" [(ngModel)]="due.month" required></label>
+      <label>Due date<input type="date" name="dueDate" [(ngModel)]="due.dueDate" required></label>
       <label>Due amount<input type="number" min="0.01" step="0.01" name="dueAmount" [(ngModel)]="due.amount" required></label>
       <label>Remarks (optional)<textarea name="dueRemarks" rows="3" [(ngModel)]="due.remarks"></textarea></label>
       <p class="hint">No customer name, phone, or other details are required. The assigned sales employee is notified automatically, and the due appears on the customer profile.</p>
@@ -38,7 +39,7 @@ export class RecordPaymentComponent {
   mode: 'collection'|'due' = 'collection'; employees:any[]=[]; customers:any[]=[]; saving=false; message=''; isError=false;
   private currentMonth = new Date().toISOString().slice(0,7);
   collection:any={salesExecutiveId:null,month:this.currentMonth,amount:null,remarks:''};
-  due:any={fileId:'',month:this.currentMonth,amount:null,remarks:''};
+  due:any={fileId:'',month:this.currentMonth,dueDate:new Date().toISOString().slice(0,10),amount:null,remarks:''};
   constructor(){forkJoin({employees:this.api.salesExecutives(),customers:this.api.customers()}).subscribe({next:x=>{this.employees=x.employees;this.customers=x.customers.filter((c:any)=>!!c.fileId)},error:e=>this.error(e.error?.message||'Could not load the form data.')})}
   saveCollection(){this.saving=true;this.api.saveMonthlyCollection({...this.collection,month:`${this.collection.month}-01`}).subscribe({next:()=>this.router.navigate(['/payments'],{queryParams:{saved:'collection'}}),error:e=>{this.saving=false;this.error(e.error?.message||'Could not save the monthly collection.')}})}
   saveDue(){this.saving=true;this.api.saveCustomerDue({...this.due,fileId:this.due.fileId.trim(),month:`${this.due.month}-01`}).subscribe({next:()=>this.router.navigate(['/payments'],{queryParams:{saved:'due'}}),error:e=>{this.saving=false;this.error(e.error?.message||'Could not save the customer due.')}})}
