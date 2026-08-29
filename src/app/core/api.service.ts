@@ -206,7 +206,9 @@ export class ApiService {
     return this.http.get<ReportSummary>(`${this.baseUrl}/reports/basic`, this.options());
   }
   reportKpis(filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/kpis?${params}`,this.options());}
+  reportOverview(filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/overview?${params}`,this.options());}
   reportCatalog(){return this.http.get<any[]>(`${this.baseUrl}/reports/catalog`,this.options());}
+  operationalReport(key:string,filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/data/${encodeURIComponent(key)}?${params}`,this.options());}
   reportDrilldown(key:string,filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/drilldown/${encodeURIComponent(key)}?${params}`,this.options());}
   reportCsvUrl(key:string,from:string,to:string){return `${this.baseUrl}/reports/export/${encodeURIComponent(key)}.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;}
   exportReportCsv(key:string,from:string,to:string){return this.http.get(this.reportCsvUrl(key,from,to),{...this.options(),responseType:'blob'});}
