@@ -1,94 +1,34 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { ReportGroup, ReportSummary } from '../../models/crm.models';
-import { label, leadSource, leadStatus, money, paymentStatus } from '../../shared/format';
 
-@Component({
-  standalone: true,
-  imports: [CommonModule],
-  template: `
-    <section class="page-head">
-      <div><p class="eyebrow">Analytics</p><h1>Basic Reports</h1></div>
-      <button type="button" class="ghost-button" (click)="load()">Refresh</button>
-    </section>
+type Kpi={key:string;name:string;currentValue:number;previousValue:number;changeAmount:number;changePercentage:number;target:number;achievementPercentage:number;status:'good'|'warning'|'critical';unit:string;trend:{date:string;value:number}[];drilldownKey:string;formula:string;isEstimate:boolean};
 
-    <section class="report-grid">
-      <!-- Lead Status Chart -->
-      <article class="panel">
-        <h2>Lead Status Distribution</h2>
-        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Counts of active prospects by operational priority status.</p>
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div *ngFor="let row of report?.leadStatus">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
-              <span>{{ label(leadStatus, row.status) }}</span>
-              <strong>{{ row.count }} leads</strong>
-            </div>
-            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
-              <div style="height: 100%; background: linear-gradient(90deg, #6366f1, #4f46e5); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="(row.count / getMaxCount(report?.leadStatus)) * 100"></div>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <!-- Lead Source Chart -->
-      <article class="panel">
-        <h2>Lead Source Channels</h2>
-        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Performance of marketing campaigns and referral listings.</p>
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div *ngFor="let row of report?.leadSource">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
-              <span>{{ label(leadSource, row.source) }}</span>
-              <strong>{{ row.count }} leads</strong>
-            </div>
-            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
-              <div style="height: 100%; background: linear-gradient(90deg, #ec4899, #db2777); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="(row.count / getMaxCount(report?.leadSource)) * 100"></div>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <!-- Payment Collections Chart -->
-      <article class="panel">
-        <h2>Payment Verification Totals</h2>
-        <p style="color: var(--muted); font-size: 13px; margin-top: -12px; margin-bottom: 20px;">Financial values of verified vs pending manual collections.</p>
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <div *ngFor="let row of report?.paymentStatus">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark);">
-              <span>{{ label(paymentStatus, row.status) }}</span>
-              <strong>{{ money(row.amount || 0) }}</strong>
-            </div>
-            <div style="height: 8px; background: var(--panel-soft); border-radius: 99px; overflow: hidden; border: 1px solid var(--line);">
-              <div style="height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 99px; transition: width 0.5s ease-out;" [style.width.%]="((row.amount || 0) / getMaxAmount(report?.paymentStatus)) * 100"></div>
-            </div>
-          </div>
-        </div>
-      </article>
-
-    </section>
-  `
-})
-export class ReportsComponent implements OnInit {
-  private api = inject(ApiService);
-  report?: ReportSummary;
-  label = label;
-  money = money;
-  leadStatus = leadStatus;
-  leadSource = leadSource;
-  paymentStatus = paymentStatus;
-
-  getMaxCount(groups?: ReportGroup[]): number {
-    if (!groups || groups.length === 0) return 1;
-    const count = Math.max(...groups.map(g => g.count));
-    return count > 0 ? count : 1;
-  }
-
-  getMaxAmount(groups?: ReportGroup[]): number {
-    if (!groups || groups.length === 0) return 1;
-    const amount = Math.max(...groups.map(g => g.amount || 0));
-    return amount > 0 ? amount : 1;
-  }
-
-  ngOnInit() { this.load(); }
-  load() { this.api.reports().subscribe(data => this.report = data); }
+@Component({standalone:true,imports:[CommonModule,FormsModule],template:`
+<section class="page-head no-print"><div><p class="eyebrow">Analytics & reporting</p><h1>CRM reporting center</h1><p>Central KPI formulas, operational reports and traceable underlying records.</p></div><div class="actions"><button class="ghost-button" (click)="savePreset()">Save filter</button><button class="ghost-button" (click)="print()">Print / PDF</button><button class="ghost-button" (click)="exportCsv()">CSV</button><button class="ghost-button" (click)="exportExcel()">Excel</button><button (click)="load()">Refresh</button></div></section>
+<article class="panel filters no-print"><label>Saved filter<select [(ngModel)]="selectedPreset" (change)="applyPreset()"><option value="">Current selection</option><option *ngFor="let p of presets" [value]="p.name">{{p.name}}</option></select></label><label>From<input type="date" [(ngModel)]="filter.from"></label><label>To<input type="date" [(ngModel)]="filter.to"></label><label>Employee<select [(ngModel)]="filter.salesExecutiveId"><option [ngValue]="null">All employees</option><option *ngFor="let x of employees" [ngValue]="x.id">{{x.fullName}}</option></select></label><label>Project<select [(ngModel)]="filter.projectId"><option [ngValue]="null">All projects</option><option *ngFor="let x of projects" [ngValue]="x.id">{{x.name}}</option></select></label><label>Source<select [(ngModel)]="filter.source"><option [ngValue]="null">All sources</option><option *ngFor="let x of sources;let i=index" [ngValue]="i">{{x}}</option></select></label><label>Lead status<select [(ngModel)]="filter.leadStatus"><option [ngValue]="null">All statuses</option><option *ngFor="let x of statuses;let i=index" [ngValue]="i">{{x}}</option></select></label><label>Priority<select [(ngModel)]="filter.priority"><option [ngValue]="null">All priorities</option><option [ngValue]="0">Cold</option><option [ngValue]="1">Warm</option><option [ngValue]="2">Hot</option></select></label><button (click)="load()">Apply filters</button><button class="ghost-button" (click)="reset()">Reset</button></article>
+<header class="print-head"><h1>CRM KPI & Reporting Summary</h1><p>{{filter.from}} to {{filter.to}} · Generated {{generatedAt|date:'medium'}}</p><p>Employee: {{filterName('employee')}} · Project: {{filterName('project')}} · Source: {{filter.source===null?'All':sources[filter.source]}}</p></header><p class="error" *ngIf="error">{{error}}</p><p class="loading" *ngIf="loading">Calculating all KPIs…</p>
+<section class="summary" *ngIf="kpis.length"><article><span>KPIs</span><strong>{{kpis.length}}</strong></article><article class="good"><span>Good</span><strong>{{count('good')}}</strong></article><article class="warning"><span>Warning</span><strong>{{count('warning')}}</strong></article><article class="critical"><span>Critical</span><strong>{{count('critical')}}</strong></article></section>
+<section class="kpi-grid"><button class="kpi panel" *ngFor="let k of kpis" [class]="'kpi panel '+k.status" (click)="open(k)"><header><span>{{k.name}}</span><i>{{k.status}}</i></header><strong>{{format(k.currentValue,k.unit)}}</strong><div class="comparison"><span>Previous {{format(k.previousValue,k.unit)}}</span><b [class.negative]="k.changePercentage<0">{{k.changePercentage>=0?'+':''}}{{k.changePercentage|number:'1.0-2'}}%</b></div><div class="target" *ngIf="k.target>0"><span>Target {{format(k.target,k.unit)}}</span><span>{{k.achievementPercentage|number:'1.0-1'}}%</span><div><i [style.width.%]="clamp(k.achievementPercentage)"></i></div></div><svg viewBox="0 0 240 44" preserveAspectRatio="none" aria-label="Trend"><polyline *ngIf="k.trend.length>1" [attr.points]="points(k.trend)" fill="none" stroke="currentColor" stroke-width="3"/><line *ngIf="k.trend.length<2" x1="0" y1="35" x2="240" y2="35" stroke="currentColor" stroke-width="2" opacity=".3"/></svg><small>{{k.formula}}<em *ngIf="k.isEstimate"> · transitional estimate</em></small><footer>Open underlying records →</footer></button></section>
+<section class="catalog no-print"><h2>Available reporting system</h2><div class="catalog-grid"><article class="panel" *ngFor="let c of catalog"><h3>{{c.name}}</h3><ul><li *ngFor="let r of c.reports">{{r}}</li></ul></article></div></section>
+<div class="modal no-print" *ngIf="selected" (click)="close()"><article class="panel drawer" (click)="$event.stopPropagation()"><header><div><p class="eyebrow">KPI drill-down</p><h2>{{selected.name}}</h2><p>{{selected.formula}}</p></div><button class="ghost-button" (click)="close()">Close</button></header><div class="drawer-metrics"><b>Current {{format(selected.currentValue,selected.unit)}}</b><b>Previous {{format(selected.previousValue,selected.unit)}}</b><b>Target {{format(selected.target,selected.unit)}}</b></div><div class="responsive"><table><thead><tr><th *ngFor="let h of drillHeaders">{{human(h)}}</th></tr></thead><tbody><tr *ngFor="let row of drillRows"><td *ngFor="let h of drillHeaders">{{cell(row[h],h)}}</td></tr><tr *ngIf="!drillRows.length"><td>No underlying records for this period.</td></tr></tbody></table></div></article></div>
+`,styles:[`.actions{display:flex;gap:8px;flex-wrap:wrap}.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end;margin-bottom:18px}.filters label{display:grid;gap:6px;font-size:12px;font-weight:800;color:var(--muted)}.print-head{display:none}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.summary article{padding:16px;border:1px solid var(--line);border-radius:12px;background:#fff;display:grid;gap:5px}.summary strong{font-size:25px}.summary .good strong{color:#047857}.summary .warning strong{color:#b45309}.summary .critical strong{color:#b91c1c}.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:14px}.kpi{text-align:left;color:var(--text);box-shadow:none;display:grid;gap:10px;border-left:5px solid #94a3b8}.kpi.good{border-left-color:#10b981}.kpi.warning{border-left-color:#f59e0b}.kpi.critical{border-left-color:#ef4444}.kpi header,.comparison,.target>span,.drawer>header,.drawer-metrics{display:flex;justify-content:space-between;gap:12px}.kpi header span{font-weight:800}.kpi header i{text-transform:uppercase;font-style:normal;font-size:10px}.kpi>strong{font-size:27px}.comparison{font-size:12px;color:var(--muted)}.comparison b{color:#047857}.comparison b.negative{color:#b91c1c}.target{font-size:11px}.target>div{height:6px;background:#e2e8f0;border-radius:10px;overflow:hidden;margin-top:5px}.target>div i{display:block;height:100%;background:var(--brand)}.kpi svg{width:100%;height:44px;color:var(--brand)}.kpi small{color:var(--muted);min-height:32px}.kpi em{color:#b45309}.kpi footer{font-size:12px;font-weight:800;color:var(--brand)}.catalog{margin-top:30px}.catalog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}.catalog li{margin:6px 0;color:var(--muted)}.modal{position:fixed;inset:0;background:#0f172a99;z-index:100;padding:22px;overflow:auto}.drawer{width:min(1200px,100%);margin:auto}.drawer-metrics{padding:14px;background:var(--panel-soft);margin:14px 0;flex-wrap:wrap}.responsive{overflow:auto;max-height:65vh}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}.loading{text-align:center;padding:30px}.error{color:#b91c1c}@media(max-width:700px){.summary{grid-template-columns:repeat(2,1fr)}}@media print{.no-print,.catalog{display:none!important}.print-head{display:block}.kpi-grid{grid-template-columns:repeat(2,1fr)}.kpi{break-inside:avoid;border:1px solid #bbb!important;border-left-width:5px!important;padding:10px}.summary{grid-template-columns:repeat(4,1fr)}@page{size:A4 landscape;margin:12mm}}`]})
+export class ReportsComponent implements OnInit{
+ private api=inject(ApiService);kpis:Kpi[]=[];catalog:any[]=[];employees:any[]=[];projects:any[]=[];selected?:Kpi;drillRows:any[]=[];drillHeaders:string[]=[];loading=false;error='';generatedAt=new Date();selectedPreset='';presets:any[]=[];
+ statuses=['New','Assigned','Contacted','Interested','Follow-up needed','Site visit scheduled','Visited','Negotiation','Invoice generated','Booked','Lost','Not interested'];sources=['Facebook','WhatsApp','Website','Phone call','Walk-in','Referral','Signboard','Event','Agent','Manual entry','Other','Company','Self'];
+ filter:any={from:new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().slice(0,10),to:new Date().toISOString().slice(0,10),salesExecutiveId:null,projectId:null,teamId:null,groupId:null,source:null,leadStatus:null,priority:null};
+ ngOnInit(){this.presets=JSON.parse(localStorage.getItem('crm-report-presets')||'[]');forkJoin({catalog:this.api.reportCatalog(),employees:this.api.salesExecutives(),projects:this.api.projects()}).subscribe({next:x=>{this.catalog=x.catalog;this.employees=x.employees;this.projects=x.projects;this.load()},error:e=>this.error=e.error?.message||'Could not load reporting options.'})}
+ load(){this.loading=true;this.error='';this.api.reportKpis(this.filter).subscribe({next:x=>{this.kpis=x.kpis;this.generatedAt=new Date(x.generatedAt);this.loading=false},error:e=>{this.error=e.error?.message||'Could not calculate KPI reports.';this.loading=false}})}
+ reset(){this.filter={...this.filter,from:new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().slice(0,10),to:new Date().toISOString().slice(0,10),salesExecutiveId:null,projectId:null,teamId:null,groupId:null,source:null,leadStatus:null,priority:null};this.load()}
+ count(s:string){return this.kpis.filter(x=>x.status===s).length}clamp(x:number){return Math.min(100,Math.max(0,x))}format(v:number,u:string){if(u==='BDT'||u==='BDT/day')return new Intl.NumberFormat('en-BD',{style:'currency',currency:'BDT',maximumFractionDigits:0}).format(v)+(u==="BDT/day"?'/day':'');return `${new Intl.NumberFormat('en-BD',{maximumFractionDigits:2}).format(v)}${u==='%'?'%':u?` ${u}`:''}`}
+ points(t:{value:number}[]){const max=Math.max(1,...t.map(x=>x.value)),step=240/Math.max(1,t.length-1);return t.map((x,i)=>`${i*step},${40-(x.value/max*34)}`).join(' ')}
+ open(k:Kpi){this.selected=k;this.drillRows=[];this.drillHeaders=[];this.api.reportDrilldown(k.drilldownKey,this.filter).subscribe({next:x=>{this.drillRows=x.rows||[];this.drillHeaders=this.drillRows.length?Object.keys(this.drillRows[0]):[]},error:e=>this.error=e.error?.message||'Could not open underlying records.'})}close(){this.selected=undefined}
+ human(x:string){return x.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase())}cell(v:any,h:string){if(v===null||v===undefined||v==='')return '—';if(/date|at$/i.test(h)){const d=new Date(v);if(!isNaN(d.valueOf()))return d.toLocaleString()}return typeof v==='object'?JSON.stringify(v):v}
+ filterName(type:'employee'|'project'){const id=type==='employee'?this.filter.salesExecutiveId:this.filter.projectId;if(!id)return 'All';const list=type==='employee'?this.employees:this.projects;return list.find(x=>x.id===id)?.[type==='employee'?'fullName':'name']||'All'}
+ savePreset(){const name=prompt('Filter name');if(!name)return;this.presets=this.presets.filter(x=>x.name!==name);this.presets.push({name,filter:{...this.filter}});localStorage.setItem('crm-report-presets',JSON.stringify(this.presets));this.selectedPreset=name}applyPreset(){const p=this.presets.find(x=>x.name===this.selectedPreset);if(p){this.filter={...p.filter};this.load()}}
+ print(){window.print()}exportCsv(){this.api.exportReportCsv('leads',this.filter.from,this.filter.to).subscribe(blob=>this.download(blob,`crm-report-${this.filter.from}-${this.filter.to}.csv`))}
+ exportExcel(){const rows:any[]=this.selected?this.drillRows:this.kpis.map(k=>({KPI:k.name,Current:k.currentValue,Previous:k.previousValue,ChangePercent:k.changePercentage,Target:k.target,AchievementPercent:k.achievementPercentage,Status:k.status,Formula:k.formula}));const headers=rows.length?Object.keys(rows[0]):[];const html=`<html><meta charset="utf-8"><table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${headers.map(h=>`<td>${r[h]??''}</td>`).join('')}</tr>`).join('')}</table></html>`;this.download(new Blob([html],{type:'application/vnd.ms-excel'}),`crm-report-${this.filter.from}-${this.filter.to}.xls`)}
+ private download(blob:Blob,name:string){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 }
