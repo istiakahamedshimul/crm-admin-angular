@@ -1,232 +1,113 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import {
-  CreateSalesExecutiveRequest,
-  SalesExecutiveDetail,
-  UpdateSalesExecutiveRequest,
-  UserSummary
-} from '../../models/crm.models';
-import { label, leadStatus, money } from '../../shared/format';
+import { UserSummary } from '../../models/crm.models';
 import { VoiceService } from '../../core/voice.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <section class="page-head">
-      <div><p class="eyebrow">Team</p><h1>Sales Accounts</h1></div>
+      <div><p class="eyebrow">Team management</p><h1>Sales Accounts</h1><p class="page-copy">Manage employee access, team placement and account status.</p></div>
+      <a routerLink="/users/new" class="add-button"><span>＋</span> Add Employee</a>
     </section>
 
-    <section class="form-grid">
-      <form class="panel form-panel" (ngSubmit)="create()">
-        <h2>Create Sales Executive</h2>
-        <p style="color:var(--muted);font-size:13px;margin-top:-12px">Create a seller account for lead assignment.</p>
-        <label>Full name<input name="fullName" [(ngModel)]="form.fullName" required></label>
-        <label>Email<input name="email" type="email" [(ngModel)]="form.email" required></label>
-        <label>Phone<input name="phone" [(ngModel)]="form.phone" required></label>
-        <label>Designation<input name="designation" [(ngModel)]="form.designation" placeholder="e.g. Senior Sales Executive" required></label>
-        <label>Team / sub-team<select name="salesTeamId" [(ngModel)]="form.salesTeamId" required><option [ngValue]="null">Select team</option><optgroup *ngFor="let group of hierarchy" [label]="group.name"><option *ngFor="let team of group.teams" [ngValue]="team.id">{{team.parentTeamId ? '↳ ' : ''}}{{team.name}}</option></optgroup></select></label>
-        <label>Password<input name="password" [(ngModel)]="form.password" type="password" required></label>
-        <button type="submit">Create Account</button>
-        <p class="success" *ngIf="message">{{ message }}</p>
-        <p class="error" *ngIf="error">{{ error }}</p>
-      </form>
-
-      <article class="panel">
-        <h2>Sales Team</h2>
-        <p style="color:var(--muted);font-size:13px;margin-top:-12px;margin-bottom:20px">
-          Select a sales executive to edit their account and inspect performance.
-        </p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
-          <button *ngFor="let user of salesUsers" type="button" (click)="openDetail(user)"
-            style="text-align:left;background:var(--bg);color:inherit;border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-height:0">
-            <div style="display:flex;align-items:center;gap:12px">
-              <div style="width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:white;background:linear-gradient(135deg,var(--brand),#06b6d4);font-weight:800">
-                {{ getInitials(user.fullName) }}
-              </div>
-              <div style="min-width:0">
-                <strong style="display:block">{{ user.fullName }}</strong>
-                <span style="display:block;font-size:12px;color:var(--brand);font-weight:700">{{ user.designation || 'Sales Executive' }}</span>
-                <span style="font-size:12px;color:var(--muted)">{{ user.email }}</span>
-                <span style="font-size:11px;color:var(--muted)">{{ user.salesGroup || 'No group' }} · {{ user.salesTeam || 'No team' }}</span>
-              </div>
-            </div>
-            <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px">{{ user.phone }}</span>
-              <span class="status-pill" [class.approved]="user.isActive" [class.rejected]="!user.isActive">
-                {{ user.isActive ? 'Active' : 'Inactive' }}
-              </span>
-            </div>
-          </button>
-        </div>
-      </article>
+    <section class="stats-grid">
+      <article><span>Total employees</span><strong>{{ salesUsers.length }}</strong></article>
+      <article><span>Active accounts</span><strong class="active-number">{{ activeCount }}</strong></article>
+      <article><span>Inactive accounts</span><strong class="inactive-number">{{ salesUsers.length - activeCount }}</strong></article>
+      <article><span>Teams represented</span><strong>{{ teamCount }}</strong></article>
     </section>
 
-    <div *ngIf="detail" (click)="closeDetail()"
-      style="position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:1000;overflow:auto;padding:24px">
-      <section (click)="$event.stopPropagation()"
-        style="width:min(1050px,100%);margin:auto;background:white;border-radius:20px;padding:24px;box-shadow:0 30px 70px rgba(15,23,42,.3)">
-        <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start">
-          <div><p class="eyebrow">Sales executive profile</p><h2 style="margin:0">{{ detail.fullName }}</h2></div>
-          <button type="button" class="ghost-button" (click)="closeDetail()">Close</button>
+    <section class="table-card">
+      <header class="table-toolbar">
+        <div><h2>All sales employees</h2><p>{{ filteredUsers.length }} matching accounts</p></div>
+        <div class="filters">
+          <input type="search" [(ngModel)]="search" placeholder="Search name, email or phone">
+          <select [(ngModel)]="team"><option value="">All teams</option><option *ngFor="let name of teams" [value]="name">{{ name }}</option></select>
+          <select [(ngModel)]="status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+          <button type="button" class="refresh" (click)="load()" [disabled]="loading">{{ loading ? 'Loading…' : 'Refresh' }}</button>
         </div>
+      </header>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:20px 0">
-          <div *ngFor="let metric of detailMetrics" style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px">
-            <span style="display:block;color:var(--muted);font-size:12px">{{ metric.label }}</span>
-            <strong style="display:block;margin-top:5px;font-size:20px">{{ metric.money ? formatMoney(metric.value) : metric.value }}</strong>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:18px">
-          <form class="panel form-panel" (ngSubmit)="saveDetail()" style="margin:0">
-            <h3>Edit account</h3>
-            <label>Full name<input name="editFullName" [(ngModel)]="editForm.fullName" required></label>
-            <label>Email<input name="editEmail" type="email" [(ngModel)]="editForm.email" required></label>
-            <label>Phone<input name="editPhone" [(ngModel)]="editForm.phone" required></label>
-            <label>New password (optional)<input name="editPassword" type="password" [(ngModel)]="editForm.password"></label>
-            <label style="display:flex;align-items:center;gap:8px">
-              <input name="editActive" type="checkbox" [(ngModel)]="editForm.isActive"> Active account
-            </label>
-            <button type="submit" [disabled]="saving">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
-            <p class="success" *ngIf="detailMessage">{{ detailMessage }}</p>
-            <p class="error" *ngIf="detailError">{{ detailError }}</p>
-          </form>
-
-          <article class="panel" style="margin:0;max-height:520px;overflow:auto">
-            <h3>Recent assigned leads</h3>
-            <div *ngFor="let lead of detail.recentLeads"
-              style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)">
-              <div>
-                <strong style="display:block">{{ lead.customerName }}</strong>
-                <span style="font-size:12px;color:var(--muted)">{{ lead.phone }} · {{ lead.project || 'No project' }}</span>
-                <span *ngIf="lead.nextFollowUpAt" style="display:block;font-size:11px;color:#b54708">
-                  Follow-up: {{ lead.nextFollowUpAt | date:'medium' }}
-                </span>
-              </div>
-              <span class="status-pill">{{ statusLabel(lead.status) }}</span>
-            </div>
-            <div *ngIf="!detail.recentLeads.length" class="empty-card">No assigned leads.</div>
-          </article>
-        </div>
-      </section>
-    </div>
-  `
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Employee</th><th>Contact</th><th>Designation</th><th>Sales group</th><th>Team / sub-team</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers" (click)="openDetail(user)" tabindex="0" (keydown.enter)="openDetail(user)">
+              <td><div class="employee"><span class="avatar">{{ initials(user.fullName) }}</span><div><strong>{{ user.fullName }}</strong><small>ID #{{ user.id }}</small></div></div></td>
+              <td><strong class="email">{{ user.email }}</strong><small>{{ user.phone }}</small></td>
+              <td>{{ user.designation || 'Sales Executive' }}</td>
+              <td>{{ user.salesGroup || 'Not assigned' }}</td>
+              <td>{{ user.salesTeam || 'Not assigned' }}</td>
+              <td><span class="status-pill" [class.active]="user.isActive" [class.inactive]="!user.isActive"><i></i>{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>
+              <td><button type="button" class="view-button" (click)="$event.stopPropagation(); openDetail(user)">View profile →</button></td>
+            </tr>
+            <tr *ngIf="!loading && !filteredUsers.length"><td colspan="7" class="empty">No employee accounts match these filters.</td></tr>
+          </tbody>
+        </table>
+        <div class="empty" *ngIf="loading">Loading employee accounts…</div>
+      </div>
+    </section>
+  `,
+  styleUrls: ['./users.component.css']
 })
 export class UsersComponent implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
   private voiceService = inject(VoiceService);
   users: UserSummary[] = [];
-  detail: SalesExecutiveDetail | null = null;
-  editForm: UpdateSalesExecutiveRequest = { fullName: '', email: '', phone: '', designation: '', isActive: true, password: '', minimumSalesUnits: 0, minimumCollectionAmount: 0, targetMonth: '' };
-  message = '';
-  error = '';
-  detailMessage = '';
-  detailError = '';
-  saving = false;
-  formatMoney = money;
-  form: CreateSalesExecutiveRequest = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345', salesTeamId:null };
-  hierarchy:any[]=[];
-  pendingAutoSelectId: number | null = null;
+  search = '';
+  team = '';
+  status = '';
+  loading = true;
+  private pendingAutoSelectId: number | null = null;
 
-  get salesUsers() {
-    return this.users.filter(user => user.role === 'SalesExecutive');
-  }
-
-  get detailMetrics() {
-    if (!this.detail) return [];
-    const metrics = this.detail.metrics;
-    return [
-      { label: 'Total assigned leads', value: metrics.totalAssignedLeads },
-      { label: 'Returned leads', value: metrics.returnedLeads },
-      { label: 'Following up', value: metrics.followingUp },
-      { label: 'Positive customers', value: metrics.positiveCustomers },
-      { label: 'Lost', value: metrics.lost },
-      { label: 'Not interested', value: metrics.notInterested },
-      { label: 'Accepted collections', value: metrics.approvedCollectionAmount, money: true },
-      { label: 'Commission', value: metrics.commission, money: true }
-    ];
+  get salesUsers() { return this.users.filter(user => user.role === 'SalesExecutive'); }
+  get activeCount() { return this.salesUsers.filter(user => user.isActive).length; }
+  get teams() { return [...new Set(this.salesUsers.map(user => user.salesTeam).filter((name): name is string => !!name))].sort(); }
+  get teamCount() { return this.teams.length; }
+  get filteredUsers() {
+    const term = this.search.trim().toLowerCase();
+    return this.salesUsers
+      .filter(user => !term || [user.fullName, user.email, user.phone, user.designation, user.salesGroup, user.salesTeam].some(value => value?.toLowerCase().includes(term)))
+      .filter(user => !this.team || user.salesTeam === this.team)
+      .filter(user => !this.status || (this.status === 'active' ? user.isActive : !user.isActive))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
   ngOnInit() {
     this.load();
-    this.api.salesHierarchy().subscribe({next:x=>this.hierarchy=x,error:()=>this.hierarchy=[]});
     this.voiceService.autoSelectSalesExecutive$.subscribe(id => {
-      if (id) {
-        const user = this.salesUsers.find(u => u.id === id);
-        if (user) {
-          this.openDetail(user);
-          this.voiceService.autoSelectSalesExecutiveSubject.next(null);
-        } else {
-          this.pendingAutoSelectId = id;
-        }
-      }
+      if (!id) return;
+      const user = this.salesUsers.find(item => item.id === id);
+      if (user) this.openDetail(user); else this.pendingAutoSelectId = id;
     });
   }
 
   load() {
-    this.api.users().subscribe(data => {
-      this.users = data;
-      if (this.pendingAutoSelectId) {
-        const user = this.salesUsers.find(u => u.id === this.pendingAutoSelectId);
-        if (user) {
-          this.openDetail(user);
+    this.loading = true;
+    this.api.users().subscribe({
+      next: data => {
+        this.users = data;
+        this.loading = false;
+        if (this.pendingAutoSelectId) {
+          const user = this.salesUsers.find(item => item.id === this.pendingAutoSelectId);
+          if (user) this.openDetail(user);
           this.pendingAutoSelectId = null;
-          this.voiceService.autoSelectSalesExecutiveSubject.next(null);
         }
-      }
+      },
+      error: () => { this.loading = false; }
     });
   }
 
   openDetail(user: UserSummary) {
+    this.voiceService.autoSelectSalesExecutiveSubject.next(null);
     void this.router.navigate(['/users', user.id]);
   }
 
-  closeDetail() {
-    if (!this.saving) this.detail = null;
-  }
-
-  saveDetail() {
-    if (!this.detail) return;
-    this.saving = true;
-    this.detailError = '';
-    this.detailMessage = '';
-    this.api.updateSalesExecutive(this.detail.id, this.editForm).subscribe({
-      next: () => {
-        this.saving = false;
-        this.detailMessage = 'Sales executive updated.';
-        this.load();
-        this.openDetail({ ...this.detail!, role: 'SalesExecutive' });
-      },
-      error: err => {
-        this.saving = false;
-        this.detailError = err.error?.message || 'Could not update salesperson.';
-      }
-    });
-  }
-
-  statusLabel(status: number) {
-    return label(leadStatus, status);
-  }
-
-  getInitials(name: string) {
-    return name.split(' ').filter(Boolean).map(part => part[0]).join('').substring(0, 2).toUpperCase() || 'SE';
-  }
-
-  create() {
-    this.message = '';
-    this.error = '';
-    this.api.createSalesExecutive(this.form).subscribe({
-      next: () => {
-        this.message = 'Sales executive created.';
-        this.form = { fullName: '', email: '', phone: '', designation: 'Sales Executive', password: 'Sales@12345', salesTeamId:null };
-        this.load();
-      },
-      error: err => this.error = err.error?.message || 'Could not create sales executive.'
-    });
-  }
+  initials(name: string) { return name.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SE'; }
 }
