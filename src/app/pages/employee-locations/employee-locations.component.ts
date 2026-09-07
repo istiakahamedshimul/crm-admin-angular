@@ -26,11 +26,18 @@ import * as L from 'leaflet';
         <aside class="employee-panel">
           <div class="panel-title"><div><h2>Field team</h2><p>Latest device signal</p></div><button class="refresh" (click)="loadLive()" [disabled]="loading">↻</button></div>
           <div class="employee-list" *ngIf="live.length; else noLocations">
-            <button *ngFor="let item of live" (click)="select(item)" [class.selected]="selected?.employeeId === item.employeeId">
-              <span class="avatar">{{ initials(item.fullName) }}</span>
-              <span class="employee-copy"><strong>{{ item.fullName }}</strong><small>{{ item.trackingChangedAtUtc ? ('Tracking turned ' + (item.trackingEnabled ? 'on' : 'off') + ' · ' + (item.trackingChangedAtUtc | date:'MMM d, h:mm a')) : (item.recordedAtUtc ? (item.recordedAtUtc | date:'MMM d, h:mm a') : 'No location received') }}</small></span>
-              <span class="signal" [class.online]="item.isOnline" [class.tracking-off]="!item.trackingEnabled">{{ !item.trackingEnabled ? 'Tracking off' : (item.isOnline ? 'Live' : (item.hasLocation ? 'Offline' : 'Waiting')) }}</span>
-            </button>
+            <div class="employee-row" *ngFor="let item of live" [class.selected]="selected?.employeeId === item.employeeId">
+              <button class="employee-select" type="button" (click)="select(item)">
+                <span class="avatar">{{ initials(item.fullName) }}</span>
+                <span class="employee-copy"><strong>{{ item.fullName }}</strong><small>{{ item.trackingChangedAtUtc ? ('Tracking turned ' + (item.trackingEnabled ? 'on' : 'off') + ' · ' + (item.trackingChangedAtUtc | date:'MMM d, h:mm a')) : (item.recordedAtUtc ? (item.recordedAtUtc | date:'MMM d, h:mm a') : 'No location received') }}</small></span>
+                <span class="signal" [class.online]="item.isOnline" [class.tracking-off]="!item.trackingEnabled">{{ !item.trackingEnabled ? 'Off' : (item.isOnline ? 'Live' : (item.hasLocation ? 'Offline' : 'Waiting')) }}</span>
+              </button>
+              <label class="tracking-toggle" [class.busy]="trackingEmployeeId === item.employeeId" [attr.title]="item.trackingEnabled ? 'Turn off employee tracking' : 'Turn on employee tracking'">
+                <input type="checkbox" [checked]="item.trackingEnabled" [disabled]="trackingEmployeeId === item.employeeId" (change)="setTracking(item, $any($event.target).checked)">
+                <span></span>
+                <b>{{ item.trackingEnabled ? 'On' : 'Off' }}</b>
+              </label>
+            </div>
           </div>
           <ng-template #noLocations><div class="location-empty"><b>No signals yet</b><span>Locations appear after field staff allow tracking.</span></div></ng-template>
         </aside>
@@ -58,12 +65,12 @@ import * as L from 'leaflet';
       </section>
     </section>
   `,
-  styleUrls: ['./employee-locations.component.css']
+  styleUrls: ['./employee-locations.component.css', './employee-location-toggle.css']
 })
 export class EmployeeLocationsComponent implements OnInit, AfterViewInit, OnDestroy {
   private api = inject(ApiService); auth = inject(AuthService); private map?: L.Map; private layer = L.layerGroup(); private timer?: ReturnType<typeof setInterval>;
   private readonly projectHouse = L.latLng(23.6612777, 90.3656087);
-  live: LiveEmployeeLocation[] = []; selected?: LiveEmployeeLocation; history?: TravelHistory; loading = false;
+  live: LiveEmployeeLocation[] = []; selected?: LiveEmployeeLocation; history?: TravelHistory; loading = false; trackingEmployeeId: number | null = null;
   historyEmployeeId: number | null = null; historyDate = new Date().toISOString().slice(0, 10);
   get canViewHistory() { return this.auth.user()?.role === 'SuperAdmin'; }
   get onlineCount() { return this.live.filter(x => x.isOnline).length; }
@@ -74,6 +81,24 @@ export class EmployeeLocationsComponent implements OnInit, AfterViewInit, OnDest
   ngOnDestroy() { if (this.timer) clearInterval(this.timer); this.map?.remove(); }
   loadLive(show = true) { if (show) this.loading = true; this.api.liveLocations().subscribe({ next: data => { this.live = data; if (!this.selected && data.length) { this.selected = data[0]; this.historyEmployeeId = data[0].employeeId; } else this.selected = data.find(x => x.employeeId === this.selected?.employeeId) || this.selected; this.drawLive(); this.loading = false; }, error: () => this.loading = false }); }
   select(item: LiveEmployeeLocation) { this.selected = item; this.historyEmployeeId = item.employeeId; this.drawLive(); if (item.latitude != null && item.longitude != null) this.map?.flyTo([item.latitude, item.longitude], 15, { duration: .8 }); }
+  setTracking(item: LiveEmployeeLocation, enabled: boolean) {
+    const previous = item.trackingEnabled;
+    item.trackingEnabled = enabled;
+    this.trackingEmployeeId = item.employeeId;
+    this.api.setEmployeeTracking(item.employeeId, enabled).subscribe({
+      next: state => {
+        item.trackingEnabled = state.trackingEnabled;
+        item.trackingChangedAtUtc = state.trackingChangedAtUtc;
+        if (!state.trackingEnabled) item.isOnline = false;
+        this.trackingEmployeeId = null;
+        this.drawLive();
+      },
+      error: () => {
+        item.trackingEnabled = previous;
+        this.trackingEmployeeId = null;
+      }
+    });
+  }
   loadHistory() { if (!this.historyEmployeeId || !this.canViewHistory) return; this.api.travelHistory(this.historyEmployeeId, this.historyDate).subscribe(data => { this.history = data; this.drawRoute(data.points); }); }
   initials(name: string) { return name.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); }
   private marker(point: LocationPoint, active = false) { return L.circleMarker([point.latitude, point.longitude], { radius: active ? 10 : 7, color: '#fff', weight: 3, fillColor: point.isMocked ? '#ef4444' : '#0f766e', fillOpacity: 1 }); }

@@ -231,6 +231,13 @@ export class ApiService {
   setVehicleStatus(id: number, isActive: boolean) { return this.http.patch(`${this.baseUrl}/vehicles/${id}/status`, isActive, this.options()); }
   createAdminVisit(request: Record<string, unknown>) { return this.http.post(`${this.baseUrl}/vehicle-bookings/admin`, request, this.options()); }
   liveLocations() { return this.http.get<LiveEmployeeLocation[]>(`${this.baseUrl}/locations/live`, this.options()); }
+  setEmployeeTracking(employeeId: number, enabled: boolean) {
+    return this.http.put<{ employeeId: number; trackingEnabled: boolean; trackingChangedAtUtc: string }>(
+      `${this.baseUrl}/locations/tracking-status/${employeeId}`,
+      { enabled },
+      this.options()
+    );
+  }
   travelHistory(employeeId: number, date: string) {
     const offset = -new Date().getTimezoneOffset();
     return this.http.get<TravelHistory>(`${this.baseUrl}/locations/history/${employeeId}?date=${date}&timezoneOffsetMinutes=${offset}`, this.options());
