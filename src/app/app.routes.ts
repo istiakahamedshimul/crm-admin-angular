@@ -24,6 +24,7 @@ import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
 import { DailyWorkReportsComponent } from './pages/daily-work-reports/daily-work-reports.component';
 import { AccessControlComponent } from './pages/access-control/access-control.component';
 import { SalesHierarchyComponent } from './pages/sales-hierarchy/sales-hierarchy.component';
+import { LeadPerformanceComponent } from './pages/lead-performance/lead-performance.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -32,6 +33,7 @@ export const routes: Routes = [
   { path: 'sales-hierarchy', component: SalesHierarchyComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','reports.view']} },
   { path: 'users/:id', component: SalesExecutiveProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','leads.manage']} },
   { path: 'leads', component: LeadsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
+  { path: 'lead-performance', component: LeadPerformanceComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'leads/:id', component: LeadProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'followups', component: FollowupsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'customers', component: CustomersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['customers.view']} },
