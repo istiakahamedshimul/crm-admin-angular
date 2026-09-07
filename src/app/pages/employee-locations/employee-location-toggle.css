@@ -1,0 +1,69 @@
+.employee-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding-right: 9px;
+  border-radius: 12px;
+}
+
+.employee-row:hover,
+.employee-row.selected {
+  background: #f0fdfa;
+}
+
+.employee-select {
+  min-width: 0;
+}
+
+.tracking-toggle {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.tracking-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tracking-toggle span {
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: 0.2s;
+}
+
+.tracking-toggle span::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+  content: '';
+  transition: 0.2s;
+}
+
+.tracking-toggle input:checked + span {
+  background: #0f766e;
+}
+
+.tracking-toggle input:checked + span::after {
+  transform: translateX(15px);
+}
+
+.tracking-toggle b {
+  color: #64748b;
+  font-size: 9px;
+}
+
+.tracking-toggle.busy {
+  cursor: wait;
+  opacity: 0.55;
+}
