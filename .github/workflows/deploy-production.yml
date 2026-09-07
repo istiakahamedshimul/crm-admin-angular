@@ -39,10 +39,9 @@ jobs:
           }
           fs.writeFileSync(file, source.replace('GEMINI_API_KEY_PLACEHOLDER', key), 'utf8');
           NODE
+          ! grep -q "geminiApiKey: 'GEMINI_API_KEY_PLACEHOLDER'" src/environments/environment.production.ts
       - name: Build production frontend
-        run: |
-          npm run build -- --configuration production
-          ! grep -R -q 'GEMINI_API_KEY_PLACEHOLDER' dist
+        run: npm run build -- --configuration production
       - name: Package frontend
         run: tar -czf frontend.tar.gz -C dist/admin-angular/browser .
       - name: Configure SSH
