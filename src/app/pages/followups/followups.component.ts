@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { VoiceService } from '../../core/voice.service';
 import { FollowUp, FollowUpProof } from '../../models/crm.models';
@@ -126,6 +127,7 @@ type CustomerGroup = { key: string; name: string; latest: FollowUp; history: Fol
 })
 export class FollowupsComponent implements OnInit {
   private api = inject(ApiService);
+  private route = inject(ActivatedRoute);
   private voiceService = inject(VoiceService);
   followUps: FollowUp[] = [];
   selectedExecutive?: string;
@@ -136,8 +138,11 @@ export class FollowupsComponent implements OnInit {
   proofError = false;
   private pendingVoiceExecutive?: string;
   private followUpsLoaded = false;
+  private requestedLeadId?: number;
 
   ngOnInit() {
+    const leadId = Number(this.route.snapshot.queryParamMap.get('leadId'));
+    if (Number.isInteger(leadId) && leadId > 0) this.requestedLeadId = leadId;
     this.voiceService.followupExecutive$.subscribe(name => {
       if (!name) return;
       this.pendingVoiceExecutive = name;
@@ -165,8 +170,17 @@ export class FollowupsComponent implements OnInit {
       this.followUpsLoaded = true;
       this.selectedExecutive=undefined;
       this.selectedCustomer=undefined;
+      this.applyRequestedLead();
       this.applyVoiceExecutive();
     });
+  }
+  private applyRequestedLead() {
+    if (!this.requestedLeadId) return;
+    const item = this.followUps.find(followUp => followUp.leadId === this.requestedLeadId);
+    if (!item) return;
+    this.selectedExecutive = item.salesExecutive;
+    const key = item.customerId ? `customer-${item.customerId}` : `lead-${item.leadId}`;
+    this.selectedCustomer = this.executiveCustomers.find(group => group.key === key);
   }
   private applyVoiceExecutive() {
     if (!this.pendingVoiceExecutive || !this.followUpsLoaded) return;
