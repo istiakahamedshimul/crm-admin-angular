@@ -26,6 +26,8 @@ import { AccessControlComponent } from './pages/access-control/access-control.co
 import { SalesHierarchyComponent } from './pages/sales-hierarchy/sales-hierarchy.component';
 import { LeadPerformanceComponent } from './pages/lead-performance/lead-performance.component';
 import { CreateSalesAccountComponent } from './pages/users/create-sales-account.component';
+import { CreateLeadComponent } from './pages/leads/create-lead.component';
+import { ImportLeadsComponent } from './pages/leads/import-leads.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -35,6 +37,8 @@ export const routes: Routes = [
   { path: 'sales-hierarchy', component: SalesHierarchyComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','reports.view']} },
   { path: 'users/:id', component: SalesExecutiveProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage','leads.manage']} },
   { path: 'leads', component: LeadsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
+  { path: 'leads/new', component: CreateLeadComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
+  { path: 'leads/import', component: ImportLeadsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'lead-performance', component: LeadPerformanceComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'leads/:id', component: LeadProfileComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'followups', component: FollowupsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
