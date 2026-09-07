@@ -1,28 +1,126 @@
-import {CommonModule} from '@angular/common';
-import {Component,inject} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {forkJoin,of} from 'rxjs';
-import {ApiService} from '../../core/api.service';
-import {AuthService} from '../../core/auth.service';
+import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { ApiService } from '../../core/api.service';
+import { AuthService } from '../../core/auth.service';
 
-@Component({standalone:true,imports:[CommonModule,FormsModule],host:{'[class.readonly]':'!auth.hasPermission("users.manage")'},template:`
-<style>:host.readonly .forms,:host.readonly .team-form,:host.readonly .target{display:none!important}</style><section class="page-head"><div><p class="eyebrow">Sales organization</p><h1>Groups, teams and sub-teams</h1><p>Manage reporting lines, leaders, monthly targets and group-only performance.</p></div></section>
-<div class="forms" *ngIf="auth.hasRole('SuperAdmin')"><form class="panel" (ngSubmit)="createGroup()"><h2>Create group</h2><label>Group name<input name="groupName" [(ngModel)]="groupForm.name" required></label><label>Group Leader<select name="groupLeader" [(ngModel)]="groupForm.groupLeaderId" required><option [ngValue]="null">Select admin Group Leader</option><option *ngFor="let user of groupLeaders" [ngValue]="user.id">{{user.fullName}}</option></select></label><button>Create group</button></form></div>
-<form class="panel team-form" (ngSubmit)="createTeam()" *ngIf="groups.length"><h2>Create team or sub-team</h2><label>Group<select name="teamGroup" [(ngModel)]="teamForm.salesGroupId" (ngModelChange)="teamForm.parentTeamId=null" required><option *ngFor="let group of groups" [ngValue]="group.id">{{group.name}}</option></select></label><label>Level<select name="teamParent" [(ngModel)]="teamForm.parentTeamId"><option [ngValue]="null">Main team</option><option *ngFor="let team of selectedGroup?.teams" [ngValue]="team.id" [disabled]="team.parentTeamId">Sub-team under {{team.name}}</option></select></label><label>Name<input name="teamName" [(ngModel)]="teamForm.name" required></label><label>Team leader (Sales Executive)<select name="teamLeader" [(ngModel)]="teamForm.teamLeaderId"><option [ngValue]="null">No leader yet</option><option *ngFor="let user of salesUsers" [ngValue]="user.id">{{user.fullName}}</option></select></label><button>Create</button></form>
-<p class="error" *ngIf="error">{{error}}</p><p class="success" *ngIf="message">{{message}}</p>
-<section class="group panel" *ngFor="let group of groups"><header><div><h2>{{group.name}}</h2><span>Group Leader: {{group.groupLeader}}</span></div><button type="button" (click)="loadReport(group)">View report</button></header><form class="target" *ngIf="auth.hasRole('SuperAdmin')" (ngSubmit)="saveGroupTarget(group)"><strong>Super Admin group target</strong><input type="month" name="gm{{group.id}}" [(ngModel)]="group.targetMonth"><input type="number" min="0" name="gu{{group.id}}" [(ngModel)]="group.unitTarget" placeholder="Units"><input type="number" min="0" name="gc{{group.id}}" [(ngModel)]="group.collectionTarget" placeholder="Collection"><button>Save</button></form><article *ngFor="let team of mainTeams(group)" class="team"><h3>{{team.name}} <small>Leader: {{team.teamLeader||'Not assigned'}} · {{team.memberCount}} members</small></h3><form class="target" (ngSubmit)="setLeader(team)"><strong>Team leader</strong><select name="leader{{team.id}}" [(ngModel)]="team.teamLeaderId"><option [ngValue]="null">Not assigned</option><option *ngFor="let member of team.members" [ngValue]="member.id">{{member.fullName}}</option></select><button>Assign</button></form><form class="target" (ngSubmit)="saveTeamTarget(team)"><strong>Team target</strong><input type="month" name="tm{{team.id}}" [(ngModel)]="team.targetMonth"><input type="number" min="0" name="tu{{team.id}}" [(ngModel)]="team.unitTarget" placeholder="Units"><input type="number" min="0" name="tc{{team.id}}" [(ngModel)]="team.collectionTarget" placeholder="Collection"><button>Save</button></form><div class="members"><span *ngFor="let member of team.members"><b>{{member.fullName}}</b><small>{{member.designation}}</small></span></div><article class="sub" *ngFor="let child of subTeams(group,team.id)"><h4>Sub-team: {{child.name}} · {{child.teamLeader||'No leader'}}</h4><form class="target" (ngSubmit)="setLeader(child)"><strong>Sub-team leader</strong><select name="leader{{child.id}}" [(ngModel)]="child.teamLeaderId"><option [ngValue]="null">Not assigned</option><option *ngFor="let member of child.members" [ngValue]="member.id">{{member.fullName}}</option></select><button>Assign</button></form><form class="target" (ngSubmit)="saveTeamTarget(child)"><strong>Sub-team target</strong><input type="month" name="tm{{child.id}}" [(ngModel)]="child.targetMonth"><input type="number" min="0" name="tu{{child.id}}" [(ngModel)]="child.unitTarget" placeholder="Units"><input type="number" min="0" name="tc{{child.id}}" [(ngModel)]="child.collectionTarget" placeholder="Collection"><button>Save</button></form><div class="members"><span *ngFor="let member of child.members"><b>{{member.fullName}}</b><small>{{member.designation}}</small></span></div></article></article></section>
-<div class="modal" *ngIf="report" (click)="report=null"><article class="panel report" (click)="$event.stopPropagation()"><header><h2>{{report.group.name}} — {{report.month|date:'MMMM yyyy'}}</h2><button type="button" class="ghost-button" (click)="report=null">Close</button></header><div class="totals"><b>Units: {{report.totals.units}} / {{report.target?.unitTarget||0}}</b><b>Collection: {{report.totals.collection|number:'1.2-2'}} / {{report.target?.collectionTarget||0|number:'1.2-2'}}</b></div><table><thead><tr><th>Team / member</th><th>Designation</th><th>Units</th><th>Collection</th></tr></thead><tbody><ng-container *ngFor="let team of report.teams"><tr class="team-row"><td colspan="4">{{team.name}} — {{team.leader||'No leader'}}</td></tr><tr *ngFor="let member of team.members"><td>{{member.fullName}}</td><td>{{member.designation}}</td><td>{{member.units}}</td><td>{{member.collection|number:'1.2-2'}}</td></tr></ng-container></tbody></table></article></div>
-`,styles:[`.forms,.team-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px}.forms form,.team-form{align-items:end}.group{margin-bottom:18px}.group header,.report header{display:flex;justify-content:space-between;align-items:center}.group header span,small{color:var(--muted)}.target{display:flex;gap:8px;align-items:end;background:var(--bg);padding:10px;margin:12px 0;flex-wrap:wrap}.target input{width:170px}.team{border-top:1px solid var(--line);padding:14px 0}.team h3 small{display:block;font-weight:400}.members{display:flex;gap:8px;flex-wrap:wrap}.members span{display:grid;background:#f1f5f9;padding:8px 10px;border-radius:8px}.sub{margin:12px 0 0 24px;border-left:3px solid var(--brand);padding-left:14px}.modal{position:fixed;inset:0;background:#0f172a99;z-index:99;padding:24px;overflow:auto}.report{width:min(1000px,100%);margin:auto}.totals{display:flex;gap:24px;background:#ecfeff;padding:16px;margin:16px 0}.report table{width:100%}.team-row{background:#e2e8f0;font-weight:800}`]})
-export class SalesHierarchyComponent{
- private api=inject(ApiService);auth=inject(AuthService);groups:any[]=[];users:any[]=[];report:any;error='';message='';month=new Date().toISOString().slice(0,7);groupForm:any={name:'',groupLeaderId:null};teamForm:any={name:'',salesGroupId:null,parentTeamId:null,teamLeaderId:null};
- constructor(){this.load()}
- get groupLeaders(){return this.users.filter(x=>x.role==='GroupLeader'&&x.isActive)} get salesUsers(){return this.users.filter(x=>x.role==='SalesExecutive'&&x.isActive)} get selectedGroup(){return this.groups.find(x=>x.id===this.teamForm.salesGroupId)}
- load(){forkJoin({groups:this.api.salesHierarchy(),users:this.auth.hasPermission('users.manage')?this.api.users():of([])}).subscribe({next:x=>{this.groups=x.groups.map(g=>({...g,targetMonth:this.month,unitTarget:0,collectionTarget:0,teams:g.teams.map((t:any)=>({...t,targetMonth:this.month,unitTarget:0,collectionTarget:0}))}));this.users=x.users;if(!this.teamForm.salesGroupId)this.teamForm.salesGroupId=this.groups[0]?.id??null},error:e=>this.error=e.error?.message||'Could not load sales hierarchy.'})}
- createGroup(){this.api.createSalesGroup(this.groupForm).subscribe({next:()=>{this.message='Group created.';this.groupForm={name:'',groupLeaderId:null};this.load()},error:e=>this.error=e.error?.message||'Could not create group.'})}
- createTeam(){this.api.createSalesTeam(this.teamForm).subscribe({next:()=>{this.message='Team created.';this.teamForm={...this.teamForm,name:'',parentTeamId:null,teamLeaderId:null};this.load()},error:e=>this.error=e.error?.message||'Could not create team.'})}
- saveGroupTarget(g:any){this.api.saveSalesGroupTarget(g.id,{month:`${g.targetMonth}-01`,unitTarget:g.unitTarget,collectionTarget:g.collectionTarget}).subscribe({next:()=>this.message='Group target saved.',error:e=>this.error=e.error?.message||'Could not save target.'})}
- saveTeamTarget(t:any){this.api.saveSalesTeamTarget(t.id,{month:`${t.targetMonth}-01`,unitTarget:t.unitTarget,collectionTarget:t.collectionTarget}).subscribe({next:()=>this.message='Team target saved.',error:e=>this.error=e.error?.message||'Could not save target.'})}
- setLeader(t:any){this.api.setSalesTeamLeader(t.id,t.teamLeaderId).subscribe({next:()=>{this.message='Team leader assigned.';this.load()},error:e=>this.error=e.error?.message||'Could not assign team leader.'})}
- loadReport(g:any){this.api.salesGroupReport(g.id,`${this.month}-01`).subscribe({next:x=>this.report=x,error:e=>this.error=e.error?.message||'Could not load group report.'})}
- mainTeams(g:any){return g.teams.filter((t:any)=>!t.parentTeamId)} subTeams(g:any,id:number){return g.teams.filter((t:any)=>t.parentTeamId===id)}
+@Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  host: { '[class.readonly]': '!auth.hasPermission("users.manage")' },
+  template: `
+    <section class="page-head">
+      <div><p class="eyebrow">Sales organization</p><h1>Sales Hierarchy</h1><p class="page-copy">Organize reporting lines, leaders, members and monthly performance targets.</p></div>
+      <div class="period-control"><label>Reporting month<input type="month" [(ngModel)]="month"></label><button type="button" class="ghost-button" (click)="load()">Refresh</button></div>
+    </section>
+
+    <section class="summary-grid">
+      <article><span>Sales groups</span><strong>{{ groups.length }}</strong><small>Active reporting groups</small></article>
+      <article><span>Teams</span><strong>{{ teamCount }}</strong><small>Main teams and sub-teams</small></article>
+      <article><span>Sales employees</span><strong>{{ salesUsers.length }}</strong><small>Active executives</small></article>
+      <article><span>Assigned leaders</span><strong>{{ leaderCount }}</strong><small>Across all team levels</small></article>
+    </section>
+
+    <section class="setup-grid" *ngIf="auth.hasPermission('users.manage')">
+      <form class="setup-card" *ngIf="auth.hasRole('SuperAdmin')" (ngSubmit)="createGroup()">
+        <header><span class="setup-icon">G</span><div><h2>Create sales group</h2><p>Set the top-level reporting owner.</p></div></header>
+        <div class="fields"><label>Group name<input name="groupName" [(ngModel)]="groupForm.name" placeholder="e.g. Dhaka Sales" required></label><label>Group leader<select name="groupLeader" [(ngModel)]="groupForm.groupLeaderId" required><option [ngValue]="null">Select group leader</option><option *ngFor="let user of groupLeaders" [ngValue]="user.id">{{ user.fullName }}</option></select></label><button>Create Group</button></div>
+      </form>
+
+      <form class="setup-card" *ngIf="groups.length" (ngSubmit)="createTeam()">
+        <header><span class="setup-icon team-icon">T</span><div><h2>Create team or sub-team</h2><p>Add a working unit under a sales group.</p></div></header>
+        <div class="fields team-fields"><label>Sales group<select name="teamGroup" [(ngModel)]="teamForm.salesGroupId" (ngModelChange)="teamForm.parentTeamId=null" required><option *ngFor="let group of groups" [ngValue]="group.id">{{ group.name }}</option></select></label><label>Level<select name="teamParent" [(ngModel)]="teamForm.parentTeamId"><option [ngValue]="null">Main team</option><option *ngFor="let team of selectedGroup?.teams" [ngValue]="team.id" [disabled]="team.parentTeamId">Under {{ team.name }}</option></select></label><label>Team name<input name="teamName" [(ngModel)]="teamForm.name" placeholder="Team name" required></label><label>Team leader<select name="teamLeader" [(ngModel)]="teamForm.teamLeaderId"><option [ngValue]="null">Assign later</option><option *ngFor="let user of salesUsers" [ngValue]="user.id">{{ user.fullName }}</option></select></label><button>Create Team</button></div>
+      </form>
+    </section>
+
+    <div class="alert error" *ngIf="error">{{ error }}<button type="button" (click)="error=''">×</button></div>
+    <div class="alert success" *ngIf="message">{{ message }}<button type="button" (click)="message=''">×</button></div>
+
+    <section class="empty-state" *ngIf="!groups.length && !error"><span>G</span><h2>No sales groups yet</h2><p>Create your first sales group to start building the organization.</p></section>
+
+    <section class="group-card" *ngFor="let group of groups; let groupIndex = index">
+      <header class="group-head">
+        <div class="group-identity"><span class="group-number">{{ (groupIndex + 1).toString().padStart(2, '0') }}</span><div><p class="eyebrow">Sales group</p><h2>{{ group.name }}</h2><span class="leader-line">Group Leader: <b>{{ group.groupLeader || 'Not assigned' }}</b></span></div></div>
+        <div class="group-actions"><span class="team-count">{{ group.teams.length }} teams · {{ groupMembers(group) }} members</span><button type="button" (click)="loadReport(group)">View Performance</button></div>
+      </header>
+
+      <form class="target-bar group-target" *ngIf="auth.hasRole('SuperAdmin')" (ngSubmit)="saveGroupTarget(group)">
+        <div class="target-label"><span>Group target</span><small>Monthly combined objective</small></div>
+        <label>Month<input type="month" name="gm{{group.id}}" [(ngModel)]="group.targetMonth"></label>
+        <label>Sales units<input type="number" min="0" name="gu{{group.id}}" [(ngModel)]="group.unitTarget" placeholder="0"></label>
+        <label>Collection target<input type="number" min="0" name="gc{{group.id}}" [(ngModel)]="group.collectionTarget" placeholder="0"></label>
+        <button>Save Target</button>
+      </form>
+
+      <div class="teams-grid">
+        <article class="team-card" *ngFor="let team of mainTeams(group)">
+          <header class="team-head"><div><span class="level-badge">Main team</span><h3>{{ team.name }}</h3><p>{{ team.memberCount }} members</p></div><span class="leader-badge">{{ team.teamLeader || 'Leader not assigned' }}</span></header>
+
+          <div class="team-controls" *ngIf="auth.hasPermission('users.manage')">
+            <form (ngSubmit)="setLeader(team)"><label>Team leader<select name="leader{{team.id}}" [(ngModel)]="team.teamLeaderId"><option [ngValue]="null">Not assigned</option><option *ngFor="let member of team.members" [ngValue]="member.id">{{ member.fullName }}</option></select></label><button>Assign</button></form>
+            <form (ngSubmit)="saveTeamTarget(team)"><label>Month<input type="month" name="tm{{team.id}}" [(ngModel)]="team.targetMonth"></label><label>Units<input type="number" min="0" name="tu{{team.id}}" [(ngModel)]="team.unitTarget" placeholder="0"></label><label>Collection<input type="number" min="0" name="tc{{team.id}}" [(ngModel)]="team.collectionTarget" placeholder="0"></label><button>Save</button></form>
+          </div>
+
+          <div class="member-section"><div class="section-title"><span>Team members</span><b>{{ team.members.length }}</b></div><div class="member-list"><div class="member" *ngFor="let member of team.members"><span class="avatar">{{ initials(member.fullName) }}</span><div><strong>{{ member.fullName }}</strong><small>{{ member.designation || 'Sales Executive' }}</small></div></div><p class="no-members" *ngIf="!team.members.length">No employees assigned to this team.</p></div></div>
+
+          <section class="sub-team" *ngFor="let child of subTeams(group, team.id)">
+            <header><div><span class="level-badge sub-level">Sub-team</span><h4>{{ child.name }}</h4><p>{{ child.memberCount }} members · Leader: <b>{{ child.teamLeader || 'Not assigned' }}</b></p></div></header>
+            <div class="team-controls compact" *ngIf="auth.hasPermission('users.manage')"><form (ngSubmit)="setLeader(child)"><label>Leader<select name="leader{{child.id}}" [(ngModel)]="child.teamLeaderId"><option [ngValue]="null">Not assigned</option><option *ngFor="let member of child.members" [ngValue]="member.id">{{ member.fullName }}</option></select></label><button>Assign</button></form><form (ngSubmit)="saveTeamTarget(child)"><label>Month<input type="month" name="tm{{child.id}}" [(ngModel)]="child.targetMonth"></label><label>Units<input type="number" min="0" name="tu{{child.id}}" [(ngModel)]="child.unitTarget"></label><label>Collection<input type="number" min="0" name="tc{{child.id}}" [(ngModel)]="child.collectionTarget"></label><button>Save</button></form></div>
+            <div class="member-list sub-members"><div class="member" *ngFor="let member of child.members"><span class="avatar small">{{ initials(member.fullName) }}</span><div><strong>{{ member.fullName }}</strong><small>{{ member.designation || 'Sales Executive' }}</small></div></div><p class="no-members" *ngIf="!child.members.length">No sub-team members.</p></div>
+          </section>
+        </article>
+      </div>
+    </section>
+
+    <div class="modal" *ngIf="report" (click)="report=null">
+      <article class="report-card" (click)="$event.stopPropagation()">
+        <header><div><p class="eyebrow">Group performance</p><h2>{{ report.group.name }}</h2><span>{{ report.month | date:'MMMM yyyy' }}</span></div><button type="button" class="close-button" (click)="report=null">×</button></header>
+        <section class="report-totals"><article><span>Sales units</span><strong>{{ report.totals.units }}</strong><small>Target {{ report.target?.unitTarget || 0 }}</small></article><article><span>Total collection</span><strong>{{ report.totals.collection | number:'1.2-2' }}</strong><small>Target {{ report.target?.collectionTarget || 0 | number:'1.2-2' }}</small></article></section>
+        <div class="report-table"><table><thead><tr><th>Team / employee</th><th>Designation</th><th>Units</th><th>Collection</th></tr></thead><tbody><ng-container *ngFor="let team of report.teams"><tr class="team-row"><td colspan="4">{{ team.name }} · {{ team.leader || 'No leader' }}</td></tr><tr *ngFor="let member of team.members"><td>{{ member.fullName }}</td><td>{{ member.designation }}</td><td>{{ member.units }}</td><td>{{ member.collection | number:'1.2-2' }}</td></tr></ng-container></tbody></table></div>
+      </article>
+    </div>
+  `,
+  styleUrls: ['./sales-hierarchy.component.css']
+})
+export class SalesHierarchyComponent {
+  private api = inject(ApiService);
+  auth = inject(AuthService);
+  groups: any[] = [];
+  users: any[] = [];
+  report: any;
+  error = '';
+  message = '';
+  month = new Date().toISOString().slice(0, 7);
+  groupForm: any = { name: '', groupLeaderId: null };
+  teamForm: any = { name: '', salesGroupId: null, parentTeamId: null, teamLeaderId: null };
+
+  constructor() { this.load(); }
+  get groupLeaders() { return this.users.filter(user => user.role === 'GroupLeader' && user.isActive); }
+  get salesUsers() { return this.users.filter(user => user.role === 'SalesExecutive' && user.isActive); }
+  get selectedGroup() { return this.groups.find(group => group.id === this.teamForm.salesGroupId); }
+  get teamCount() { return this.groups.reduce((total, group) => total + group.teams.length, 0); }
+  get leaderCount() { return this.groups.reduce((total, group) => total + group.teams.filter((team: any) => !!team.teamLeader).length, 0); }
+  groupMembers(group: any) { return group.teams.reduce((total: number, team: any) => total + team.members.length, 0); }
+  initials(name: string) { return name.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SE'; }
+
+  load() {
+    forkJoin({ groups: this.api.salesHierarchy(), users: this.auth.hasPermission('users.manage') ? this.api.users() : of([]) }).subscribe({
+      next: result => {
+        this.groups = result.groups.map(group => ({ ...group, targetMonth: this.month, unitTarget: 0, collectionTarget: 0, teams: group.teams.map((team: any) => ({ ...team, targetMonth: this.month, unitTarget: 0, collectionTarget: 0 })) }));
+        this.users = result.users;
+        if (!this.teamForm.salesGroupId) this.teamForm.salesGroupId = this.groups[0]?.id ?? null;
+      },
+      error: error => this.error = error.error?.message || 'Could not load sales hierarchy.'
+    });
+  }
+  createGroup() { this.clearAlerts(); this.api.createSalesGroup(this.groupForm).subscribe({ next: () => { this.message = 'Sales group created.'; this.groupForm = { name: '', groupLeaderId: null }; this.load(); }, error: error => this.error = error.error?.message || 'Could not create group.' }); }
+  createTeam() { this.clearAlerts(); this.api.createSalesTeam(this.teamForm).subscribe({ next: () => { this.message = 'Team created.'; this.teamForm = { ...this.teamForm, name: '', parentTeamId: null, teamLeaderId: null }; this.load(); }, error: error => this.error = error.error?.message || 'Could not create team.' }); }
+  saveGroupTarget(group: any) { this.clearAlerts(); this.api.saveSalesGroupTarget(group.id, { month: `${group.targetMonth}-01`, unitTarget: group.unitTarget, collectionTarget: group.collectionTarget }).subscribe({ next: () => this.message = 'Group target saved.', error: error => this.error = error.error?.message || 'Could not save target.' }); }
+  saveTeamTarget(team: any) { this.clearAlerts(); this.api.saveSalesTeamTarget(team.id, { month: `${team.targetMonth}-01`, unitTarget: team.unitTarget, collectionTarget: team.collectionTarget }).subscribe({ next: () => this.message = 'Team target saved.', error: error => this.error = error.error?.message || 'Could not save target.' }); }
+  setLeader(team: any) { this.clearAlerts(); this.api.setSalesTeamLeader(team.id, team.teamLeaderId).subscribe({ next: () => { this.message = 'Team leader assigned.'; this.load(); }, error: error => this.error = error.error?.message || 'Could not assign team leader.' }); }
+  loadReport(group: any) { this.clearAlerts(); this.api.salesGroupReport(group.id, `${this.month}-01`).subscribe({ next: result => this.report = result, error: error => this.error = error.error?.message || 'Could not load group report.' }); }
+  mainTeams(group: any) { return group.teams.filter((team: any) => !team.parentTeamId); }
+  subTeams(group: any, id: number) { return group.teams.filter((team: any) => team.parentTeamId === id); }
+  private clearAlerts() { this.error = ''; this.message = ''; }
 }
