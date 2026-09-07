@@ -1,0 +1,46 @@
+name: Deploy CRM admin production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-admin-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Package frontend
+        run: tar -czf frontend.tar.gz -C dist/admin-angular/browser .
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Upload and activate
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          test -n "$VPS_HOST" && test -n "$VPS_USER"
+          ssh "$VPS_USER@$VPS_HOST" "mkdir -p incoming/frontend-$GITHUB_SHA"
+          scp frontend.tar.gz "$VPS_USER@$VPS_HOST:incoming/frontend-$GITHUB_SHA/"
+          ssh "$VPS_USER@$VPS_HOST" "sudo /usr/local/sbin/crm-deploy-frontend $GITHUB_SHA"
