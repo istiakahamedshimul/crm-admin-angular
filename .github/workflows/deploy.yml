@@ -2,9 +2,6 @@ name: Deploy Admin Angular
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   deploy:

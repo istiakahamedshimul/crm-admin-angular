@@ -23,7 +23,26 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Validate and inject Gemini API key
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$GEMINI_API_KEY"
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'src/environments/environment.production.ts';
+          const key = process.env.GEMINI_API_KEY;
+          const source = fs.readFileSync(file, 'utf8');
+          if (!source.includes('GEMINI_API_KEY_PLACEHOLDER')) {
+            throw new Error('Gemini placeholder is missing from the production environment file.');
+          }
+          fs.writeFileSync(file, source.replace('GEMINI_API_KEY_PLACEHOLDER', key), 'utf8');
+          NODE
+      - name: Build production frontend
+        run: |
+          npm run build -- --configuration production
+          ! grep -R -q 'GEMINI_API_KEY_PLACEHOLDER' dist
       - name: Package frontend
         run: tar -czf frontend.tar.gz -C dist/admin-angular/browser .
       - name: Configure SSH
