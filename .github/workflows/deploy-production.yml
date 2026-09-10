@@ -58,7 +58,18 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
+          set -euo pipefail
           test -n "$VPS_HOST" && test -n "$VPS_USER"
-          ssh "$VPS_USER@$VPS_HOST" "mkdir -p incoming/frontend-$GITHUB_SHA"
-          scp frontend.tar.gz "$VPS_USER@$VPS_HOST:incoming/frontend-$GITHUB_SHA/"
-          ssh "$VPS_USER@$VPS_HOST" "sudo /usr/local/sbin/crm-deploy-frontend $GITHUB_SHA"
+          SSH_OPTIONS=(-o ConnectTimeout=15 -o ConnectionAttempts=2 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
+          retry() {
+            local attempt
+            for attempt in 1 2 3 4; do
+              "$@" && return 0
+              if [ "$attempt" -eq 4 ]; then return 1; fi
+              echo "Connection attempt $attempt failed; retrying in $((attempt * 15)) seconds..."
+              sleep $((attempt * 15))
+            done
+          }
+          retry ssh "${SSH_OPTIONS[@]}" "$VPS_USER@$VPS_HOST" "mkdir -p incoming/frontend-$GITHUB_SHA"
+          retry scp "${SSH_OPTIONS[@]}" frontend.tar.gz "$VPS_USER@$VPS_HOST:incoming/frontend-$GITHUB_SHA/"
+          retry ssh "${SSH_OPTIONS[@]}" "$VPS_USER@$VPS_HOST" "sudo /usr/local/sbin/crm-deploy-frontend $GITHUB_SHA"
