@@ -98,11 +98,13 @@ export class BackupsComponent implements OnInit, OnDestroy {
   }
   download(item: BackupItem) {
     this.downloading = item.id; this.error = '';
-    this.api.downloadBackup(item.id).subscribe({
-      next: blob => {
-        const url = URL.createObjectURL(blob); const link = document.createElement('a');
-        link.href = url; link.download = item.fileName || `crm-backup-${item.id}.tar.gz`; link.click();
-        URL.revokeObjectURL(url); this.downloading = '';
+    this.api.backupDownloadLink(item.id).subscribe({
+      next: response => {
+        const link = document.createElement('a');
+        link.href = this.api.backupDownloadUrl(item.id, response.token);
+        link.download = item.fileName || `crm-backup-${item.id}.tar.gz`;
+        document.body.appendChild(link); link.click(); link.remove();
+        this.downloading = '';
       },
       error: () => { this.error = 'The backup could not be downloaded. It may have expired.'; this.downloading = ''; }
     });

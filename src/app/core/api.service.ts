@@ -199,7 +199,8 @@ export class ApiService {
   saveNotificationSettings(request:any){return this.http.put(`${this.baseUrl}/notification-settings`,request,this.options());}
   backups(){return this.http.get<{items:any[]}>(`${this.baseUrl}/backups`,this.options());}
   createBackup(){return this.http.post(`${this.baseUrl}/backups`,{},this.options());}
-  downloadBackup(id:string){return this.http.get(`${this.baseUrl}/backups/${encodeURIComponent(id)}/download`,{...this.options(),responseType:'blob'});}
+  backupDownloadLink(id:string){return this.http.post<{token:string,expiresAtUtc:string}>(`${this.baseUrl}/backups/${encodeURIComponent(id)}/download-link`,{},this.options());}
+  backupDownloadUrl(id:string,token:string){return `${this.baseUrl}/backups/${encodeURIComponent(id)}/download?token=${encodeURIComponent(token)}`;}
 
   commissions() {
     return this.http.get<Commission[]>(`${this.baseUrl}/commissions`, this.options());
