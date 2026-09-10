@@ -28,6 +28,7 @@ import { LeadPerformanceComponent } from './pages/lead-performance/lead-performa
 import { CreateSalesAccountComponent } from './pages/users/create-sales-account.component';
 import { CreateLeadComponent } from './pages/leads/create-lead.component';
 import { ImportLeadsComponent } from './pages/leads/import-leads.component';
+import { BackupsComponent } from './pages/backups/backups.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -47,6 +48,7 @@ export const routes: Routes = [
   { path: 'admin-users', component: AdminUsersComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['users.manage']} },
   { path: 'access-control', component: AccessControlComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['permissions.manage']} },
   { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['notifications.manage']} },
+  { path: 'backups', component: BackupsComponent, canActivate: [authGuard], data:{roles:['SuperAdmin']} },
  
     {
         path: 'properties/projects',

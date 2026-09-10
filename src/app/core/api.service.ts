@@ -197,6 +197,9 @@ export class ApiService {
   adminNotifications(){return this.http.get<any>(`${this.baseUrl}/notifications/admin`,this.options());}
   notificationSettings(){return this.http.get<any>(`${this.baseUrl}/notification-settings`,this.options());}
   saveNotificationSettings(request:any){return this.http.put(`${this.baseUrl}/notification-settings`,request,this.options());}
+  backups(){return this.http.get<{items:any[]}>(`${this.baseUrl}/backups`,this.options());}
+  createBackup(){return this.http.post(`${this.baseUrl}/backups`,{},this.options());}
+  downloadBackup(id:string){return this.http.get(`${this.baseUrl}/backups/${encodeURIComponent(id)}/download`,{...this.options(),responseType:'blob'});}
 
   commissions() {
     return this.http.get<Commission[]>(`${this.baseUrl}/commissions`, this.options());
