@@ -79,6 +79,7 @@ import { VoiceService } from './core/voice.service';
               <a *ngIf="auth.hasPermission('payments.record')" routerLink="/payments/record" routerLinkActive="active">Add Collection / Due</a>
             </div>
             <a *ngIf="auth.hasPermission('notifications.manage')" routerLink="/notifications" routerLinkActive="active"><span>N</span>Notifications</a>
+            <a *ngIf="auth.hasRole('SuperAdmin')" routerLink="/backups" routerLinkActive="active"><span>B</span>Backups</a>
 
             <a *ngIf="auth.hasPermission('payments.view')" routerLink="/commissions" routerLinkActive="active">
               <span>W</span>
