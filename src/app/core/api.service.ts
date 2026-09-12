@@ -199,23 +199,14 @@ export class ApiService {
   saveNotificationSettings(request:any){return this.http.put(`${this.baseUrl}/notification-settings`,request,this.options());}
   backups(){return this.http.get<{items:any[]}>(`${this.baseUrl}/backups`,this.options());}
   createBackup(){return this.http.post(`${this.baseUrl}/backups`,{},this.options());}
-  downloadBackup(id:string){return this.http.get(`${this.baseUrl}/backups/${encodeURIComponent(id)}/download`,{...this.options(),responseType:'blob'});}
+  backupDownloadLink(id:string){return this.http.post<{token:string,expiresAtUtc:string}>(`${this.baseUrl}/backups/${encodeURIComponent(id)}/download-link`,{},this.options());}
+  backupDownloadUrl(id:string,token:string){return `${this.baseUrl}/backups/${encodeURIComponent(id)}/download?token=${encodeURIComponent(token)}`;}
 
   commissions() {
     return this.http.get<Commission[]>(`${this.baseUrl}/commissions`, this.options());
   }
 
-  reports() {
-    return this.http.get<ReportSummary>(`${this.baseUrl}/reports/basic`, this.options());
-  }
-  reportKpis(filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/kpis?${params}`,this.options());}
-  reportOverview(filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/overview?${params}`,this.options());}
-  reportCatalog(){return this.http.get<any[]>(`${this.baseUrl}/reports/catalog`,this.options());}
-  operationalReport(key:string,filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/data/${encodeURIComponent(key)}?${params}`,this.options());}
-  reportDrilldown(key:string,filters:Record<string,string|number|null|undefined>){const params=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')params.set(k,String(v))});return this.http.get<any>(`${this.baseUrl}/reports/drilldown/${encodeURIComponent(key)}?${params}`,this.options());}
-  reportCsvUrl(key:string,from:string,to:string){return `${this.baseUrl}/reports/export/${encodeURIComponent(key)}.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;}
-  exportReportCsv(key:string,from:string,to:string){return this.http.get(this.reportCsvUrl(key,from,to),{...this.options(),responseType:'blob'});}
-  dailyWorkReports(from:string,to:string,salesExecutiveId?:number|null){const params=new URLSearchParams({from,to});if(salesExecutiveId)params.set('salesExecutiveId',String(salesExecutiveId));return this.http.get<any>(`${this.baseUrl}/daily-work-reports?${params}`,this.options());}
+  employeeKpiReport(from:string,to:string,salesExecutiveId?:number|null){const params=new URLSearchParams({from,to});if(salesExecutiveId)params.set('salesExecutiveId',String(salesExecutiveId));return this.http.get<any>(`${this.baseUrl}/reports/employee-kpis?${params}`,this.options());}
 
   vehicleBookings() {
     return this.http.get<VehicleBooking[]>(`${this.baseUrl}/vehicle-bookings`, this.options());
