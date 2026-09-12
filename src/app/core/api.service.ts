@@ -206,7 +206,7 @@ export class ApiService {
     return this.http.get<Commission[]>(`${this.baseUrl}/commissions`, this.options());
   }
 
-  employeeKpiReport(from:string,to:string,salesExecutiveId?:number|null){const params=new URLSearchParams({from,to});if(salesExecutiveId)params.set('salesExecutiveId',String(salesExecutiveId));return this.http.get<any>(`${this.baseUrl}/reports/employee-kpis?${params}`,this.options());}
+  reportWorkspace(from:string,to:string,salesExecutiveId?:number|null,projectId?:number|null){const params=new URLSearchParams({from,to});if(salesExecutiveId)params.set('salesExecutiveId',String(salesExecutiveId));if(projectId)params.set('projectId',String(projectId));return this.http.get<any>(`${this.baseUrl}/reports/workspace?${params}`,this.options());}
 
   vehicleBookings() {
     return this.http.get<VehicleBooking[]>(`${this.baseUrl}/vehicle-bookings`, this.options());
