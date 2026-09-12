@@ -13,6 +13,7 @@ import { PaymentsComponent } from './pages/payments/payments.component';
 import { RecordPaymentComponent } from './pages/payments/record-payment.component';
 import { CommissionsComponent } from './pages/commissions/commissions.component';
 import { ReportsComponent } from './pages/reports/reports.component';
+import { EmployeeReportComponent } from './pages/reports/employee-report.component';
 import { VehicleBookingsComponent } from './pages/vehicle-bookings/vehicle-bookings.component';
 import { ScheduleVisitComponent } from './pages/vehicle-bookings/schedule-visit.component';
 import { VehiclesComponent } from './pages/vehicle-bookings/vehicles.component';
@@ -58,6 +59,7 @@ export const routes: Routes = [
   { path: 'payments', component: PaymentsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['payments.view']} },
   { path: 'commissions', component: CommissionsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['payments.view']} },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['reports.view']} },
+  { path: 'reports/employees/:id', component: EmployeeReportComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['reports.view']} },
   { path: 'employee-locations', component: EmployeeLocationsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['leads.manage']} },
   { path: 'vehicle-bookings', redirectTo: 'transport/requests', pathMatch: 'full' },
   { path: 'transport/requests', component: VehicleBookingsComponent, canActivate: [authGuard,permissionGuard], data:{permissions:['transportation.manage']} },
