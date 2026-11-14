@@ -1,0 +1,75 @@
+name: Deploy CRM admin production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-admin-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate and inject Gemini API key
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$GEMINI_API_KEY"
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'src/environments/environment.production.ts';
+          const key = process.env.GEMINI_API_KEY;
+          const source = fs.readFileSync(file, 'utf8');
+          if (!source.includes('GEMINI_API_KEY_PLACEHOLDER')) {
+            throw new Error('Gemini placeholder is missing from the production environment file.');
+          }
+          fs.writeFileSync(file, source.replace('GEMINI_API_KEY_PLACEHOLDER', key), 'utf8');
+          NODE
+          ! grep -q "geminiApiKey: 'GEMINI_API_KEY_PLACEHOLDER'" src/environments/environment.production.ts
+      - name: Build production frontend
+        run: npm run build -- --configuration production
+      - name: Package frontend
+        run: tar -czf frontend.tar.gz -C dist/admin-angular/browser .
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Upload and activate
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$VPS_HOST" && test -n "$VPS_USER"
+          SSH_OPTIONS=(-o ConnectTimeout=15 -o ConnectionAttempts=2 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
+          retry() {
+            local attempt
+            for attempt in 1 2 3 4; do
+              "$@" && return 0
+              if [ "$attempt" -eq 4 ]; then return 1; fi
+              echo "Connection attempt $attempt failed; retrying in $((attempt * 15)) seconds..."
+              sleep $((attempt * 15))
+            done
+          }
+          retry ssh "${SSH_OPTIONS[@]}" "$VPS_USER@$VPS_HOST" "mkdir -p incoming/frontend-$GITHUB_SHA"
+          retry scp "${SSH_OPTIONS[@]}" frontend.tar.gz "$VPS_USER@$VPS_HOST:incoming/frontend-$GITHUB_SHA/"
+          ssh "${SSH_OPTIONS[@]}" "$VPS_USER@$VPS_HOST" "sudo /usr/local/sbin/crm-deploy-frontend $GITHUB_SHA"

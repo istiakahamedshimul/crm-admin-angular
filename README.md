@@ -3,6 +3,7 @@
 Real Estate CRM admin panel built with Angular.
 
 ## Tech Stack
+
 - Angular 17
 - TypeScript
 - REST API integration
@@ -26,18 +27,18 @@ Open `http://localhost:4200`
 
 ## Pages
 
-| Page | Description |
-|------|-------------|
-| Login | Admin authentication |
-| Dashboard | Summary stats |
-| Users | Sales executive account management |
-| Leads | Lead creation and assignment |
-| Customers | Customer profiles from leads |
-| Properties | Project and unit management |
-| Invoices | Invoice list |
-| Payments | Manual payment verification |
-| Commissions | Commission list |
-| Reports | Basic reports |
+| Page        | Description                        |
+| ----------- | ---------------------------------- |
+| Login       | Admin authentication               |
+| Dashboard   | Summary stats                      |
+| Users       | Sales executive account management |
+| Leads       | Lead creation and assignment       |
+| Customers   | Customer profiles from leads       |
+| Properties  | Project and unit management        |
+| Invoices    | Invoice list                       |
+| Payments    | Manual payment verification        |
+| Commissions | Commission list                    |
+| Reports     | Basic reports                      |
 
 ## Branch Strategy
 

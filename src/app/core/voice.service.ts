@@ -1,6 +1,6 @@
-import { Injectable, inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { Injectable, inject } from "@angular/core";
+import { Router } from "@angular/router";
+import { BehaviorSubject, Observable, firstValueFrom } from "rxjs";
 import {
   ActivityHandling,
   EndSensitivity,
@@ -10,14 +10,14 @@ import {
   Modality,
   Session,
   StartSensitivity,
-  Type
-} from '@google/genai';
-import { ApiService } from './api.service';
-import { Payment, UserSummary } from '../models/crm.models';
-import { environment } from '../../environments/environment';
+  Type,
+} from "@google/genai";
+import { ApiService } from "./api.service";
+import { Payment, UserSummary } from "../models/crm.models";
+import { environment } from "../../environments/environment";
 
-const GEMINI_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
-const GEMINI_API_KEY = environment.geminiApiKey || '';
+const GEMINI_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025";
+const GEMINI_API_KEY = environment.geminiApiKey || "";
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
 
@@ -35,15 +35,15 @@ interface SalesExecutiveContext {
 }
 
 export interface CollectionVoiceFilter {
-  status?: 'all' | 'pending' | 'approved' | 'rejected';
-  period?: 'week' | 'month' | 'year' | 'overall' | 'custom';
+  status?: "all" | "pending" | "approved" | "rejected";
+  period?: "week" | "month" | "year" | "overall" | "custom";
   from?: string;
   to?: string;
   salesExecutiveName?: string;
   search?: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class VoiceService {
   private router = inject(Router);
   private api = inject(ApiService);
@@ -57,18 +57,23 @@ export class VoiceService {
   private errorSubject = new BehaviorSubject<string | null>(null);
   error$: Observable<string | null> = this.errorSubject.asObservable();
 
-  public autoSelectSalesExecutiveSubject = new BehaviorSubject<number | null>(null);
+  public autoSelectSalesExecutiveSubject = new BehaviorSubject<number | null>(
+    null,
+  );
   autoSelectSalesExecutive$: Observable<number | null> =
     this.autoSelectSalesExecutiveSubject.asObservable();
   public followupExecutiveSubject = new BehaviorSubject<string | null>(null);
-  followupExecutive$: Observable<string | null> = this.followupExecutiveSubject.asObservable();
+  followupExecutive$: Observable<string | null> =
+    this.followupExecutiveSubject.asObservable();
   public leadExecutiveSubject = new BehaviorSubject<string | null>(null);
-  leadExecutive$: Observable<string | null> = this.leadExecutiveSubject.asObservable();
-  public collectionFilterSubject = new BehaviorSubject<CollectionVoiceFilter | null>(null);
+  leadExecutive$: Observable<string | null> =
+    this.leadExecutiveSubject.asObservable();
+  public collectionFilterSubject =
+    new BehaviorSubject<CollectionVoiceFilter | null>(null);
   collectionFilter$: Observable<CollectionVoiceFilter | null> =
     this.collectionFilterSubject.asObservable();
 
-  language: 'en' | 'bn' = 'en';
+  language: "en" | "bn" = "en";
 
   private session: Session | null = null;
   private mediaStream: MediaStream | null = null;
@@ -84,7 +89,7 @@ export class VoiceService {
   private explicitlyStarted = false;
   private setupComplete = false;
   private executives: SalesExecutiveContext[] = [];
-  private voiceState: 'idle' | 'candidate' | 'speaking' | 'processing' = 'idle';
+  private voiceState: "idle" | "candidate" | "speaking" | "processing" = "idle";
   private candidateChunks: Int16Array[] = [];
   private candidateVoiceFrames = 0;
   private lastVoiceAt = 0;
@@ -103,13 +108,15 @@ export class VoiceService {
   constructor() {
     (window as any).crmVoiceDebug = {
       snapshot: () => this.getDebugSnapshot(),
-      print: () => console.table(this.getDebugSnapshot())
+      print: () => console.table(this.getDebugSnapshot()),
     };
-    this.debug('Voice service created. Run crmVoiceDebug.print() for current state.');
+    this.debug(
+      "Voice service created. Run crmVoiceDebug.print() for current state.",
+    );
   }
 
   toggleLanguage(): void {
-    this.language = this.language === 'en' ? 'bn' : 'en';
+    this.language = this.language === "en" ? "bn" : "en";
 
     // The language instruction is part of Live API session setup, so reconnect.
     if (this.explicitlyStarted) {
@@ -125,35 +132,41 @@ export class VoiceService {
     this.explicitlyStarted = true;
     this.audioChunksSent = 0;
     this.audioBytesReceived = 0;
-    this.debug('Start requested.', { language: this.language, model: GEMINI_MODEL });
+    this.debug("Start requested.", {
+      language: this.language,
+      model: GEMINI_MODEL,
+    });
     this.errorSubject.next(null);
     this.processingSubject.next(true);
 
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'GEMINI_API_KEY_PLACEHOLDER') {
-      this.debugError('Gemini API key is missing or still uses the placeholder.');
-      this.failSession('Gemini Live API key is not configured.');
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "GEMINI_API_KEY_PLACEHOLDER") {
+      this.debugError(
+        "Gemini API key is missing or still uses the placeholder.",
+      );
+      this.failSession("Gemini Live API key is not configured.");
       return;
     }
 
     try {
       this.executives = await this.loadSalesExecutiveContext();
-      this.debug('CRM context loaded.', {
+      this.debug("CRM context loaded.", {
         executiveCount: this.executives.length,
-        availableCount: this.executives.filter((item) => !item.unavailable).length
+        availableCount: this.executives.filter((item) => !item.unavailable)
+          .length,
       });
       await this.openLiveSession();
     } catch (error) {
-      console.error('Unable to start Gemini Live conversation:', error);
+      console.error("Unable to start Gemini Live conversation:", error);
       this.failSession(
-        this.language === 'bn'
-          ? 'লাইভ ভয়েস কথোপকথন শুরু করা যায়নি।'
-          : 'Could not start the live voice conversation.'
+        this.language === "bn"
+          ? "লাইভ ভয়েস কথোপকথন শুরু করা যায়নি।"
+          : "Could not start the live voice conversation.",
       );
     }
   }
 
   stopListening(): void {
-    this.debug('Stop requested by user.');
+    this.debug("Stop requested by user.");
     this.explicitlyStarted = false;
     this.listeningSubject.next(false);
     this.processingSubject.next(false);
@@ -173,23 +186,27 @@ export class VoiceService {
       this.executives = await this.loadSalesExecutiveContext();
       await this.openLiveSession();
     } catch (error) {
-      console.error('Unable to restart Gemini Live conversation:', error);
+      console.error("Unable to restart Gemini Live conversation:", error);
       this.failSession(
-        this.language === 'bn'
-          ? 'ভাষা পরিবর্তনের পরে ভয়েস সেশন চালু করা যায়নি।'
-          : 'Could not restart the voice session after changing language.'
+        this.language === "bn"
+          ? "ভাষা পরিবর্তনের পরে ভয়েস সেশন চালু করা যায়নি।"
+          : "Could not restart the voice session after changing language.",
       );
     }
   }
 
   private async loadSalesExecutiveContext(): Promise<SalesExecutiveContext[]> {
     const users = await firstValueFrom(this.api.users());
-    const salesUsers = users.filter((user: UserSummary) => user.role === 'SalesExecutive');
+    const salesUsers = users.filter(
+      (user: UserSummary) => user.role === "SalesExecutive",
+    );
 
     return Promise.all(
       salesUsers.map(async (user) => {
         try {
-          const detail = await firstValueFrom(this.api.salesExecutiveDetail(user.id));
+          const detail = await firstValueFrom(
+            this.api.salesExecutiveDetail(user.id),
+          );
           return {
             id: user.id,
             fullName: user.fullName,
@@ -198,58 +215,59 @@ export class VoiceService {
               positiveCustomers: detail.metrics.positiveCustomers,
               lost: detail.metrics.lost,
               notInterested: detail.metrics.notInterested,
-              assignedStage: detail.metrics.assignedStage
-            }
+              assignedStage: detail.metrics.assignedStage,
+            },
           };
         } catch {
           return { id: user.id, fullName: user.fullName, unavailable: true };
         }
-      })
+      }),
     );
   }
 
   private async openLiveSession(): Promise<void> {
     this.setupComplete = false;
-    this.debug('Opening Gemini Live SDK session...');
+    this.debug("Opening Gemini Live SDK session...");
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     const session = await ai.live.connect({
       model: GEMINI_MODEL,
       config: this.createSessionConfig(),
       callbacks: {
-        onopen: () => this.debug('Gemini Live WebSocket opened.'),
-        onmessage: (message: LiveServerMessage) => this.handleServerMessage(message),
+        onopen: () => this.debug("Gemini Live WebSocket opened."),
+        onmessage: (message: LiveServerMessage) =>
+          this.handleServerMessage(message),
         onerror: (error) => {
-          this.debugError('Gemini Live connection error.', error);
+          this.debugError("Gemini Live connection error.", error);
           this.errorSubject.next(
-            this.language === 'bn'
-              ? 'Gemini Live সংযোগে সমস্যা হয়েছে।'
-              : 'The Gemini Live connection failed.'
+            this.language === "bn"
+              ? "Gemini Live সংযোগে সমস্যা হয়েছে।"
+              : "The Gemini Live connection failed.",
           );
         },
         onclose: (event) => {
-          this.debugError('Gemini Live connection closed.', event);
+          this.debugError("Gemini Live connection closed.", event);
           this.setupComplete = false;
           this.listeningSubject.next(false);
           if (this.explicitlyStarted) {
             this.errorSubject.next(
-              this.language === 'bn'
-                ? 'লাইভ ভয়েস সংযোগ বিচ্ছিন্ন হয়েছে। আবার চেষ্টা করুন।'
-                : 'The live voice connection ended. Please try again.'
+              this.language === "bn"
+                ? "লাইভ ভয়েস সংযোগ বিচ্ছিন্ন হয়েছে। আবার চেষ্টা করুন।"
+                : "The live voice connection ended. Please try again.",
             );
             this.explicitlyStarted = false;
           }
-        }
-      }
+        },
+      },
     });
 
     if (!this.explicitlyStarted) {
       session.close();
-      throw new Error('Voice session was stopped before connecting.');
+      throw new Error("Voice session was stopped before connecting.");
     }
 
     this.session = session;
     this.setupComplete = true;
-    this.debug('Gemini Live session ready; requesting microphone.');
+    this.debug("Gemini Live session ready; requesting microphone.");
     this.processingSubject.next(false);
     await this.startMicrophone();
     this.listeningSubject.next(true);
@@ -257,9 +275,9 @@ export class VoiceService {
 
   private createSessionConfig(): LiveConnectConfig {
     const answerLanguage =
-      this.language === 'bn'
-        ? 'Always understand and speak natural Bengali. Use English names only when needed.'
-        : 'Always understand and speak natural English. Understand Bengali names and accents too.';
+      this.language === "bn"
+        ? "Always understand and speak natural Bengali. Use English names only when needed."
+        : "Always understand and speak natural English. Understand Bengali names and accents too.";
 
     return {
       responseModalities: [Modality.AUDIO],
@@ -296,87 +314,109 @@ use the first tool result and give only one spoken answer. Never repeat an answe
 Current sales executive performance data:
 ${JSON.stringify(this.executives)}`,
       speechConfig: {
-        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
-      tools: [{
+      tools: [
+        {
           functionDeclarations: [
             {
-              name: 'open_sales_executive_performance',
-              description: 'Open the matched sales executive profile in the CRM.',
+              name: "open_sales_executive_performance",
+              description:
+                "Open the matched sales executive profile in the CRM.",
               parameters: {
                 type: Type.OBJECT,
                 properties: {
-                  executiveId: { type: Type.INTEGER }
+                  executiveId: { type: Type.INTEGER },
                 },
-                required: ['executiveId']
-              }
+                required: ["executiveId"],
+              },
             },
             {
-              name: 'open_crm_page',
-              description: 'Open a supported CRM page.',
+              name: "open_crm_page",
+              description: "Open a supported CRM page.",
               parameters: {
                 type: Type.OBJECT,
                 properties: {
                   route: {
                     type: Type.STRING,
                     enum: [
-                      '/', '/users', '/leads', '/followups', '/customers',
-                      '/properties/projects', '/payments', '/commissions', '/reports',
-                      '/transport/requests', '/transport/schedule', '/transport/vehicles'
-                    ]
-                  }
+                      "/",
+                      "/users",
+                      "/leads",
+                      "/followups",
+                      "/customers",
+                      "/properties/projects",
+                      "/payments",
+                      "/commissions",
+                      "/reports",
+                      "/transport/requests",
+                      "/transport/schedule",
+                      "/transport/vehicles",
+                    ],
+                  },
                 },
-                required: ['route']
-              }
+                required: ["route"],
+              },
             },
             {
-              name: 'open_sales_executive_followups',
-              description: 'Open the Follow-ups page filtered to the exact matched sales executive.',
+              name: "open_sales_executive_followups",
+              description:
+                "Open the Follow-ups page filtered to the exact matched sales executive.",
               parameters: {
                 type: Type.OBJECT,
                 properties: {
-                  executiveId: { type: Type.INTEGER }
+                  executiveId: { type: Type.INTEGER },
                 },
-                required: ['executiveId']
-              }
+                required: ["executiveId"],
+              },
             },
             {
-              name: 'open_sales_executive_leads',
-              description: 'Open the Leads page filtered to the exact matched sales executive.',
+              name: "open_sales_executive_leads",
+              description:
+                "Open the Leads page filtered to the exact matched sales executive.",
               parameters: {
                 type: Type.OBJECT,
                 properties: {
-                  executiveId: { type: Type.INTEGER }
+                  executiveId: { type: Type.INTEGER },
                 },
-                required: ['executiveId']
-              }
+                required: ["executiveId"],
+              },
             },
             {
-              name: 'filter_collections',
-              description: 'Open Collections and apply the requested status, period, salesperson, date, or search filters.',
+              name: "filter_collections",
+              description:
+                "Open Collections and apply the requested status, period, salesperson, date, or search filters.",
               parameters: {
                 type: Type.OBJECT,
                 properties: {
                   status: {
                     type: Type.STRING,
-                    enum: ['all', 'pending', 'approved', 'rejected']
+                    enum: ["all", "pending", "approved", "rejected"],
                   },
                   period: {
                     type: Type.STRING,
-                    enum: ['week', 'month', 'year', 'overall', 'custom']
+                    enum: ["week", "month", "year", "overall", "custom"],
                   },
-                  from: { type: Type.STRING, description: 'Custom start date in YYYY-MM-DD format.' },
-                  to: { type: Type.STRING, description: 'Custom end date in YYYY-MM-DD format.' },
+                  from: {
+                    type: Type.STRING,
+                    description: "Custom start date in YYYY-MM-DD format.",
+                  },
+                  to: {
+                    type: Type.STRING,
+                    description: "Custom end date in YYYY-MM-DD format.",
+                  },
                   salesExecutiveName: { type: Type.STRING },
                   search: {
                     type: Type.STRING,
-                    description: 'Customer, collection number, amount, or other search text.'
-                  }
-                }
-              }
-            }
-          ]
-        }],
+                    description:
+                      "Customer, collection number, amount, or other search text.",
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
       inputAudioTranscription: {},
       outputAudioTranscription: {},
       realtimeInputConfig: {
@@ -384,10 +424,10 @@ ${JSON.stringify(this.executives)}`,
           disabled: false,
           startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
           endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
-          silenceDurationMs: 700
+          silenceDurationMs: 700,
         },
-        activityHandling: ActivityHandling.NO_INTERRUPTION
-      }
+        activityHandling: ActivityHandling.NO_INTERRUPTION,
+      },
     };
   }
 
@@ -395,38 +435,50 @@ ${JSON.stringify(this.executives)}`,
     // Keep this identical to the proven ShopSenseAI capture path. Browser/
     // device-specific processing constraints were producing zeroed PCM on the
     // affected machine.
-    this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
 
     this.captureContext = new AudioContext();
     await this.captureContext.resume();
-    this.debug('Microphone permission granted.', {
+    this.debug("Microphone permission granted.", {
       browserSampleRate: this.captureContext.sampleRate,
       targetSampleRate: INPUT_SAMPLE_RATE,
-      track: this.mediaStream.getAudioTracks()[0]?.getSettings()
+      track: this.mediaStream.getAudioTracks()[0]?.getSettings(),
     });
-    this.captureSource = this.captureContext.createMediaStreamSource(this.mediaStream);
-    this.captureProcessor = this.captureContext.createScriptProcessor(4096, 1, 1);
+    this.captureSource = this.captureContext.createMediaStreamSource(
+      this.mediaStream,
+    );
+    this.captureProcessor = this.captureContext.createScriptProcessor(
+      4096,
+      1,
+      1,
+    );
 
     this.captureProcessor.onaudioprocess = (event: AudioProcessingEvent) => {
       if (
         !this.setupComplete ||
         !this.session ||
-        this.voiceState === 'processing' ||
+        this.voiceState === "processing" ||
         performance.now() < this.microphoneResumeAt
       ) {
         return;
       }
 
       const source = event.inputBuffer.getChannelData(0);
-      const resampled = this.resample(source, event.inputBuffer.sampleRate, INPUT_SAMPLE_RATE);
+      const resampled = this.resample(
+        source,
+        event.inputBuffer.sampleRate,
+        INPUT_SAMPLE_RATE,
+      );
       const pcm = this.floatToPcm16(resampled);
       const now = performance.now();
       if (now - this.lastAudioDiagnosticAt >= 1000) {
         this.lastAudioDiagnosticAt = now;
-        this.debug('Microphone streaming.', {
+        this.debug("Microphone streaming.", {
           level: Number(this.calculateRms(source).toFixed(4)),
           state: this.voiceState,
-          chunksSent: this.audioChunksSent
+          chunksSent: this.audioChunksSent,
         });
       }
       // Match the working ShopSenseAI flow: stream each PCM frame through the
@@ -443,15 +495,17 @@ ${JSON.stringify(this.executives)}`,
   private handleServerMessage(message: LiveServerMessage): void {
     const inputTranscript = message.serverContent?.inputTranscription?.text;
     const outputTranscript = message.serverContent?.outputTranscription?.text;
-    this.debug('Gemini message received.', {
+    this.debug("Gemini message received.", {
       inputTranscript: inputTranscript || undefined,
       outputTranscript: outputTranscript || undefined,
-      audioParts: message.serverContent?.modelTurn?.parts?.filter(
-        (part) => Boolean(part.inlineData?.data)
-      ).length || 0,
-      toolCalls: message.toolCall?.functionCalls?.map((call) => call.name) || [],
+      audioParts:
+        message.serverContent?.modelTurn?.parts?.filter((part) =>
+          Boolean(part.inlineData?.data),
+        ).length || 0,
+      toolCalls:
+        message.toolCall?.functionCalls?.map((call) => call.name) || [],
       interrupted: Boolean(message.serverContent?.interrupted),
-      turnComplete: Boolean(message.serverContent?.turnComplete)
+      turnComplete: Boolean(message.serverContent?.turnComplete),
     });
 
     if (message.serverContent?.interrupted) {
@@ -485,16 +539,22 @@ ${JSON.stringify(this.executives)}`,
     const generation = this.sessionGeneration;
     this.toolCallQueue = this.toolCallQueue
       .then(() => this.processToolCalls(functionCalls, generation))
-      .catch((error) => this.debugError('Tool call processing failed.', error));
+      .catch((error) => this.debugError("Tool call processing failed.", error));
   }
 
-  private async processToolCalls(functionCalls: any[], generation: number): Promise<void> {
+  private async processToolCalls(
+    functionCalls: any[],
+    generation: number,
+  ): Promise<void> {
     if (generation !== this.sessionGeneration || !this.session) return;
 
     const responses = [];
     for (const call of functionCalls) {
-      this.debug('Executing Gemini tool call.', { name: call.name, args: call.args });
-      let result = 'Unsupported action.';
+      this.debug("Executing Gemini tool call.", {
+        name: call.name,
+        args: call.args,
+      });
+      let result = "Unsupported action.";
       const commandKey = this.commandKey(call.name, call.args);
       const now = Date.now();
       const lastExecutedAt = this.recentCommands.get(commandKey) || 0;
@@ -503,145 +563,174 @@ ${JSON.stringify(this.executives)}`,
       this.removeExpiredCommands(now);
 
       if (isDuplicate) {
-        result = 'Duplicate command ignored. The action was already completed. Do not repeat the spoken answer.';
-        this.debug('Duplicate Gemini tool call ignored.', {
+        result =
+          "Duplicate command ignored. The action was already completed. Do not repeat the spoken answer.";
+        this.debug("Duplicate Gemini tool call ignored.", {
           name: call.name,
           args: call.args,
-          elapsedMs: now - lastExecutedAt
+          elapsedMs: now - lastExecutedAt,
         });
       } else {
         // Reserve the command before awaiting navigation or an API call. This
         // guarantees at-most-once execution even when duplicate calls overlap.
         this.recentCommands.set(commandKey, now);
 
-        if (call.name === 'open_sales_executive_performance') {
-        const executiveId = Number(call.args?.executiveId);
-        const executive = this.executives.find((item) => item.id === executiveId);
-        if (executive) {
-          await this.router.navigate(['/users', executiveId]);
-          result = `Opened ${executive.fullName}'s performance profile.`;
-          this.debug('Navigating to sales executive profile.', {
-            executiveId,
-            executiveName: executive.fullName,
-            route: `/users/${executiveId}`
-          });
-        } else {
-          result = 'No matching sales executive was found.';
-        }
-      } else if (call.name === 'open_crm_page') {
-        const route = String(call.args?.route || '');
-        const allowedRoutes = [
-          '/', '/users', '/leads', '/followups', '/customers', '/properties/projects',
-          '/payments', '/commissions', '/reports', '/transport/requests',
-          '/transport/schedule', '/transport/vehicles'
-        ];
-        if (allowedRoutes.includes(route)) {
-          await this.router.navigateByUrl(route);
-          result = `Opened ${route}.`;
-          this.debug('Navigating to CRM page.', { route });
-        }
-      } else if (call.name === 'open_sales_executive_followups') {
-        const executive = this.findExecutive(Number(call.args?.executiveId));
-        if (executive) {
-          await this.router.navigateByUrl('/followups');
-          this.followupExecutiveSubject.next(executive.fullName);
-          result = `Opened follow-ups for ${executive.fullName}.`;
-        } else {
-          result = 'No matching sales executive was found.';
-        }
-      } else if (call.name === 'open_sales_executive_leads') {
-        const executive = this.findExecutive(Number(call.args?.executiveId));
-        if (executive) {
-          await this.router.navigateByUrl('/leads');
-          this.leadExecutiveSubject.next(executive.fullName);
-          result = `Opened leads for ${executive.fullName}.`;
-        } else {
-          result = 'No matching sales executive was found.';
-        }
-      } else if (call.name === 'filter_collections') {
-        const requestedName = String(call.args?.salesExecutiveName || '').trim();
-        const matchedExecutive = requestedName
-          ? this.executives.find((item) =>
-              item.fullName.toLowerCase().includes(requestedName.toLowerCase()) ||
-              requestedName.toLowerCase().includes(item.fullName.toLowerCase())
-            )
-          : undefined;
-        const filter: CollectionVoiceFilter = {
-          status: call.args?.status || 'all',
-          period: call.args?.period || 'overall',
-          from: call.args?.from,
-          to: call.args?.to,
-          salesExecutiveName: matchedExecutive?.fullName || requestedName || undefined,
-          search: call.args?.search
-        };
-        if (filter.from || filter.to) {
-          filter.period = 'custom';
-        }
-        await this.router.navigateByUrl('/payments');
-        this.collectionFilterSubject.next(filter);
-        const criteria = [
-          filter.status !== 'all' ? filter.status : '',
-          filter.period,
-          filter.salesExecutiveName,
-          filter.search
-        ].filter(Boolean).join(', ');
-        try {
-          const payments = await firstValueFrom(this.api.payments());
-          const matching = this.filterCollections(payments, filter);
-          const amount = matching.reduce(
-            (sum, payment) => sum + Math.abs(payment.amount || 0),
-            0
+        if (call.name === "open_sales_executive_performance") {
+          const executiveId = Number(call.args?.executiveId);
+          const executive = this.executives.find(
+            (item) => item.id === executiveId,
           );
-          result =
-            `Opened collections filtered by ${criteria || 'all records'}. ` +
-            `There are ${matching.length} matching collections with a total amount of ${amount}.`;
-        } catch {
-          result = `Opened collections filtered by ${criteria || 'all records'}.`;
-        }
+          if (executive) {
+            await this.router.navigate(["/users", executiveId]);
+            result = `Opened ${executive.fullName}'s performance profile.`;
+            this.debug("Navigating to sales executive profile.", {
+              executiveId,
+              executiveName: executive.fullName,
+              route: `/users/${executiveId}`,
+            });
+          } else {
+            result = "No matching sales executive was found.";
+          }
+        } else if (call.name === "open_crm_page") {
+          const route = String(call.args?.route || "");
+          const allowedRoutes = [
+            "/",
+            "/users",
+            "/leads",
+            "/followups",
+            "/customers",
+            "/properties/projects",
+            "/payments",
+            "/commissions",
+            "/reports",
+            "/transport/requests",
+            "/transport/schedule",
+            "/transport/vehicles",
+          ];
+          if (allowedRoutes.includes(route)) {
+            await this.router.navigateByUrl(route);
+            result = `Opened ${route}.`;
+            this.debug("Navigating to CRM page.", { route });
+          }
+        } else if (call.name === "open_sales_executive_followups") {
+          const executive = this.findExecutive(Number(call.args?.executiveId));
+          if (executive) {
+            await this.router.navigateByUrl("/followups");
+            this.followupExecutiveSubject.next(executive.fullName);
+            result = `Opened follow-ups for ${executive.fullName}.`;
+          } else {
+            result = "No matching sales executive was found.";
+          }
+        } else if (call.name === "open_sales_executive_leads") {
+          const executive = this.findExecutive(Number(call.args?.executiveId));
+          if (executive) {
+            await this.router.navigateByUrl("/leads");
+            this.leadExecutiveSubject.next(executive.fullName);
+            result = `Opened leads for ${executive.fullName}.`;
+          } else {
+            result = "No matching sales executive was found.";
+          }
+        } else if (call.name === "filter_collections") {
+          const requestedName = String(
+            call.args?.salesExecutiveName || "",
+          ).trim();
+          const matchedExecutive = requestedName
+            ? this.executives.find(
+                (item) =>
+                  item.fullName
+                    .toLowerCase()
+                    .includes(requestedName.toLowerCase()) ||
+                  requestedName
+                    .toLowerCase()
+                    .includes(item.fullName.toLowerCase()),
+              )
+            : undefined;
+          const filter: CollectionVoiceFilter = {
+            status: call.args?.status || "all",
+            period: call.args?.period || "overall",
+            from: call.args?.from,
+            to: call.args?.to,
+            salesExecutiveName:
+              matchedExecutive?.fullName || requestedName || undefined,
+            search: call.args?.search,
+          };
+          if (filter.from || filter.to) {
+            filter.period = "custom";
+          }
+          await this.router.navigateByUrl("/payments");
+          this.collectionFilterSubject.next(filter);
+          const criteria = [
+            filter.status !== "all" ? filter.status : "",
+            filter.period,
+            filter.salesExecutiveName,
+            filter.search,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          try {
+            const payments = await firstValueFrom(this.api.payments());
+            const matching = this.filterCollections(payments, filter);
+            const amount = matching.reduce(
+              (sum, payment) => sum + Math.abs(payment.amount || 0),
+              0,
+            );
+            result =
+              `Opened collections filtered by ${criteria || "all records"}. ` +
+              `There are ${matching.length} matching collections with a total amount of ${amount}.`;
+          } catch {
+            result = `Opened collections filtered by ${criteria || "all records"}.`;
+          }
         }
       }
 
       responses.push({
         id: call.id,
         name: call.name,
-        response: { result }
+        response: { result },
       });
     }
 
     if (generation !== this.sessionGeneration || !this.session) return;
     this.session.sendToolResponse({ functionResponses: responses });
-    this.debug('Tool response sent to Gemini.', {
+    this.debug("Tool response sent to Gemini.", {
       responses: responses.map((item) => ({
         id: item.id,
         name: item.name,
-        result: item.response.result
-      }))
+        result: item.response.result,
+      })),
     });
   }
 
   private commandKey(name: unknown, args: unknown): string {
-    const commandName = String(name || '');
-    const values = (args && typeof args === 'object')
-      ? args as Record<string, unknown>
-      : {};
+    const commandName = String(name || "");
+    const values =
+      args && typeof args === "object" ? (args as Record<string, unknown>) : {};
     let normalizedArgs: Record<string, unknown> = values;
 
     if (
-      commandName === 'open_sales_executive_performance' ||
-      commandName === 'open_sales_executive_followups' ||
-      commandName === 'open_sales_executive_leads'
+      commandName === "open_sales_executive_performance" ||
+      commandName === "open_sales_executive_followups" ||
+      commandName === "open_sales_executive_leads"
     ) {
-      normalizedArgs = { executiveId: Number(values['executiveId']) };
-    } else if (commandName === 'open_crm_page') {
-      normalizedArgs = { route: String(values['route'] || '').trim().toLowerCase() };
-    } else if (commandName === 'filter_collections') {
+      normalizedArgs = { executiveId: Number(values["executiveId"]) };
+    } else if (commandName === "open_crm_page") {
       normalizedArgs = {
-        status: String(values['status'] || 'all').toLowerCase(),
-        period: String(values['period'] || 'overall').toLowerCase(),
-        from: String(values['from'] || ''),
-        to: String(values['to'] || ''),
-        salesExecutiveName: String(values['salesExecutiveName'] || '').trim().toLowerCase(),
-        search: String(values['search'] || '').trim().toLowerCase()
+        route: String(values["route"] || "")
+          .trim()
+          .toLowerCase(),
+      };
+    } else if (commandName === "filter_collections") {
+      normalizedArgs = {
+        status: String(values["status"] || "all").toLowerCase(),
+        period: String(values["period"] || "overall").toLowerCase(),
+        from: String(values["from"] || ""),
+        to: String(values["to"] || ""),
+        salesExecutiveName: String(values["salesExecutiveName"] || "")
+          .trim()
+          .toLowerCase(),
+        search: String(values["search"] || "")
+          .trim()
+          .toLowerCase(),
       };
     }
 
@@ -650,13 +739,13 @@ ${JSON.stringify(this.executives)}`,
 
   private stableJson(value: unknown): string {
     if (Array.isArray(value)) {
-      return `[${value.map((item) => this.stableJson(item)).join(',')}]`;
+      return `[${value.map((item) => this.stableJson(item)).join(",")}]`;
     }
-    if (value && typeof value === 'object') {
+    if (value && typeof value === "object") {
       return `{${Object.entries(value as Record<string, unknown>)
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([key, item]) => `${JSON.stringify(key)}:${this.stableJson(item)}`)
-        .join(',')}}`;
+        .join(",")}}`;
     }
     return JSON.stringify(value) ?? String(value);
   }
@@ -675,44 +764,61 @@ ${JSON.stringify(this.executives)}`,
 
   private filterCollections(
     payments: Payment[],
-    filter: CollectionVoiceFilter
+    filter: CollectionVoiceFilter,
   ): Payment[] {
-    const statusValue = filter.status === 'pending'
-      ? 0
-      : filter.status === 'approved'
-        ? 1
-        : filter.status === 'rejected'
-          ? 2
-          : null;
+    const statusValue =
+      filter.status === "pending"
+        ? 0
+        : filter.status === "approved"
+          ? 1
+          : filter.status === "rejected"
+            ? 2
+            : null;
     const now = new Date();
 
     return payments.filter((payment) => {
-      if (statusValue !== null && payment.status !== statusValue) return false;
+      if (statusValue === 1 && (payment.status !== 1 || payment.isReversed))
+        return false;
+      if (statusValue === 0 && (payment.status !== 0 || payment.isReversed))
+        return false;
+      if (statusValue === 2 && payment.status !== 2 && !payment.isReversed)
+        return false;
 
-      const created = new Date(payment.createdAt);
-      if (filter.period === 'week') {
+      const paid = new Date(`${payment.paymentDate.slice(0, 10)}T12:00:00`);
+      if (filter.period === "week") {
         const day = now.getDay();
         const daysSinceMonday = day === 0 ? 6 : day - 1;
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
-        if (created < start) return false;
-      } else if (filter.period === 'month') {
+        const start = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - daysSinceMonday,
+        );
+        if (paid < start) return false;
+      } else if (filter.period === "month") {
         if (
-          created.getFullYear() !== now.getFullYear() ||
-          created.getMonth() !== now.getMonth()
-        ) return false;
-      } else if (filter.period === 'year' && created.getFullYear() !== now.getFullYear()) {
+          paid.getFullYear() !== now.getFullYear() ||
+          paid.getMonth() !== now.getMonth()
+        )
+          return false;
+      } else if (
+        filter.period === "year" &&
+        paid.getFullYear() !== now.getFullYear()
+      ) {
         return false;
-      } else if (filter.period === 'custom') {
-        if (filter.from && created < new Date(`${filter.from}T00:00:00`)) return false;
-        if (filter.to && created > new Date(`${filter.to}T23:59:59.999`)) return false;
+      } else if (filter.period === "custom") {
+        if (filter.from && paid < new Date(`${filter.from}T00:00:00`))
+          return false;
+        if (filter.to && paid > new Date(`${filter.to}T23:59:59.999`))
+          return false;
       }
 
       if (
         filter.salesExecutiveName &&
-        !payment.salesExecutive.toLowerCase().includes(
-          filter.salesExecutiveName.toLowerCase()
-        )
-      ) return false;
+        !payment.salesExecutive
+          .toLowerCase()
+          .includes(filter.salesExecutiveName.toLowerCase())
+      )
+        return false;
 
       if (filter.search) {
         const query = filter.search.toLowerCase();
@@ -721,7 +827,8 @@ ${JSON.stringify(this.executives)}`,
           !payment.collectionNumber.toLowerCase().includes(query) &&
           !payment.salesExecutive.toLowerCase().includes(query) &&
           !String(payment.amount).includes(query)
-        ) return false;
+        )
+          return false;
       }
       return true;
     });
@@ -736,7 +843,9 @@ ${JSON.stringify(this.executives)}`,
     }
 
     if (!this.playbackContext) {
-      this.playbackContext = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+      this.playbackContext = new AudioContext({
+        sampleRate: OUTPUT_SAMPLE_RATE,
+      });
       this.nextPlaybackTime = this.playbackContext.currentTime;
     }
 
@@ -746,13 +855,20 @@ ${JSON.stringify(this.executives)}`,
       samples[index] = view.getInt16(index * 2, true) / 32768;
     }
 
-    const buffer = this.playbackContext.createBuffer(1, sampleCount, OUTPUT_SAMPLE_RATE);
+    const buffer = this.playbackContext.createBuffer(
+      1,
+      sampleCount,
+      OUTPUT_SAMPLE_RATE,
+    );
     buffer.copyToChannel(samples, 0);
     const source = this.playbackContext.createBufferSource();
     source.buffer = buffer;
     source.connect(this.playbackContext.destination);
 
-    const startAt = Math.max(this.playbackContext.currentTime, this.nextPlaybackTime);
+    const startAt = Math.max(
+      this.playbackContext.currentTime,
+      this.nextPlaybackTime,
+    );
     this.nextPlaybackTime = startAt + buffer.duration;
     this.playbackSources.add(source);
     source.onended = () => {
@@ -760,11 +876,11 @@ ${JSON.stringify(this.executives)}`,
       this.finishProcessingWhenPlaybackEnds();
     };
     source.start(startAt);
-    this.debug('Native audio queued.', {
+    this.debug("Native audio queued.", {
       chunkBytes: bytes.byteLength,
       totalAudioBytes: this.audioBytesReceived,
       durationMs: Math.round(buffer.duration * 1000),
-      queuedSources: this.playbackSources.size
+      queuedSources: this.playbackSources.size,
     });
   }
 
@@ -829,24 +945,30 @@ ${JSON.stringify(this.executives)}`,
 
     // The adaptive floor follows quiet background sound slowly. A clear voice must
     // be substantially louder than that floor and also exceed an absolute level.
-    if (this.voiceState === 'idle' && rms < Math.max(0.012, this.noiseFloor * 2.2)) {
+    if (
+      this.voiceState === "idle" &&
+      rms < Math.max(0.012, this.noiseFloor * 2.2)
+    ) {
       this.noiseFloor = this.noiseFloor * 0.97 + rms * 0.03;
     }
-    const speechThreshold = Math.max(0.014, Math.min(0.06, this.noiseFloor * 3.5));
+    const speechThreshold = Math.max(
+      0.014,
+      Math.min(0.06, this.noiseFloor * 3.5),
+    );
     const clearVoice = rms >= speechThreshold && peak >= speechThreshold * 1.8;
 
-    if (this.voiceState === 'idle') {
+    if (this.voiceState === "idle") {
       if (!clearVoice) {
         return;
       }
-      this.voiceState = 'candidate';
+      this.voiceState = "candidate";
       this.candidateChunks = [pcm];
       this.candidateVoiceFrames = 1;
       this.lastVoiceAt = now;
       return;
     }
 
-    if (this.voiceState === 'candidate') {
+    if (this.voiceState === "candidate") {
       this.candidateChunks.push(pcm);
       if (this.candidateChunks.length > 5) {
         this.candidateChunks.shift();
@@ -862,7 +984,7 @@ ${JSON.stringify(this.executives)}`,
       }
 
       if (this.candidateVoiceFrames >= 3) {
-        this.voiceState = 'speaking';
+        this.voiceState = "speaking";
         this.speechStartedAt = now;
         for (const chunk of this.candidateChunks) {
           this.sendAudioChunk(chunk);
@@ -873,7 +995,7 @@ ${JSON.stringify(this.executives)}`,
       return;
     }
 
-    if (this.voiceState === 'speaking') {
+    if (this.voiceState === "speaking") {
       this.sendAudioChunk(pcm);
       if (clearVoice) {
         this.lastVoiceAt = now;
@@ -883,7 +1005,7 @@ ${JSON.stringify(this.executives)}`,
         // Explicitly close this audio turn so Gemini responds immediately. The
         // next clear speech chunk automatically opens a fresh input stream.
         this.sendRealtimeInput({ audioStreamEnd: true });
-        this.voiceState = 'processing';
+        this.voiceState = "processing";
         this.serverTurnComplete = false;
         this.listeningSubject.next(false);
         this.processingSubject.next(true);
@@ -896,9 +1018,11 @@ ${JSON.stringify(this.executives)}`,
     this.audioChunksSent++;
     this.sendRealtimeInput({
       media: {
-        data: this.bytesToBase64(new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength)),
-        mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`
-      }
+        data: this.bytesToBase64(
+          new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength),
+        ),
+        mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`,
+      },
     });
   }
 
@@ -907,12 +1031,12 @@ ${JSON.stringify(this.executives)}`,
   }
 
   private beginProcessingResponse(): void {
-    if (this.voiceState === 'processing') {
+    if (this.voiceState === "processing") {
       return;
     }
 
-    this.voiceState = 'processing';
-    this.debug('Gemini started responding; microphone transmission paused.');
+    this.voiceState = "processing";
+    this.debug("Gemini started responding; microphone transmission paused.");
     this.serverTurnComplete = false;
     this.listeningSubject.next(false);
     this.processingSubject.next(true);
@@ -921,7 +1045,7 @@ ${JSON.stringify(this.executives)}`,
 
   private finishProcessingWhenPlaybackEnds(): void {
     if (
-      this.voiceState !== 'processing' ||
+      this.voiceState !== "processing" ||
       !this.serverTurnComplete ||
       this.playbackSources.size > 0
     ) {
@@ -933,7 +1057,7 @@ ${JSON.stringify(this.executives)}`,
       this.processingTimeout = null;
     }
     this.processingSubject.next(false);
-    this.debug('Gemini turn and audio playback completed; listening resumed.');
+    this.debug("Gemini turn and audio playback completed; listening resumed.");
     // Avoid treating the tail of speaker playback as another user question on
     // devices with weak acoustic echo cancellation.
     this.microphoneResumeAt = performance.now() + 600;
@@ -948,15 +1072,18 @@ ${JSON.stringify(this.executives)}`,
       window.clearTimeout(this.processingTimeout);
     }
     this.processingTimeout = window.setTimeout(() => {
-      if (this.voiceState !== 'processing') {
+      if (this.voiceState !== "processing") {
         return;
       }
       this.processingSubject.next(false);
-      this.debugError('Gemini response timed out after 30 seconds.', this.getDebugSnapshot());
+      this.debugError(
+        "Gemini response timed out after 30 seconds.",
+        this.getDebugSnapshot(),
+      );
       this.errorSubject.next(
-        this.language === 'bn'
-          ? 'কমান্ডটি প্রক্রিয়া করা যায়নি। পরিষ্কারভাবে আবার বলুন।'
-          : 'The command could not be processed. Please speak clearly and try again.'
+        this.language === "bn"
+          ? "কমান্ডটি প্রক্রিয়া করা যায়নি। পরিষ্কারভাবে আবার বলুন।"
+          : "The command could not be processed. Please speak clearly and try again.",
       );
       this.resetVoiceDetection();
       if (this.explicitlyStarted && this.setupComplete) {
@@ -966,7 +1093,7 @@ ${JSON.stringify(this.executives)}`,
   }
 
   private resetVoiceDetection(): void {
-    this.voiceState = 'idle';
+    this.voiceState = "idle";
     this.candidateChunks = [];
     this.candidateVoiceFrames = 0;
     this.lastVoiceAt = 0;
@@ -990,7 +1117,11 @@ ${JSON.stringify(this.executives)}`,
     return peak;
   }
 
-  private resample(input: Float32Array, fromRate: number, toRate: number): Float32Array {
+  private resample(
+    input: Float32Array,
+    fromRate: number,
+    toRate: number,
+  ): Float32Array {
     if (fromRate === toRate) {
       return input;
     }
@@ -1022,10 +1153,12 @@ ${JSON.stringify(this.executives)}`,
   }
 
   private bytesToBase64(bytes: Uint8Array): string {
-    let binary = '';
+    let binary = "";
     const chunkSize = 0x8000;
     for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+      binary += String.fromCharCode(
+        ...bytes.subarray(offset, offset + chunkSize),
+      );
     }
     return window.btoa(binary);
   }
@@ -1047,13 +1180,13 @@ ${JSON.stringify(this.executives)}`,
       sessionConnected: Boolean(this.session),
       setupComplete: this.setupComplete,
       microphoneActive: Boolean(this.mediaStream?.active),
-      audioContextState: this.captureContext?.state || 'none',
+      audioContextState: this.captureContext?.state || "none",
       voiceState: this.voiceState,
       audioChunksSent: this.audioChunksSent,
       audioBytesReceived: this.audioBytesReceived,
       executivesLoaded: this.executives.length,
       playbackSources: this.playbackSources.size,
-      serverTurnComplete: this.serverTurnComplete
+      serverTurnComplete: this.serverTurnComplete,
     };
   }
 

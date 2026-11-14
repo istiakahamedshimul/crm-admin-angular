@@ -2,9 +2,6 @@ name: Deploy Admin Angular
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   deploy:
@@ -135,4 +132,4 @@ jobs:
             echo "Testing frontend locally on VPS..."
             curl -I http://127.0.0.1 || true
 
-            echo "Angular frontend deployed successfully."c
+            echo "Angular frontend deployed successfully."
