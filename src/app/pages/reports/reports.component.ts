@@ -1,45 +1,723 @@
-import {CommonModule} from '@angular/common';
-import {Component,OnInit,inject} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {Router} from '@angular/router';
-import {ApiService} from '../../core/api.service';
-import {ReportPdfService} from '../../core/report-pdf.service';
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, inject } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { Router } from "@angular/router";
+import { ApiService } from "../../core/api.service";
+import { ReportPdfService } from "../../core/report-pdf.service";
 
-type Key='kpi'|'leads'|'sales'|'collections'|'returned'|'projects'|'teams'|'groups';
-type Col={key:string;label:string;type?:'number'|'money'|'percent'|'date'|'datetime';accent?:boolean};
+type Key =
+  | "kpi"
+  | "leads"
+  | "sales"
+  | "collections"
+  | "returned"
+  | "projects"
+  | "teams"
+  | "groups";
+type Col = {
+  key: string;
+  label: string;
+  type?: "number" | "money" | "percent" | "date" | "datetime";
+  accent?: boolean;
+};
 
-@Component({standalone:true,imports:[CommonModule,FormsModule],template:`
-<section class="page-head no-print"><div><p class="eyebrow">Performance intelligence</p><h1>CRM Reports</h1><p>Choose a report to review accountable, decision-ready business data.</p></div></section>
-<section class="panel filters no-print"><div class="period-buttons"><button *ngFor="let p of periods" [class.active]="period===p.key" (click)="setPeriod(p.key)">{{p.label}}</button></div><label *ngIf="period==='yearly'">Year<select [(ngModel)]="year" (change)="setPeriod('yearly')"><option *ngFor="let y of years" [value]="y">{{y}}</option></select></label><ng-container *ngIf="period==='custom'"><label>From<input type="date" [(ngModel)]="from"></label><label>To<input type="date" [(ngModel)]="to"></label></ng-container><label>Employee<select [(ngModel)]="employeeId"><option [ngValue]="null">All employees</option><option *ngFor="let x of employees" [ngValue]="x.id">{{x.fullName}}</option></select></label><label>Project<select [(ngModel)]="projectId"><option [ngValue]="null">All projects</option><option *ngFor="let x of projects" [ngValue]="x.id">{{x.name}}</option></select></label><button (click)="load()">Apply</button></section>
-<p class="error" *ngIf="error">{{error}}</p>
+@Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <section class="page-head no-print">
+      <div>
+        <p class="eyebrow">Performance intelligence</p>
+        <h1>CRM Reports</h1>
+        <p>
+          Choose a report to review accountable, decision-ready business data.
+        </p>
+      </div>
+    </section>
+    <section class="panel filters no-print">
+      <div class="period-buttons">
+        <button
+          *ngFor="let p of periods"
+          [class.active]="period === p.key"
+          (click)="setPeriod(p.key)"
+        >
+          {{ p.label }}
+        </button>
+      </div>
+      <label *ngIf="period === 'yearly'"
+        >Year<select [(ngModel)]="year" (change)="setPeriod('yearly')">
+          <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+        </select></label
+      ><ng-container *ngIf="period === 'custom'"
+        ><label>From<input type="date" [(ngModel)]="from" /></label
+        ><label>To<input type="date" [(ngModel)]="to" /></label></ng-container
+      ><label
+        >Employee<select [(ngModel)]="employeeId">
+          <option [ngValue]="null">All employees</option>
+          <option *ngFor="let x of employees" [ngValue]="x.id">
+            {{ x.fullName }}
+          </option>
+        </select></label
+      ><label
+        >Project<select [(ngModel)]="projectId">
+          <option [ngValue]="null">All projects</option>
+          <option *ngFor="let x of projects" [ngValue]="x.id">
+            {{ x.name }}
+          </option>
+        </select></label
+      ><button (click)="load()">Apply</button>
+    </section>
+    <p class="error" *ngIf="error">{{ error }}</p>
 
-<section class="report-home no-print" *ngIf="!active"><article *ngFor="let card of cards" (click)="open(card.key)"><span>{{card.icon}}</span><div><small>{{card.group}}</small><h2>{{card.label}}</h2><p>{{card.description}}</p><b>Open report →</b></div></article></section>
+    <section class="report-home no-print" *ngIf="!active">
+      <article *ngFor="let card of cards" (click)="open(card.key)">
+        <span>{{ card.icon }}</span>
+        <div>
+          <small>{{ card.group }}</small>
+          <h2>{{ card.label }}</h2>
+          <p>{{ card.description }}</p>
+          <b>Open report →</b>
+        </div>
+      </article>
+    </section>
 
-<ng-container *ngIf="active"><div class="report-toolbar no-print"><button class="ghost-button" (click)="active=null">← All reports</button><div><button class="ghost-button" (click)="exportCsv()">CSV</button><button (click)="downloadPdf()">Download PDF</button></div></div>
-<section class="report-title"><div><p class="eyebrow">{{current?.group}}</p><h1>{{current?.label}}</h1><p>{{current?.description}}</p></div><div class="period"><b>Reporting period</b><strong>{{from|date:'mediumDate'}} — {{to|date:'mediumDate'}}</strong><small>Generated {{generatedAt|date:'medium'}}</small></div></section>
-<section class="formula" *ngIf="active==='kpi'&&formula"><b>Employee KPI formula</b><p>{{formula.score}}</p><small>{{formula.note}}</small></section>
-<section class="panel table-panel"><div class="scroll"><table><thead><tr><th *ngFor="let c of columns" [class.accent]="c.accent">{{c.label}}</th></tr></thead><tbody><tr *ngFor="let row of rows"><td *ngFor="let c of columns" [class.accent]="c.accent"><a *ngIf="active==='kpi'&&c.key==='employee'" (click)="employeeReport(row)">{{row[c.key]}}</a><span *ngIf="!(active==='kpi'&&c.key==='employee')" [class.badge]="c.key==='rating'">{{format(row[c.key],c.type)}}</span></td></tr><tr *ngIf="!loading&&!rows.length"><td [attr.colspan]="columns.length" class="empty">No records match the selected filters.</td></tr></tbody><tfoot *ngIf="rows.length&&active!=='kpi'&&active!=='returned'"><tr><th *ngFor="let c of columns">{{c===columns[0]?'Total':total(c)}}</th></tr></tfoot></table></div><footer><span>{{rows.length|number}} rows</span><span>Figures use the selected reporting period.</span></footer></section></ng-container>
-`,styles:[`
-.filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:22px}.filters label{display:grid;gap:5px;min-width:150px;font-size:11px;font-weight:800;color:var(--muted)}.period-buttons{display:flex;gap:5px}.period-buttons button{background:#fff;color:var(--text);box-shadow:none;border:1px solid var(--line)}.period-buttons button.active{background:var(--brand);color:#fff}
-.report-home{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.report-home article{display:flex;gap:14px;padding:20px;background:#fff;border:1px solid var(--line);border-radius:15px;cursor:pointer;transition:.18s}.report-home article:hover{transform:translateY(-3px);border-color:var(--brand);box-shadow:0 12px 28px #0f172a12}.report-home article>span{flex:0 0 42px;height:42px;border-radius:11px;display:grid;place-items:center;background:var(--brand-light);color:var(--brand);font-weight:900}.report-home small{color:var(--brand);text-transform:uppercase;font-weight:800;font-size:9px}.report-home h2{font-size:16px;margin:5px 0}.report-home p{color:var(--muted);font-size:11px;line-height:1.5;min-height:48px}.report-home b{color:var(--brand);font-size:11px}
-.report-toolbar,.report-toolbar>div,.report-title{display:flex;justify-content:space-between;gap:8px}.report-title{align-items:end;margin:22px 0 15px}.report-title h1{margin:3px 0}.report-title p{color:var(--muted);margin:0}.period{display:grid;text-align:right;min-width:260px}.period b,.period small{color:var(--muted);font-size:10px}.formula{padding:14px 17px;border-radius:11px;background:#eef2ff;border:1px solid #c7d2fe;margin-bottom:14px}.formula p{margin:4px 0;font-size:12px}.formula small{color:var(--muted)}
-.table-panel{padding:0;overflow:hidden}.scroll{overflow:auto}table{width:100%;border-collapse:separate;border-spacing:0;min-width:850px}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-size:12px}th:first-child,td:first-child{text-align:left}thead th{background:#f8fafc;text-transform:uppercase;font-size:10px;color:#475569;letter-spacing:.04em}tbody tr:nth-child(even){background:#fafcff}tbody tr:hover{background:#f1f5f9}.accent{background:#fff7ed!important;color:#9a3412!important}td a{font-weight:800;color:var(--brand);text-decoration:underline;cursor:pointer}.badge{padding:5px 8px;border-radius:20px;background:#e2e8f0;font-weight:800}tfoot th{background:#f1f5f9}.empty{text-align:center!important;padding:32px!important;color:var(--muted)}.table-panel footer{padding:10px 14px;display:flex;justify-content:space-between;color:var(--muted);font-size:10px}.error{color:#b91c1c}
-@media(max-width:1100px){.report-home{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.report-home{grid-template-columns:1fr}.report-title{display:block}.period{text-align:left;margin-top:12px}}@media print{.no-print{display:none!important}.workspace{padding:0!important}.report-title{margin-top:0}.table-panel{border:0!important}table{min-width:0}th,td{padding:7px;font-size:9px}@page{size:A4 landscape;margin:10mm}}
-`]})
-export class ReportsComponent implements OnInit{
- private api=inject(ApiService);private router=inject(Router);private reportPdf=inject(ReportPdfService);data:any={};active:Key|null=null;rows:any[]=[];columns:Col[]=[];employees:any[]=[];projects:any[]=[];formula:any;loading=false;error='';generatedAt=new Date();period='monthly';year=new Date().getFullYear();from='';to='';employeeId:number|null=null;projectId:number|null=null;
- periods=[{key:'monthly',label:'Monthly'},{key:'yearly',label:'Yearly'},{key:'overall',label:'Overall'},{key:'custom',label:'Custom'}];years=Array.from({length:10},(_,i)=>new Date().getFullYear()-i);
- cards=[{key:'kpi' as Key,icon:'K',group:'People',label:'Employee KPI',description:'Weighted score, targets and employee accountability.'},{key:'leads' as Key,icon:'L',group:'Pipeline',label:'Lead Summary',description:'Lead volume, ownership, outcomes and follow-up.'},{key:'sales' as Key,icon:'S',group:'Revenue',label:'Sales Summary',description:'Sold units and agreed sales value.'},{key:'collections' as Key,icon:'৳',group:'Finance',label:'Collections',description:'Monthly collection results against targets.'},{key:'returned' as Key,icon:'!',group:'Service risk',label:'Returned Leads',description:'Missed response deadlines and accountability.'},{key:'projects' as Key,icon:'P',group:'Portfolio',label:'Project Performance',description:'Outcomes, units, booked value and collections.'},{key:'teams' as Key,icon:'T',group:'Hierarchy',label:'Team Performance',description:'Team-level KPI, sales and collections.'},{key:'groups' as Key,icon:'G',group:'Hierarchy',label:'Group Performance',description:'Group-level performance and team totals.'}];
- configs:Record<Key,Col[]>={kpi:[{key:'employee',label:'Employee'},{key:'team',label:'Team'},{key:'score',label:'KPI Score',type:'number'},{key:'rating',label:'Rating'},{key:'won',label:'Won',type:'number'},{key:'lost',label:'Lost',type:'number'},{key:'returned',label:'Returned',type:'number',accent:true},{key:'returnedRate',label:'Return Rate',type:'percent',accent:true},{key:'salesUnits',label:'Sales Units',type:'number'},{key:'collections',label:'Collections',type:'money'},{key:'winRate',label:'Win Rate',type:'percent'},{key:'followupCoverage',label:'Follow-up',type:'percent'}],leads:[{key:'totalLeads',label:'Total Leads',type:'number'},{key:'newLeads',label:'New',type:'number'},{key:'assigned',label:'Assigned',type:'number'},{key:'unassigned',label:'Unassigned',type:'number'},{key:'active',label:'Active',type:'number'},{key:'won',label:'Won',type:'number'},{key:'lost',label:'Lost',type:'number'},{key:'returned',label:'Returned',type:'number',accent:true},{key:'awaitingFollowUp',label:'Awaiting Follow-up',type:'number'}],sales:[{key:'employee',label:'Employee'},{key:'project',label:'Project'},{key:'salesUnits',label:'Sales Units',type:'number'},{key:'agreedSalesValue',label:'Agreed Sales Value',type:'money'},{key:'won',label:'Won',type:'number'},{key:'lost',label:'Lost',type:'number'}],collections:[{key:'employee',label:'Employee'},{key:'month',label:'Month',type:'date'},{key:'target',label:'Target',type:'money'},{key:'collected',label:'Collected',type:'money'},{key:'variance',label:'Variance',type:'money'},{key:'achievement',label:'Achievement',type:'percent'}],returned:[{key:'lead',label:'Lead / Customer'},{key:'employee',label:'Responsible Employee',accent:true},{key:'project',label:'Project'},{key:'assignedAt',label:'Assigned',type:'datetime'},{key:'returnedAt',label:'Returned',type:'datetime',accent:true},{key:'notificationCount',label:'Reminders',type:'number'},{key:'status',label:'Current Status'},{key:'currentEmployee',label:'Current Assignment'}],projects:[{key:'project',label:'Project'},{key:'leadsReceived',label:'Leads',type:'number'},{key:'won',label:'Won',type:'number'},{key:'lost',label:'Lost',type:'number'},{key:'salesUnits',label:'Sales Units',type:'number'},{key:'agreedSalesValue',label:'Agreed Sales Value',type:'money'},{key:'totalCollections',label:'Total Collections',type:'money'}],teams:[{key:'group',label:'Group'},{key:'team',label:'Team'},{key:'employees',label:'Employees',type:'number'},{key:'averageKpi',label:'Average KPI',type:'number'},{key:'won',label:'Won',type:'number'},{key:'lost',label:'Lost',type:'number'},{key:'returned',label:'Returned',type:'number',accent:true},{key:'salesUnits',label:'Sales Units',type:'number'},{key:'collections',label:'Collections',type:'money'}],groups:[{key:'group',label:'Group'},{key:'teams',label:'Teams',type:'number'},{key:'employees',label:'Employees',type:'number'},{key:'averageKpi',label:'Average KPI',type:'number'},{key:'won',label:'Won',type:'number'},{key:'lost',label:'Lost',type:'number'},{key:'returned',label:'Returned',type:'number',accent:true},{key:'salesUnits',label:'Sales Units',type:'number'},{key:'collections',label:'Collections',type:'money'}]};
- ngOnInit(){this.setPeriod('monthly',false);this.api.salesExecutives().subscribe(x=>this.employees=x);this.api.projects().subscribe(x=>this.projects=x);this.load()}
- get current(){return this.cards.find(x=>x.key===this.active)}
- setPeriod(key:string,reload=true){this.period=key;const now=new Date();if(key==='monthly'){this.from=this.iso(new Date(now.getFullYear(),now.getMonth(),1));this.to=this.iso(now)}else if(key==='yearly'){this.from=`${this.year}-01-01`;this.to=`${this.year}-12-31`}else if(key==='overall'){this.from='2000-01-01';this.to=this.iso(now)}if(reload&&key!=='custom')this.load()}
- iso(d:Date){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
- load(){this.loading=true;this.api.reportWorkspace(this.from,this.to,this.employeeId,this.projectId).subscribe({next:r=>{this.data=r;this.formula=r.formula;this.generatedAt=new Date(r.generatedAt);if(this.active)this.apply();this.loading=false},error:e=>{this.error=e.error?.message||'Could not load reports.';this.loading=false}})}
- open(key:Key){this.active=key;this.apply();setTimeout(()=>document.querySelector('.report-toolbar')?.scrollIntoView({behavior:'smooth'}))}apply(){const map:Record<Key,string>={kpi:'kpis',leads:'leadSummary',sales:'salesSummary',collections:'collectionSummary',returned:'returnedLeads',projects:'projectSummary',teams:'teamSummary',groups:'groupSummary'};this.rows=this.data[map[this.active!]]||[];this.columns=this.configs[this.active!]}
- employeeReport(row:any){this.router.navigate(['/reports/employees',row.employeeId],{queryParams:{from:this.from,to:this.to}})}
- format(v:any,t?:Col['type']){if(v===null||v===undefined||v==='')return '—';if(t==='money')return new Intl.NumberFormat('en-BD',{style:'currency',currency:'BDT',maximumFractionDigits:0}).format(v);if(t==='percent')return `${Number(v).toFixed(1)}%`;if(t==='number')return new Intl.NumberFormat('en-BD',{maximumFractionDigits:2}).format(v);if(t==='date'||t==='datetime'){const d=new Date(v);return d.toLocaleString('en-BD',t==='date'?{month:'short',year:'numeric'}:{dateStyle:'medium',timeStyle:'short'})}return String(v)}
- total(c:Col){if(!c.type||c.type==='date'||c.type==='datetime'||c.type==='percent')return '—';return this.format(this.rows.reduce((n,r)=>n+(Number(r[c.key])||0),0),c.type)}
- exportCsv(){const q=(v:any)=>`"${String(v??'').replace(/"/g,'""')}"`;const csv='\ufeff'+this.columns.map(c=>q(c.label)).join(',')+'\r\n'+this.rows.map(r=>this.columns.map(c=>q(this.format(r[c.key],c.type))).join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`${this.active}-report-${this.from}-${this.to}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
- async downloadPdf(){if(!this.active||!this.current)return;this.error='';try{await this.reportPdf.download(this.current.label,this.current.description,`${this.from} to ${this.to}`,this.columns,this.rows,(v,key)=>this.format(v,this.columns.find(c=>c.key===key)?.type),`${this.active}-report-${this.from}-${this.to}`)}catch(e:any){this.error=e?.message||'Could not create the PDF report.'}}
+    <ng-container *ngIf="active"
+      ><div class="report-toolbar no-print">
+        <button class="ghost-button" (click)="active = null">
+          ← All reports
+        </button>
+        <div>
+          <button class="ghost-button" (click)="exportCsv()">CSV</button
+          ><button (click)="downloadPdf()">Download PDF</button>
+        </div>
+      </div>
+      <section class="report-title">
+        <div>
+          <p class="eyebrow">{{ current?.group }}</p>
+          <h1>{{ current?.label }}</h1>
+          <p>{{ current?.description }}</p>
+        </div>
+        <div class="period">
+          <b>Reporting period</b
+          ><strong
+            >{{ from | date: "mediumDate" }} —
+            {{ to | date: "mediumDate" }}</strong
+          ><small>Generated {{ generatedAt | date: "medium" }}</small>
+        </div>
+      </section>
+      <section class="formula" *ngIf="active === 'kpi' && formula">
+        <b>Employee KPI formula</b>
+        <p>{{ formula.score }}</p>
+        <small>{{ formula.note }}</small>
+      </section>
+      <section class="panel table-panel">
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th *ngFor="let c of columns" [class.accent]="c.accent">
+                  {{ c.label }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td *ngFor="let c of columns" [class.accent]="c.accent">
+                  <a
+                    *ngIf="active === 'kpi' && c.key === 'employee'"
+                    (click)="employeeReport(row)"
+                    >{{ row[c.key] }}</a
+                  ><span
+                    *ngIf="!(active === 'kpi' && c.key === 'employee')"
+                    [class.badge]="c.key === 'rating'"
+                    >{{ format(row[c.key], c.type) }}</span
+                  >
+                </td>
+              </tr>
+              <tr *ngIf="!loading && !rows.length">
+                <td [attr.colspan]="columns.length" class="empty">
+                  No records match the selected filters.
+                </td>
+              </tr>
+            </tbody>
+            <tfoot
+              *ngIf="rows.length && active !== 'kpi' && active !== 'returned'"
+            >
+              <tr>
+                <th *ngFor="let c of columns">
+                  {{ c === columns[0] ? "Total" : total(c) }}
+                </th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <footer>
+          <span>{{ rows.length | number }} rows</span
+          ><span>Figures use the selected reporting period.</span>
+        </footer>
+      </section></ng-container
+    >
+  `,
+  styles: [
+    `
+      .filters {
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+      }
+      .filters label {
+        display: grid;
+        gap: 5px;
+        min-width: 150px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--muted);
+      }
+      .period-buttons {
+        display: flex;
+        gap: 5px;
+      }
+      .period-buttons button {
+        background: #fff;
+        color: var(--text);
+        box-shadow: none;
+        border: 1px solid var(--line);
+      }
+      .period-buttons button.active {
+        background: var(--brand);
+        color: #fff;
+      }
+      .report-home {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+      .report-home article {
+        display: flex;
+        gap: 14px;
+        padding: 20px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        cursor: pointer;
+        transition: 0.18s;
+      }
+      .report-home article:hover {
+        transform: translateY(-3px);
+        border-color: var(--brand);
+        box-shadow: 0 12px 28px #0f172a12;
+      }
+      .report-home article > span {
+        flex: 0 0 42px;
+        height: 42px;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        background: var(--brand-light);
+        color: var(--brand);
+        font-weight: 900;
+      }
+      .report-home small {
+        color: var(--brand);
+        text-transform: uppercase;
+        font-weight: 800;
+        font-size: 9px;
+      }
+      .report-home h2 {
+        font-size: 16px;
+        margin: 5px 0;
+      }
+      .report-home p {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+        min-height: 48px;
+      }
+      .report-home b {
+        color: var(--brand);
+        font-size: 11px;
+      }
+      .report-toolbar,
+      .report-toolbar > div,
+      .report-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .report-title {
+        align-items: end;
+        margin: 22px 0 15px;
+      }
+      .report-title h1 {
+        margin: 3px 0;
+      }
+      .report-title p {
+        color: var(--muted);
+        margin: 0;
+      }
+      .period {
+        display: grid;
+        text-align: right;
+        min-width: 260px;
+      }
+      .period b,
+      .period small {
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .formula {
+        padding: 14px 17px;
+        border-radius: 11px;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        margin-bottom: 14px;
+      }
+      .formula p {
+        margin: 4px 0;
+        font-size: 12px;
+      }
+      .formula small {
+        color: var(--muted);
+      }
+      .table-panel {
+        padding: 0;
+        overflow: hidden;
+      }
+      .scroll {
+        overflow: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 850px;
+      }
+      th,
+      td {
+        padding: 13px 14px;
+        border-bottom: 1px solid var(--line);
+        text-align: right;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      th:first-child,
+      td:first-child {
+        text-align: left;
+      }
+      thead th {
+        background: #f8fafc;
+        text-transform: uppercase;
+        font-size: 10px;
+        color: #475569;
+        letter-spacing: 0.04em;
+      }
+      tbody tr:nth-child(even) {
+        background: #fafcff;
+      }
+      tbody tr:hover {
+        background: #f1f5f9;
+      }
+      .accent {
+        background: #fff7ed !important;
+        color: #9a3412 !important;
+      }
+      td a {
+        font-weight: 800;
+        color: var(--brand);
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .badge {
+        padding: 5px 8px;
+        border-radius: 20px;
+        background: #e2e8f0;
+        font-weight: 800;
+      }
+      tfoot th {
+        background: #f1f5f9;
+      }
+      .empty {
+        text-align: center !important;
+        padding: 32px !important;
+        color: var(--muted);
+      }
+      .table-panel footer {
+        padding: 10px 14px;
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .error {
+        color: #b91c1c;
+      }
+      @media (max-width: 1100px) {
+        .report-home {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 650px) {
+        .report-home {
+          grid-template-columns: 1fr;
+        }
+        .report-title {
+          display: block;
+        }
+        .period {
+          text-align: left;
+          margin-top: 12px;
+        }
+      }
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        .workspace {
+          padding: 0 !important;
+        }
+        .report-title {
+          margin-top: 0;
+        }
+        .table-panel {
+          border: 0 !important;
+        }
+        table {
+          min-width: 0;
+        }
+        th,
+        td {
+          padding: 7px;
+          font-size: 9px;
+        }
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
+        }
+      }
+    `,
+  ],
+})
+export class ReportsComponent implements OnInit {
+  private api = inject(ApiService);
+  private router = inject(Router);
+  private reportPdf = inject(ReportPdfService);
+  data: any = {};
+  active: Key | null = null;
+  rows: any[] = [];
+  columns: Col[] = [];
+  employees: any[] = [];
+  projects: any[] = [];
+  formula: any;
+  loading = false;
+  error = "";
+  generatedAt = new Date();
+  period = "monthly";
+  year = new Date().getFullYear();
+  from = "";
+  to = "";
+  employeeId: number | null = null;
+  projectId: number | null = null;
+  periods = [
+    { key: "monthly", label: "Monthly" },
+    { key: "yearly", label: "Yearly" },
+    { key: "overall", label: "Overall" },
+    { key: "custom", label: "Custom" },
+  ];
+  years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+  cards = [
+    {
+      key: "kpi" as Key,
+      icon: "K",
+      group: "People",
+      label: "Employee KPI",
+      description: "Weighted score, targets and employee accountability.",
+    },
+    {
+      key: "leads" as Key,
+      icon: "L",
+      group: "Pipeline",
+      label: "Lead Summary",
+      description: "Lead volume, ownership, outcomes and follow-up.",
+    },
+    {
+      key: "sales" as Key,
+      icon: "S",
+      group: "Revenue",
+      label: "Sales Summary",
+      description: "Sold units and agreed sales value.",
+    },
+    {
+      key: "collections" as Key,
+      icon: "৳",
+      group: "Finance",
+      label: "Collections",
+      description: "Monthly collection results against targets.",
+    },
+    {
+      key: "returned" as Key,
+      icon: "!",
+      group: "Service risk",
+      label: "Returned Leads",
+      description: "Missed response deadlines and accountability.",
+    },
+    {
+      key: "projects" as Key,
+      icon: "P",
+      group: "Portfolio",
+      label: "Project Performance",
+      description: "Outcomes, units, booked value and collections.",
+    },
+    {
+      key: "teams" as Key,
+      icon: "T",
+      group: "Hierarchy",
+      label: "Team Performance",
+      description: "Team-level KPI, sales and collections.",
+    },
+    {
+      key: "groups" as Key,
+      icon: "G",
+      group: "Hierarchy",
+      label: "Group Performance",
+      description: "Group-level performance and team totals.",
+    },
+  ];
+  configs: Record<Key, Col[]> = {
+    kpi: [
+      { key: "employee", label: "Employee" },
+      { key: "team", label: "Team" },
+      { key: "score", label: "KPI Score", type: "number" },
+      { key: "rating", label: "Rating" },
+      { key: "won", label: "Won", type: "number" },
+      { key: "lost", label: "Lost", type: "number" },
+      { key: "returned", label: "Returned", type: "number", accent: true },
+      {
+        key: "returnedRate",
+        label: "Return Rate",
+        type: "percent",
+        accent: true,
+      },
+      { key: "salesUnits", label: "Sales Units", type: "number" },
+      { key: "collections", label: "Collections", type: "money" },
+      { key: "winRate", label: "Win Rate", type: "percent" },
+      { key: "followupCoverage", label: "Follow-up", type: "percent" },
+    ],
+    leads: [
+      { key: "totalLeads", label: "Total Leads", type: "number" },
+      { key: "newLeads", label: "New", type: "number" },
+      { key: "assigned", label: "Assigned", type: "number" },
+      { key: "unassigned", label: "Unassigned", type: "number" },
+      { key: "active", label: "Active", type: "number" },
+      { key: "won", label: "Won", type: "number" },
+      { key: "lost", label: "Lost", type: "number" },
+      { key: "returned", label: "Returned", type: "number", accent: true },
+      { key: "awaitingFollowUp", label: "Awaiting Follow-up", type: "number" },
+    ],
+    sales: [
+      { key: "employee", label: "Employee" },
+      { key: "project", label: "Project" },
+      { key: "salesUnits", label: "Sales Units", type: "number" },
+      { key: "agreedSalesValue", label: "Agreed Sales Value", type: "money" },
+      { key: "won", label: "Won", type: "number" },
+      { key: "lost", label: "Lost", type: "number" },
+    ],
+    collections: [
+      { key: "employee", label: "Employee" },
+      { key: "month", label: "Month", type: "date" },
+      { key: "target", label: "Target", type: "money" },
+      { key: "collected", label: "Collected", type: "money" },
+      { key: "variance", label: "Variance", type: "money" },
+      { key: "achievement", label: "Achievement", type: "percent" },
+    ],
+    returned: [
+      { key: "lead", label: "Lead / Customer" },
+      { key: "employee", label: "Responsible Employee", accent: true },
+      { key: "project", label: "Project" },
+      { key: "assignedAt", label: "Assigned", type: "datetime" },
+      { key: "returnedAt", label: "Returned", type: "datetime", accent: true },
+      { key: "notificationCount", label: "Reminders", type: "number" },
+      { key: "status", label: "Current Status" },
+      { key: "currentEmployee", label: "Current Assignment" },
+    ],
+    projects: [
+      { key: "project", label: "Project" },
+      { key: "leadsReceived", label: "Leads", type: "number" },
+      { key: "won", label: "Won", type: "number" },
+      { key: "lost", label: "Lost", type: "number" },
+      { key: "salesUnits", label: "Sales Units", type: "number" },
+      { key: "agreedSalesValue", label: "Agreed Sales Value", type: "money" },
+      { key: "totalCollections", label: "Total Collections", type: "money" },
+    ],
+    teams: [
+      { key: "group", label: "Group" },
+      { key: "team", label: "Team" },
+      { key: "employees", label: "Employees", type: "number" },
+      { key: "averageKpi", label: "Average KPI", type: "number" },
+      { key: "won", label: "Won", type: "number" },
+      { key: "lost", label: "Lost", type: "number" },
+      { key: "returned", label: "Returned", type: "number", accent: true },
+      { key: "salesUnits", label: "Sales Units", type: "number" },
+      { key: "collections", label: "Collections", type: "money" },
+    ],
+    groups: [
+      { key: "group", label: "Group" },
+      { key: "teams", label: "Teams", type: "number" },
+      { key: "employees", label: "Employees", type: "number" },
+      { key: "averageKpi", label: "Average KPI", type: "number" },
+      { key: "won", label: "Won", type: "number" },
+      { key: "lost", label: "Lost", type: "number" },
+      { key: "returned", label: "Returned", type: "number", accent: true },
+      { key: "salesUnits", label: "Sales Units", type: "number" },
+      { key: "collections", label: "Collections", type: "money" },
+    ],
+  };
+  ngOnInit() {
+    this.setPeriod("monthly", false);
+    this.api.salesExecutives().subscribe((x) => (this.employees = x));
+    this.api.projects().subscribe((x) => (this.projects = x));
+    this.load();
+  }
+  get current() {
+    return this.cards.find((x) => x.key === this.active);
+  }
+  setPeriod(key: string, reload = true) {
+    this.period = key;
+    const now = new Date();
+    if (key === "monthly") {
+      this.from = this.iso(new Date(now.getFullYear(), now.getMonth(), 1));
+      this.to = this.iso(now);
+    } else if (key === "yearly") {
+      this.from = `${this.year}-01-01`;
+      this.to = `${this.year}-12-31`;
+    } else if (key === "overall") {
+      this.from = "2000-01-01";
+      this.to = this.iso(now);
+    }
+    if (reload && key !== "custom") this.load();
+  }
+  iso(d: Date) {
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+  }
+  load() {
+    this.loading = true;
+    this.api
+      .reportWorkspace(this.from, this.to, this.employeeId, this.projectId)
+      .subscribe({
+        next: (r) => {
+          this.data = r;
+          this.formula = r.formula;
+          this.generatedAt = new Date(r.generatedAt);
+          if (this.active) this.apply();
+          this.loading = false;
+        },
+        error: (e) => {
+          this.error = e.error?.message || "Could not load reports.";
+          this.loading = false;
+        },
+      });
+  }
+  open(key: Key) {
+    this.active = key;
+    this.apply();
+    setTimeout(() =>
+      document
+        .querySelector(".report-toolbar")
+        ?.scrollIntoView({ behavior: "smooth" }),
+    );
+  }
+  apply() {
+    const map: Record<Key, string> = {
+      kpi: "kpis",
+      leads: "leadSummary",
+      sales: "salesSummary",
+      collections: "collectionSummary",
+      returned: "returnedLeads",
+      projects: "projectSummary",
+      teams: "teamSummary",
+      groups: "groupSummary",
+    };
+    this.rows = this.data[map[this.active!]] || [];
+    this.columns = this.configs[this.active!];
+  }
+  employeeReport(row: any) {
+    this.router.navigate(["/reports/employees", row.employeeId], {
+      queryParams: { from: this.from, to: this.to },
+    });
+  }
+  format(v: any, t?: Col["type"]) {
+    if (v === null || v === undefined || v === "") return "—";
+    if (t === "money")
+      return new Intl.NumberFormat("en-BD", {
+        style: "currency",
+        currency: "BDT",
+        maximumFractionDigits: 0,
+      }).format(v);
+    if (t === "percent") return `${Number(v).toFixed(1)}%`;
+    if (t === "number")
+      return new Intl.NumberFormat("en-BD", {
+        maximumFractionDigits: 2,
+      }).format(v);
+    if (t === "date" || t === "datetime") {
+      const d = new Date(v);
+      return d.toLocaleString(
+        "en-BD",
+        t === "date"
+          ? { month: "short", year: "numeric" }
+          : { dateStyle: "medium", timeStyle: "short" },
+      );
+    }
+    return String(v);
+  }
+  total(c: Col) {
+    if (
+      !c.type ||
+      c.type === "date" ||
+      c.type === "datetime" ||
+      c.type === "percent"
+    )
+      return "—";
+    return this.format(
+      this.rows.reduce((n, r) => n + (Number(r[c.key]) || 0), 0),
+      c.type,
+    );
+  }
+  exportCsv() {
+    const q = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv =
+      "\ufeff" +
+      this.columns.map((c) => q(c.label)).join(",") +
+      "\r\n" +
+      this.rows
+        .map((r) =>
+          this.columns.map((c) => q(this.format(r[c.key], c.type))).join(","),
+        )
+        .join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = `${this.active}-report-${this.from}-${this.to}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  async downloadPdf() {
+    if (!this.active || !this.current) return;
+    this.error = "";
+    try {
+      await this.reportPdf.download(
+        this.current.label,
+        this.current.description,
+        `${this.from} to ${this.to}`,
+        this.columns,
+        this.rows,
+        (v, key) =>
+          this.format(v, this.columns.find((c) => c.key === key)?.type),
+        `${this.active}-report-${this.from}-${this.to}`,
+      );
+    } catch (e: any) {
+      this.error = e?.message || "Could not create the PDF report.";
+    }
+  }
 }
