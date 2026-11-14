@@ -1,11 +1,11 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { DashboardSummary } from '../../models/crm.models';
-import { money } from '../../shared/format';
-import { AuthService } from '../../core/auth.service';
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, inject } from "@angular/core";
+import { RouterLink } from "@angular/router";
+import { FormsModule } from "@angular/forms";
+import { ApiService } from "../../core/api.service";
+import { DashboardSummary } from "../../models/crm.models";
+import { money } from "../../shared/format";
+import { AuthService } from "../../core/auth.service";
 
 @Component({
   standalone: true,
@@ -15,11 +15,25 @@ import { AuthService } from '../../core/auth.service';
       <div>
         <p class="eyebrow">Overview</p>
         <h1>Admin Dashboard</h1>
-        <p class="page-copy">Real-time indicators of your sales funnel, properties, and collections.</p>
+        <p class="page-copy">
+          Real-time indicators of your sales funnel, properties, and
+          collections.
+        </p>
       </div>
       <button type="button" class="ghost-button refresh-btn" (click)="load()">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="refresh-icon">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="refresh-icon"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+          />
         </svg>
         <span>Refresh</span>
       </button>
@@ -28,10 +42,14 @@ import { AuthService } from '../../core/auth.service';
     <!-- Visual Dashboard Banner -->
     <div class="dashboard-banner">
       <div class="banner-overlay"></div>
-      <div class="banner-content">
-        <span class="banner-eyebrow">System Console</span>
+      <div syle="position: relative; z-index: 1; color: #b41a1a;">
+        <span class="banner-eyebrow">System Consolel</span>
         <h2>Welcome Back, Administrator</h2>
-        <p>Operations are running smoothly. The current lead-to-customer conversion rate is at <strong>{{ conversionRate }}%</strong>.</p>
+        <p>
+          Operations are running smoothly. The current lead-to-customer
+          conversion rate is at
+          <strong>{{ conversionRate }}%</strong>.
+        </p>
       </div>
       <div class="banner-metrics">
         <div class="banner-metric-pill">
@@ -45,10 +63,24 @@ import { AuthService } from '../../core/auth.service';
     <section class="quick-shortcuts-panel">
       <span class="section-tag">Quick Actions</span>
       <div class="shortcuts-grid">
-        <a *ngIf="auth.hasPermission('leads.manage')" routerLink="/leads" class="shortcut-card">
+        <a
+          *ngIf="auth.hasPermission('leads.manage')"
+          routerLink="/leads"
+          class="shortcut-card"
+        >
           <div class="shortcut-icon-bg leads-bg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z"
+              />
             </svg>
           </div>
           <div class="shortcut-info">
@@ -56,10 +88,24 @@ import { AuthService } from '../../core/auth.service';
             <span>Add a new lead to the CRM</span>
           </div>
         </a>
-        <a *ngIf="auth.hasRole('SuperAdmin','Admin')" routerLink="/properties/projects" class="shortcut-card">
+        <a
+          *ngIf="auth.hasRole('SuperAdmin', 'Admin')"
+          routerLink="/properties/projects"
+          class="shortcut-card"
+        >
           <div class="shortcut-icon-bg projects-bg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.203 0-4.361.152-6.475.445V21M3 21h18M12 11.25H12.008v.008H12v-.008Z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.203 0-4.361.152-6.475.445V21M3 21h18M12 11.25H12.008v.008H12v-.008Z"
+              />
             </svg>
           </div>
           <div class="shortcut-info">
@@ -67,10 +113,24 @@ import { AuthService } from '../../core/auth.service';
             <span>Create property listings</span>
           </div>
         </a>
-        <a *ngIf="auth.hasPermission('payments.view')" routerLink="/payments" class="shortcut-card">
+        <a
+          *ngIf="auth.hasPermission('payments.view')"
+          routerLink="/payments"
+          class="shortcut-card"
+        >
           <div class="shortcut-icon-bg collections-bg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"
+              />
             </svg>
           </div>
           <div class="shortcut-info">
@@ -78,10 +138,24 @@ import { AuthService } from '../../core/auth.service';
             <span>Review payment receipts</span>
           </div>
         </a>
-        <a *ngIf="auth.hasPermission('transportation.manage')" routerLink="/transport/schedule" class="shortcut-card">
+        <a
+          *ngIf="auth.hasPermission('transportation.manage')"
+          routerLink="/transport/schedule"
+          class="shortcut-card"
+        >
           <div class="shortcut-icon-bg transport-bg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125a1.125 1.125 0 0 0 1.125-1.125V9.75M8.25 4.5h8.25a8.967 8.967 0 0 1 7.305 3.75M8.25 4.5 1.5 12m7.5-7.5v3.75M22.5 12h-9m9 0a8.967 8.967 0 0 1-4.5 7.75M12.75 12h-9m0 0 7.5 6.75M12.75 12v3.75m0 0H8.25m4.5 0h4.5" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125a1.125 1.125 0 0 0 1.125-1.125V9.75M8.25 4.5h8.25a8.967 8.967 0 0 1 7.305 3.75M8.25 4.5 1.5 12m7.5-7.5v3.75M22.5 12h-9m9 0a8.967 8.967 0 0 1-4.5 7.75M12.75 12h-9m0 0 7.5 6.75M12.75 12v3.75m0 0H8.25m4.5 0h4.5"
+              />
             </svg>
           </div>
           <div class="shortcut-info">
@@ -93,18 +167,69 @@ import { AuthService } from '../../core/auth.service';
     </section>
 
     <section class="collection-filter panel">
-      <div><strong>Collection period</strong><small>Approved collections from {{ collectionFrom | date }} to {{ collectionTo | date }}</small></div>
-      <div class="period-buttons"><button type="button" [class.active]="period==='month'" (click)="setPeriod('month')">This month</button><button type="button" [class.active]="period==='week'" (click)="setPeriod('week')">This week</button><button type="button" [class.active]="period==='year'" (click)="setPeriod('year')">This year</button><button type="button" [class.active]="period==='custom'" (click)="period='custom'">Custom</button></div>
-      <div class="custom-dates" *ngIf="period==='custom'"><input type="date" [(ngModel)]="collectionFrom"><input type="date" [(ngModel)]="collectionTo"><button type="button" (click)="load()">Apply</button></div>
+      <div>
+        <strong>Collection period</strong
+        ><small
+          >Approved collections from {{ collectionFrom | date }} to
+          {{ collectionTo | date }}</small
+        >
+      </div>
+      <div class="period-buttons">
+        <button
+          type="button"
+          [class.active]="period === 'month'"
+          (click)="setPeriod('month')"
+        >
+          This month</button
+        ><button
+          type="button"
+          [class.active]="period === 'week'"
+          (click)="setPeriod('week')"
+        >
+          This week</button
+        ><button
+          type="button"
+          [class.active]="period === 'year'"
+          (click)="setPeriod('year')"
+        >
+          This year</button
+        ><button
+          type="button"
+          [class.active]="period === 'custom'"
+          (click)="period = 'custom'"
+        >
+          Custom
+        </button>
+      </div>
+      <div class="custom-dates" *ngIf="period === 'custom'">
+        <input type="date" [(ngModel)]="collectionFrom" /><input
+          type="date"
+          [(ngModel)]="collectionTo"
+        /><button type="button" (click)="load()">Apply</button>
+      </div>
     </section>
 
     <!-- Visual Dashboard Metrics Cards -->
     <section class="metric-grid-dashboard">
       <!-- Total Leads -->
-      <a *ngIf="!auth.hasRole('Transportation')" routerLink="/lead-performance" class="dashboard-metric-card clickable-card">
+      <a
+        *ngIf="!auth.hasRole('Transportation')"
+        routerLink="/lead-performance"
+        class="dashboard-metric-card clickable-card"
+      >
         <div class="icon-wrapper leads-theme">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 12.75 0ZM15 7.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6.75 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 12.75 0ZM15 7.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6.75 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"
+            />
           </svg>
         </div>
         <div class="body-wrapper">
@@ -112,29 +237,74 @@ import { AuthService } from '../../core/auth.service';
           <strong class="card-val">{{ summary.leads || 0 }}</strong>
         </div>
       </a>
-      <article *ngIf="auth.hasRole('Transportation')" class="dashboard-metric-card">
-        <div class="icon-wrapper leads-theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17h16M6 17V9h12v8M8 20h.01M16 20h.01"/></svg></div>
-        <div class="body-wrapper"><span class="card-label">Transport Requests ({{ periodLabel }})</span><strong class="card-val">{{ summary.leads || 0 }}</strong></div>
+      <article
+        *ngIf="auth.hasRole('Transportation')"
+        class="dashboard-metric-card"
+      >
+        <div class="icon-wrapper leads-theme">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M4 17h16M6 17V9h12v8M8 20h.01M16 20h.01" />
+          </svg>
+        </div>
+        <div class="body-wrapper">
+          <span class="card-label">Transport Requests ({{ periodLabel }})</span
+          ><strong class="card-val">{{ summary.leads || 0 }}</strong>
+        </div>
       </article>
 
       <!-- Booked Customers -->
       <article class="dashboard-metric-card">
         <div class="icon-wrapper customers-theme">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"
+            />
           </svg>
         </div>
         <div class="body-wrapper">
-          <span class="card-label">{{auth.hasRole('Transportation')?'Scheduled Visits':'Booked Customers'}} ({{ periodLabel }})</span>
+          <span class="card-label"
+            >{{
+              auth.hasRole("Transportation")
+                ? "Scheduled Visits"
+                : "Booked Customers"
+            }}
+            ({{ periodLabel }})</span
+          >
           <strong class="card-val">{{ summary.customers || 0 }}</strong>
         </div>
       </article>
 
       <!-- Transportation-only active vehicles -->
-      <article class="dashboard-metric-card" *ngIf="auth.hasRole('Transportation')">
+      <article
+        class="dashboard-metric-card"
+        *ngIf="auth.hasRole('Transportation')"
+      >
         <div class="icon-wrapper projects-theme">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.203 0-4.361.152-6.475.445V21M3 21h18M12 11.25H12.008v.008H12v-.008Z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.203 0-4.361.152-6.475.445V21M3 21h18M12 11.25H12.008v.008H12v-.008Z"
+            />
           </svg>
         </div>
         <div class="body-wrapper">
@@ -144,10 +314,24 @@ import { AuthService } from '../../core/auth.service';
       </article>
 
       <!-- This Month Collection (Clickable Card Linked to payments/collections) -->
-      <a *ngIf="auth.hasPermission('payments.view')" routerLink="/payments" class="dashboard-metric-card clickable-card">
+      <a
+        *ngIf="auth.hasPermission('payments.view')"
+        routerLink="/payments"
+        class="dashboard-metric-card clickable-card"
+      >
         <div class="icon-wrapper collections-theme">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75m-.75-1.5h1.5m-1.5 15h1.5m-1.5-1.5v1.5m15-15h1.5m-1.5 0v1.5m-1.5 15h1.5m0-1.5v1.5M6 7.5h12M6 12h12m-9 4.5h6" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75m-.75-1.5h1.5m-1.5 15h1.5m-1.5-1.5v1.5m15-15h1.5m-1.5 0v1.5m-1.5 15h1.5m0-1.5v1.5M6 7.5h12M6 12h12m-9 4.5h6"
+            />
           </svg>
         </div>
         <div class="body-wrapper">
@@ -155,20 +339,37 @@ import { AuthService } from '../../core/auth.service';
             <span class="card-label">Collection ({{ periodLabel }})</span>
             <span class="hint-badge">Click to Filter</span>
           </div>
-          <strong class="card-val text-brand">{{ formatMoney(summary.totalCollection) }}</strong>
+          <strong class="card-val text-brand">{{
+            formatMoney(summary.totalCollection)
+          }}</strong>
         </div>
       </a>
 
       <!-- Commission (This Month) -->
-      <article class="dashboard-metric-card" *ngIf="auth.hasPermission('payments.view')">
+      <article
+        class="dashboard-metric-card"
+        *ngIf="auth.hasPermission('payments.view')"
+      >
         <div class="icon-wrapper commissions-theme">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
+            />
           </svg>
         </div>
         <div class="body-wrapper">
           <span class="card-label">Commission ({{ periodLabel }})</span>
-          <strong class="card-val text-success">{{ formatMoney(commissionAmount) }}</strong>
+          <strong class="card-val text-success">{{
+            formatMoney(commissionAmount)
+          }}</strong>
         </div>
       </article>
     </section>
@@ -177,708 +378,1039 @@ import { AuthService } from '../../core/auth.service';
     <section class="two-column">
       <article class="panel" *ngIf="auth.hasPermission('leads.manage')">
         <h2>Funnel Conversion</h2>
-        <p class="panel-desc">Visualizing conversion of manual and automated leads into closed customers.</p>
-        
+        <p class="panel-desc">
+          Visualizing conversion of manual and automated leads into closed
+          customers.
+        </p>
+
         <div class="pipeline-progress">
           <div class="progress-info">
             <span>Leads converted to Customers</span>
             <strong>{{ conversionRate }}%</strong>
           </div>
           <div class="progress-bar-bg">
-            <div class="progress-bar-fill" [style.width.%]="conversionRate"></div>
+            <div
+              class="progress-bar-fill"
+              [style.width.%]="conversionRate"
+            ></div>
           </div>
         </div>
 
         <div class="pipeline">
-          <div><span>Total Leads</span><strong>{{ summary.leads || 0 }}</strong></div>
-          <div><span>Positive Customers (Booked)</span><strong>{{ summary.customers || 0 }}</strong></div>
+          <div>
+            <span>Total Leads</span><strong>{{ summary.leads || 0 }}</strong>
+          </div>
+          <div>
+            <span>Positive Customers (Booked)</span
+            ><strong>{{ summary.customers || 0 }}</strong>
+          </div>
         </div>
       </article>
 
-      <article class="panel target-control" *ngIf="auth.hasPermission('payments.view') && summary.salesTargetProgress as target">
-        <div class="target-head"><div><p class="eyebrow">Monthly performance</p><h2>Sales Target Control</h2></div><span class="target-period">Current month</span></div>
+      <article
+        class="panel target-control"
+        *ngIf="
+          auth.hasPermission('payments.view') &&
+          summary.salesTargetProgress as target
+        "
+      >
+        <div class="target-head">
+          <div>
+            <p class="eyebrow">Monthly performance</p>
+            <h2>Sales Target Control</h2>
+          </div>
+          <span class="target-period">Current month</span>
+        </div>
         <div class="target-grid">
           <section class="target-card unit-target">
-            <div class="target-title"><span>Target Units</span><strong>{{ target.unitsCompleted }} / {{ target.unitTarget }}</strong></div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" [style.width.%]="targetPercent(target.unitsCompleted,target.unitTarget)"></div></div>
-            <div class="target-details"><div><span>Given</span><b>{{ target.unitTarget }}</b></div><div><span>Completed</span><b>{{ target.unitsCompleted }}</b></div><div [class.positive]="target.unitVariance>=0" [class.negative]="target.unitVariance<0"><span>{{ target.unitVariance>=0?'Overachievement':'Shortage' }}</span><b>{{ abs(target.unitVariance) }}</b></div></div>
+            <div class="target-title">
+              <span>Target Units</span
+              ><strong
+                >{{ target.unitsCompleted }} / {{ target.unitTarget }}</strong
+              >
+            </div>
+            <div class="progress-bar-bg">
+              <div
+                class="progress-bar-fill"
+                [style.width.%]="
+                  targetPercent(target.unitsCompleted, target.unitTarget)
+                "
+              ></div>
+            </div>
+            <div class="target-details">
+              <div>
+                <span>Given</span><b>{{ target.unitTarget }}</b>
+              </div>
+              <div>
+                <span>Completed</span><b>{{ target.unitsCompleted }}</b>
+              </div>
+              <div
+                [class.positive]="target.unitVariance >= 0"
+                [class.negative]="target.unitVariance < 0"
+              >
+                <span>{{
+                  target.unitVariance >= 0 ? "Overachievement" : "Shortage"
+                }}</span
+                ><b>{{ abs(target.unitVariance) }}</b>
+              </div>
+            </div>
           </section>
           <section class="target-card collection-target">
-            <div class="target-title"><span>Collection Target</span><strong>{{ formatMoney(target.collectionCompleted) }} / {{ formatMoney(target.collectionTarget) }}</strong></div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill success" [style.width.%]="targetPercent(target.collectionCompleted,target.collectionTarget)"></div></div>
-            <div class="target-details"><div><span>Given</span><b>{{ formatMoney(target.collectionTarget) }}</b></div><div><span>Completed</span><b>{{ formatMoney(target.collectionCompleted) }}</b></div><div [class.positive]="target.collectionVariance>=0" [class.negative]="target.collectionVariance<0"><span>{{ target.collectionVariance>=0?'Overachievement':'Shortage' }}</span><b>{{ formatMoney(abs(target.collectionVariance)) }}</b></div></div>
+            <div class="target-title">
+              <span>Collection Target</span
+              ><strong
+                >{{ formatMoney(target.collectionCompleted) }} /
+                {{ formatMoney(target.collectionTarget) }}</strong
+              >
+            </div>
+            <div class="progress-bar-bg">
+              <div
+                class="progress-bar-fill success"
+                [style.width.%]="
+                  targetPercent(
+                    target.collectionCompleted,
+                    target.collectionTarget
+                  )
+                "
+              ></div>
+            </div>
+            <div class="target-details">
+              <div>
+                <span>Given</span
+                ><b>{{ formatMoney(target.collectionTarget) }}</b>
+              </div>
+              <div>
+                <span>Completed</span
+                ><b>{{ formatMoney(target.collectionCompleted) }}</b>
+              </div>
+              <div
+                [class.positive]="target.collectionVariance >= 0"
+                [class.negative]="target.collectionVariance < 0"
+              >
+                <span>{{
+                  target.collectionVariance >= 0
+                    ? "Overachievement"
+                    : "Shortage"
+                }}</span
+                ><b>{{ formatMoney(abs(target.collectionVariance)) }}</b>
+              </div>
+            </div>
           </section>
         </div>
       </article>
     </section>
   `,
-  styles: [`
-    .refresh-btn {
-      height: 38px;
-      min-height: 38px;
-      padding: 0 14px;
-      font-size: 13px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .collection-filter{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.collection-filter>div:first-child{display:flex;flex-direction:column;gap:3px}.collection-filter small{color:var(--muted)}.period-buttons{display:flex;gap:7px;flex-wrap:wrap}.period-buttons button{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;padding:8px 12px}.period-buttons button.active{background:var(--brand);color:#fff}.custom-dates{display:flex;gap:8px;align-items:center}.custom-dates input{width:auto}@media(max-width:900px){.collection-filter{align-items:stretch;flex-direction:column}.custom-dates{flex-wrap:wrap}}
-    .target-control{background:linear-gradient(145deg,#fff,#f8fafc)}.target-head{display:flex;justify-content:space-between;gap:16px;align-items:start}.target-head h2{margin:2px 0 4px}.target-period{padding:6px 10px;border-radius:99px;background:#ecfdf3;color:#047857;font-size:11px;font-weight:800}.target-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.target-card{padding:18px;border:1px solid var(--line);border-radius:14px;background:#fff}.target-title{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}.target-title span{font-weight:800;color:#475569}.target-title strong{text-align:right;color:#0f172a}.target-details{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.target-details div{padding:10px;border-radius:10px;background:#f8fafc}.target-details span,.target-details b{display:block}.target-details span{font-size:10px;color:var(--muted);margin-bottom:4px}.target-details b{font-size:14px;color:#0f172a}.target-details .positive{background:#ecfdf3}.target-details .positive b{color:#047857}.target-details .negative{background:#fef2f2}.target-details .negative b{color:#b42318}@media(max-width:900px){.target-grid{grid-template-columns:1fr}}@media(max-width:520px){.target-details{grid-template-columns:1fr}.target-title{flex-direction:column}.target-title strong{text-align:left}}
-
-    .refresh-icon {
-      width: 16px;
-      height: 16px;
-      transition: transform 0.4s ease;
-    }
-
-    .refresh-btn:hover .refresh-icon {
-      transform: rotate(180deg);
-    }
-
-    /* Welcoming Banner */
-    .dashboard-banner {
-      position: relative;
-      background: linear-gradient(135deg, #090d16 0%, #1e293b 100%);
-      border: 1px solid #1e293b;
-      border-radius: 16px;
-      padding: 32px;
-      margin-bottom: 24px;
-      overflow: hidden;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #fff;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    .banner-overlay {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 80% 20%, rgba(15, 118, 110, 0.15) 0%, transparent 50%);
-      pointer-events: none;
-    }
-
-    .banner-content {
-      position: relative;
-      z-index: 1;
-      max-width: 60%;
-    }
-
-    .banner-eyebrow {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 700;
-      color: var(--brand);
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .banner-content h2 {
-      color: #fff;
-      font-size: 24px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      letter-spacing: -0.5px;
-    }
-
-    .banner-content p {
-      color: #94a3b8;
-      font-size: 14px;
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    .banner-content p strong {
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .banner-metrics {
-      position: relative;
-      z-index: 1;
-    }
-
-    .banner-metric-pill {
-      background: rgba(15, 118, 110, 0.15);
-      border: 1px solid rgba(15, 118, 110, 0.3);
-      padding: 8px 16px;
-      border-radius: 99px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #06b6d4;
-    }
-
-    .pulse-indicator {
-      width: 8px;
-      height: 8px;
-      background: #06b6d4;
-      border-radius: 50%;
-      position: relative;
-    }
-
-    .pulse-indicator::after {
-      content: '';
-      position: absolute;
-      inset: -4px;
-      border-radius: 50%;
-      border: 2px solid #06b6d4;
-      animation: pulse 1.8s infinite ease-in-out;
-      opacity: 0;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.6); opacity: 0; }
-      50% { opacity: 0.5; }
-      100% { transform: scale(1.6); opacity: 0; }
-    }
-
-    /* Quick Action Shortcuts */
-    .quick-shortcuts-panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow);
-    }
-
-    .section-tag {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--muted);
-      display: block;
-      margin-bottom: 14px;
-    }
-
-    .shortcuts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 16px;
-    }
-
-    .shortcut-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      padding: 14px 18px;
-      border-radius: 12px;
-      text-decoration: none;
-      color: var(--text-dark);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .shortcut-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--brand);
-      box-shadow: 0 10px 15px -3px rgba(15, 118, 110, 0.05), 0 0 0 1px rgba(15, 118, 110, 0.1);
-    }
-
-    .shortcut-icon-bg {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .shortcut-icon-bg svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    .leads-bg { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-    .projects-bg { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-    .collections-bg { background: rgba(15, 118, 110, 0.1); color: var(--brand); }
-    .transport-bg { background: rgba(249, 115, 22, 0.1); color: #f97316; }
-
-    .shortcut-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .shortcut-info strong {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
-
-    .shortcut-info span {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    /* Metric Cards Grid */
-    .metric-grid-dashboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .dashboard-metric-card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .dashboard-metric-card::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    .dashboard-metric-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-hover);
-    }
-
-    .dashboard-metric-card:hover::after {
-      opacity: 1;
-    }
-
-    .clickable-card {
-      cursor: pointer;
-      text-decoration: none;
-    }
-
-    .clickable-card::after {
-      background: linear-gradient(90deg, var(--brand), #0ea5e9);
-    }
-
-    .clickable-card:hover {
-      border-color: rgba(15, 118, 110, 0.3);
-    }
-
-    .icon-wrapper {
-      width: 46px;
-      height: 46px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .icon-wrapper svg {
-      width: 24px;
-      height: 24px;
-    }
-
-    .leads-theme { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-    .dashboard-metric-card:nth-of-type(1)::after { background: #6366f1; }
-
-    .customers-theme { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
-    .dashboard-metric-card:nth-of-type(2)::after { background: #ec4899; }
-
-    .projects-theme { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-    .dashboard-metric-card:nth-of-type(3)::after { background: #8b5cf6; }
-
-    .pending-collections-theme { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-    .dashboard-metric-card:nth-of-type(4)::after { background: #f59e0b; }
-
-    .collections-theme { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .dashboard-metric-card:nth-of-type(5)::after { background: #10b981; }
-
-    .commissions-theme { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    .dashboard-metric-card:nth-of-type(6)::after { background: #3b82f6; }
-
-    .body-wrapper {
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
-
-    .card-label {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .card-val {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--text-dark);
-      margin-top: 4px;
-      letter-spacing: -0.5px;
-    }
-
-    .text-brand {
-      color: var(--brand-dark);
-    }
-
-    .label-with-hint {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hint-badge {
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--brand);
-      background: var(--brand-light);
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.2px;
-      transition: all 0.2s ease;
-    }
-
-    .clickable-card:hover .hint-badge {
-      background: var(--brand);
-      color: white;
-    }
-
-    /* Split value commissions styling */
-    .double-value-card {
-      align-items: flex-start;
-    }
-
-    .commissions-split-container {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-top: 6px;
-    }
-
-    .split-col {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .split-label {
-      font-size: 10px;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .split-val {
-      font-size: 15px;
-      font-weight: 800;
-      margin-top: 1px;
-    }
-
-    .split-divider {
-      align-self: stretch;
-      width: 1px;
-      background: var(--line);
-    }
-
-    .text-success { color: var(--success-dark); }
-    .text-warning { color: var(--warning-dark); }
-
-    /* Funnel & Conversion progress items */
-    .pipeline-progress {
-      margin: 18px 0;
-    }
-
-    .progress-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .progress-info span {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .progress-info strong {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
-
-    .progress-bar-bg {
-      height: 8px;
-      background: #f1f5f9;
-      border-radius: 99px;
-      overflow: hidden;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--brand), #0ea5e9);
-      border-radius: 99px;
-      transition: width 0.8s ease-in-out;
-    }
-
-    .progress-bar-fill.success {
-      background: linear-gradient(90deg, #10b981, #059669);
-    }
-
-    .panel-desc {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: -12px;
-      margin-bottom: 16px;
-    }
-
-    /* Small pipeline modifications */
-    .pipeline {
-      margin-top: 16px;
-    }
-
-    /* Compact dashboard layout and overflow-safe target controls. */
-    :host {
-      display: block;
-      min-width: 0;
-    }
-
-    .page-head {
-      margin-bottom: 12px;
-    }
-
-    .dashboard-banner {
-      min-height: 104px;
-      padding: 18px 22px;
-      margin-bottom: 12px;
-    }
-
-    .banner-content h2 {
-      font-size: 20px;
-      margin-bottom: 4px;
-    }
-
-    .banner-content p {
-      font-size: 12px;
-    }
-
-    .quick-shortcuts-panel {
-      padding: 12px 14px;
-      margin-bottom: 12px;
-    }
-
-    .section-tag {
-      margin-bottom: 8px;
-    }
-
-    .shortcuts-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 9px;
-    }
-
-    .shortcut-card {
-      min-width: 0;
-      padding: 9px 11px;
-      gap: 9px;
-    }
-
-    .shortcut-icon-bg {
-      width: 34px;
-      height: 34px;
-    }
-
-    .shortcut-info {
-      min-width: 0;
-    }
-
-    .shortcut-info strong,
-    .shortcut-info span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .collection-filter {
-      min-width: 0;
-      padding: 11px 14px;
-      margin-bottom: 12px;
-    }
-
-    .period-buttons {
-      flex-wrap: nowrap;
-    }
-
-    .period-buttons button {
-      min-height: 32px;
-      padding: 6px 9px;
-      white-space: nowrap;
-    }
-
-    .metric-grid-dashboard {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 9px;
-      margin-bottom: 12px;
-    }
-
-    .dashboard-metric-card {
-      min-width: 0;
-      padding: 12px 13px;
-      gap: 10px;
-      border-radius: 13px;
-    }
-
-    .icon-wrapper {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-    }
-
-    .icon-wrapper svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    .body-wrapper,
-    .label-with-hint {
-      min-width: 0;
-    }
-
-    .card-label {
-      font-size: 9px;
-    }
-
-    .card-val {
-      max-width: 100%;
-      font-size: clamp(16px, 1.55vw, 22px);
-      overflow-wrap: anywhere;
-    }
-
-    .two-column {
-      grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.3fr);
-      gap: 10px;
-      align-items: stretch;
-    }
-
-    .two-column > .panel {
-      min-width: 0;
-      padding: 15px;
-    }
-
-    .target-control,
-    .target-grid,
-    .target-card,
-    .target-title,
-    .target-details,
-    .target-details > div {
-      min-width: 0;
-    }
-
-    .target-head h2 {
-      font-size: 17px;
-    }
-
-    .target-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 9px;
-      margin-top: 10px;
-    }
-
-    .target-card {
-      padding: 12px;
-    }
-
-    .target-title {
-      align-items: flex-start;
-      margin-bottom: 8px;
-    }
-
-    .target-title span {
-      flex: 0 1 auto;
-      font-size: 11px;
-    }
-
-    .target-title strong {
-      flex: 1 1 120px;
-      max-width: 100%;
-      font-size: clamp(10px, 1vw, 13px);
-      line-height: 1.3;
-      overflow-wrap: anywhere;
-    }
-
-    .target-details {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 5px;
-      margin-top: 9px;
-    }
-
-    .target-details div {
-      padding: 7px;
-    }
-
-    .target-details span {
-      min-height: 22px;
-      font-size: 8px;
-      line-height: 1.25;
-    }
-
-    .target-details b {
-      max-width: 100%;
-      font-size: 11px;
-      line-height: 1.25;
-      overflow-wrap: anywhere;
-    }
-
-    .pipeline-progress {
-      margin: 12px 0;
-    }
-
-    .pipeline {
-      margin-top: 10px;
-    }
-
-    @media (max-width: 1250px) {
-      .shortcuts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .metric-grid-dashboard { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .two-column { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 760px) {
-      .dashboard-banner { align-items: flex-start; gap: 12px; }
-      .banner-content { max-width: 100%; }
-      .banner-metrics { display: none; }
-      .collection-filter { overflow-x: auto; }
-      .period-buttons { flex-wrap: wrap; }
-      .metric-grid-dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .target-grid { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 480px) {
-      .shortcuts-grid,
-      .metric-grid-dashboard { grid-template-columns: 1fr; }
-      .target-details { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-  `]
+  styles: [
+    `
+      .refresh-btn {
+        height: 38px;
+        min-height: 38px;
+        padding: 0 14px;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .collection-filter {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+      .collection-filter > div:first-child {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .collection-filter small {
+        color: var(--muted);
+      }
+      .period-buttons {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .period-buttons button {
+        background: #fff;
+        color: var(--text);
+        border: 1px solid var(--line);
+        box-shadow: none;
+        padding: 8px 12px;
+      }
+      .period-buttons button.active {
+        background: var(--brand);
+        color: #fff;
+      }
+      .custom-dates {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .custom-dates input {
+        width: auto;
+      }
+      @media (max-width: 900px) {
+        .collection-filter {
+          align-items: stretch;
+          flex-direction: column;
+        }
+        .custom-dates {
+          flex-wrap: wrap;
+        }
+      }
+      .target-control {
+        background: linear-gradient(145deg, #fff, #f8fafc);
+      }
+      .target-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: start;
+      }
+      .target-head h2 {
+        margin: 2px 0 4px;
+      }
+      .target-period {
+        padding: 6px 10px;
+        border-radius: 99px;
+        background: #ecfdf3;
+        color: #047857;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .target-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 18px;
+      }
+      .target-card {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fff;
+      }
+      .target-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .target-title span {
+        font-weight: 800;
+        color: #475569;
+      }
+      .target-title strong {
+        text-align: right;
+        color: #0f172a;
+      }
+      .target-details {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .target-details div {
+        padding: 10px;
+        border-radius: 10px;
+        background: #f8fafc;
+      }
+      .target-details span,
+      .target-details b {
+        display: block;
+      }
+      .target-details span {
+        font-size: 10px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .target-details b {
+        font-size: 14px;
+        color: #0f172a;
+      }
+      .target-details .positive {
+        background: #ecfdf3;
+      }
+      .target-details .positive b {
+        color: #047857;
+      }
+      .target-details .negative {
+        background: #fef2f2;
+      }
+      .target-details .negative b {
+        color: #b42318;
+      }
+      @media (max-width: 900px) {
+        .target-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 520px) {
+        .target-details {
+          grid-template-columns: 1fr;
+        }
+        .target-title {
+          flex-direction: column;
+        }
+        .target-title strong {
+          text-align: left;
+        }
+      }
+
+      .refresh-icon {
+        width: 16px;
+        height: 16px;
+        transition: transform 0.4s ease;
+      }
+
+      .refresh-btn:hover .refresh-icon {
+        transform: rotate(180deg);
+      }
+
+      /* Welcoming Banner */
+      .dashboard-banner {
+        position: relative;
+        background: linear-gradient(135deg, #090d16 0%, #1e293b 100%);
+        border: 1px solid #1e293b;
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #fff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      }
+
+      .banner-overlay {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 80% 20%,
+          rgba(15, 118, 110, 0.15) 0%,
+          transparent 50%
+        );
+        pointer-events: none;
+      }
+
+      .banner-content {
+        position: relative;
+        z-index: 1;
+        max-width: 60%;
+      }
+
+      .banner-eyebrow {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+        color: var(--brand);
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .banner-content h2 {
+        color: #fff;
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+      }
+
+      .banner-content p {
+        color: #94a3b8;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      .banner-content p strong {
+        color: #fff;
+        font-weight: 700;
+      }
+
+      .banner-metrics {
+        position: relative;
+        z-index: 1;
+      }
+
+      .banner-metric-pill {
+        background: rgba(15, 118, 110, 0.15);
+        border: 1px solid rgba(15, 118, 110, 0.3);
+        padding: 8px 16px;
+        border-radius: 99px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #06b6d4;
+      }
+
+      .pulse-indicator {
+        width: 8px;
+        height: 8px;
+        background: #06b6d4;
+        border-radius: 50%;
+        position: relative;
+      }
+
+      .pulse-indicator::after {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        border: 2px solid #06b6d4;
+        animation: pulse 1.8s infinite ease-in-out;
+        opacity: 0;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(0.6);
+          opacity: 0;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          transform: scale(1.6);
+          opacity: 0;
+        }
+      }
+
+      /* Quick Action Shortcuts */
+      .quick-shortcuts-panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .section-tag {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 14px;
+      }
+
+      .shortcuts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 16px;
+      }
+
+      .shortcut-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 14px 18px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--text-dark);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .shortcut-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--brand);
+        box-shadow:
+          0 10px 15px -3px rgba(15, 118, 110, 0.05),
+          0 0 0 1px rgba(15, 118, 110, 0.1);
+      }
+
+      .shortcut-icon-bg {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .shortcut-icon-bg svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .leads-bg {
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+      }
+      .projects-bg {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+      }
+      .collections-bg {
+        background: rgba(15, 118, 110, 0.1);
+        color: var(--brand);
+      }
+      .transport-bg {
+        background: rgba(249, 115, 22, 0.1);
+        color: #f97316;
+      }
+
+      .shortcut-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .shortcut-info strong {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+      }
+
+      .shortcut-info span {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      /* Metric Cards Grid */
+      .metric-grid-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .dashboard-metric-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .dashboard-metric-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .dashboard-metric-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-hover);
+      }
+
+      .dashboard-metric-card:hover::after {
+        opacity: 1;
+      }
+
+      .clickable-card {
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .clickable-card::after {
+        background: linear-gradient(90deg, var(--brand), #0ea5e9);
+      }
+
+      .clickable-card:hover {
+        border-color: rgba(15, 118, 110, 0.3);
+      }
+
+      .icon-wrapper {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .icon-wrapper svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .leads-theme {
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+      }
+      .dashboard-metric-card:nth-of-type(1)::after {
+        background: #6366f1;
+      }
+
+      .customers-theme {
+        background: rgba(236, 72, 153, 0.1);
+        color: #ec4899;
+      }
+      .dashboard-metric-card:nth-of-type(2)::after {
+        background: #ec4899;
+      }
+
+      .projects-theme {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+      }
+      .dashboard-metric-card:nth-of-type(3)::after {
+        background: #8b5cf6;
+      }
+
+      .pending-collections-theme {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+      }
+      .dashboard-metric-card:nth-of-type(4)::after {
+        background: #f59e0b;
+      }
+
+      .collections-theme {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+      }
+      .dashboard-metric-card:nth-of-type(5)::after {
+        background: #10b981;
+      }
+
+      .commissions-theme {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+      }
+      .dashboard-metric-card:nth-of-type(6)::after {
+        background: #3b82f6;
+      }
+
+      .body-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+
+      .card-label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .card-val {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin-top: 4px;
+        letter-spacing: -0.5px;
+      }
+
+      .text-brand {
+        color: var(--brand-dark);
+      }
+
+      .label-with-hint {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .hint-badge {
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--brand);
+        background: var(--brand-light);
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+        transition: all 0.2s ease;
+      }
+
+      .clickable-card:hover .hint-badge {
+        background: var(--brand);
+        color: white;
+      }
+
+      /* Split value commissions styling */
+      .double-value-card {
+        align-items: flex-start;
+      }
+
+      .commissions-split-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 6px;
+      }
+
+      .split-col {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .split-label {
+        font-size: 10px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .split-val {
+        font-size: 15px;
+        font-weight: 800;
+        margin-top: 1px;
+      }
+
+      .split-divider {
+        align-self: stretch;
+        width: 1px;
+        background: var(--line);
+      }
+
+      .text-success {
+        color: var(--success-dark);
+      }
+      .text-warning {
+        color: var(--warning-dark);
+      }
+
+      /* Funnel & Conversion progress items */
+      .pipeline-progress {
+        margin: 18px 0;
+      }
+
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .progress-info span {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .progress-info strong {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-dark);
+      }
+
+      .progress-bar-bg {
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: 99px;
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--brand), #0ea5e9);
+        border-radius: 99px;
+        transition: width 0.8s ease-in-out;
+      }
+
+      .progress-bar-fill.success {
+        background: linear-gradient(90deg, #10b981, #059669);
+      }
+
+      .panel-desc {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: -12px;
+        margin-bottom: 16px;
+      }
+
+      /* Small pipeline modifications */
+      .pipeline {
+        margin-top: 16px;
+      }
+
+      /* Compact dashboard layout and overflow-safe target controls. */
+      :host {
+        display: block;
+        min-width: 0;
+      }
+
+      .page-head {
+        margin-bottom: 12px;
+      }
+
+      .dashboard-banner {
+        min-height: 104px;
+        padding: 18px 22px;
+        margin-bottom: 12px;
+      }
+
+      .banner-content h2 {
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+
+      .banner-content p {
+        font-size: 12px;
+      }
+
+      .quick-shortcuts-panel {
+        padding: 12px 14px;
+        margin-bottom: 12px;
+      }
+
+      .section-tag {
+        margin-bottom: 8px;
+      }
+
+      .shortcuts-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .shortcut-card {
+        min-width: 0;
+        padding: 9px 11px;
+        gap: 9px;
+      }
+
+      .shortcut-icon-bg {
+        width: 34px;
+        height: 34px;
+      }
+
+      .shortcut-info {
+        min-width: 0;
+      }
+
+      .shortcut-info strong,
+      .shortcut-info span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .collection-filter {
+        min-width: 0;
+        padding: 11px 14px;
+        margin-bottom: 12px;
+      }
+
+      .period-buttons {
+        flex-wrap: nowrap;
+      }
+
+      .period-buttons button {
+        min-height: 32px;
+        padding: 6px 9px;
+        white-space: nowrap;
+      }
+
+      .metric-grid-dashboard {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 9px;
+        margin-bottom: 12px;
+      }
+
+      .dashboard-metric-card {
+        min-width: 0;
+        padding: 12px 13px;
+        gap: 10px;
+        border-radius: 13px;
+      }
+
+      .icon-wrapper {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+      }
+
+      .icon-wrapper svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .body-wrapper,
+      .label-with-hint {
+        min-width: 0;
+      }
+
+      .card-label {
+        font-size: 9px;
+      }
+
+      .card-val {
+        max-width: 100%;
+        font-size: clamp(16px, 1.55vw, 22px);
+        overflow-wrap: anywhere;
+      }
+
+      .two-column {
+        grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.3fr);
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .two-column > .panel {
+        min-width: 0;
+        padding: 15px;
+      }
+
+      .target-control,
+      .target-grid,
+      .target-card,
+      .target-title,
+      .target-details,
+      .target-details > div {
+        min-width: 0;
+      }
+
+      .target-head h2 {
+        font-size: 17px;
+      }
+
+      .target-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+        margin-top: 10px;
+      }
+
+      .target-card {
+        padding: 12px;
+      }
+
+      .target-title {
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+
+      .target-title span {
+        flex: 0 1 auto;
+        font-size: 11px;
+      }
+
+      .target-title strong {
+        flex: 1 1 120px;
+        max-width: 100%;
+        font-size: clamp(10px, 1vw, 13px);
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+      }
+
+      .target-details {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
+        margin-top: 9px;
+      }
+
+      .target-details div {
+        padding: 7px;
+      }
+
+      .target-details span {
+        min-height: 22px;
+        font-size: 8px;
+        line-height: 1.25;
+      }
+
+      .target-details b {
+        max-width: 100%;
+        font-size: 11px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .pipeline-progress {
+        margin: 12px 0;
+      }
+
+      .pipeline {
+        margin-top: 10px;
+      }
+
+      @media (max-width: 1250px) {
+        .shortcuts-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .metric-grid-dashboard {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .two-column {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .dashboard-banner {
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .banner-content {
+          max-width: 100%;
+        }
+        .banner-metrics {
+          display: none;
+        }
+        .collection-filter {
+          overflow-x: auto;
+        }
+        .period-buttons {
+          flex-wrap: wrap;
+        }
+        .metric-grid-dashboard {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .target-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .shortcuts-grid,
+        .metric-grid-dashboard {
+          grid-template-columns: 1fr;
+        }
+        .target-details {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+    `,
+  ],
 })
 export class DashboardComponent implements OnInit {
   private api = inject(ApiService);
-  auth=inject(AuthService);
+  auth = inject(AuthService);
   summary: DashboardSummary = {};
   formatMoney = money;
-  period:'month'|'week'|'year'|'custom'='month';
-  collectionFrom='';collectionTo='';
+  period: "month" | "week" | "year" | "custom" = "month";
+  collectionFrom = "";
+  collectionTo = "";
 
-  constructor(){this.setPeriodDates('month')}
-  get periodLabel(){return this.period==='month'?'This Month':this.period==='week'?'This Week':this.period==='year'?'This Year':'Custom Range'}
+  constructor() {
+    this.setPeriodDates("month");
+  }
+  get periodLabel() {
+    return this.period === "month"
+      ? "This Month"
+      : this.period === "week"
+        ? "This Week"
+        : this.period === "year"
+          ? "This Year"
+          : "Custom Range";
+  }
 
   get conversionRate() {
     const leads = this.summary.leads || 0;
@@ -896,19 +1428,46 @@ export class DashboardComponent implements OnInit {
     const total = approved + pending;
     return total ? Math.round((approved / total) * 100) : 0;
   }
-  targetPercent(completed:number,target:number){return target>0?Math.min(100,Math.round(completed/target*100)):0}
-  abs(value:number){return Math.abs(value)}
+  targetPercent(completed: number, target: number) {
+    return target > 0
+      ? Math.min(100, Math.round((completed / target) * 100))
+      : 0;
+  }
+  abs(value: number) {
+    return Math.abs(value);
+  }
 
   ngOnInit() {
     this.load();
   }
 
   load() {
-    this.api.dashboard(this.collectionFrom,this.collectionTo).subscribe((data: any) => {
-      this.summary = data;
-    });
+    this.api
+      .dashboard(this.collectionFrom, this.collectionTo)
+      .subscribe((data: any) => {
+        this.summary = data;
+      });
   }
-  setPeriod(period:'month'|'week'|'year'){this.period=period;this.setPeriodDates(period);this.load()}
-  private setPeriodDates(period:'month'|'week'|'year'){const now=new Date();let start=new Date(now);if(period==='month')start=new Date(now.getFullYear(),now.getMonth(),1);if(period==='year')start=new Date(now.getFullYear(),0,1);if(period==='week'){const day=(now.getDay()+6)%7;start=new Date(now.getFullYear(),now.getMonth(),now.getDate()-day)}this.collectionFrom=this.localDate(start);this.collectionTo=this.localDate(now)}
-  private localDate(value:Date){const offset=value.getTimezoneOffset()*60000;return new Date(value.getTime()-offset).toISOString().slice(0,10)}
+  setPeriod(period: "month" | "week" | "year") {
+    this.period = period;
+    this.setPeriodDates(period);
+    this.load();
+  }
+  private setPeriodDates(period: "month" | "week" | "year") {
+    const now = new Date();
+    let start = new Date(now);
+    if (period === "month")
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (period === "year") start = new Date(now.getFullYear(), 0, 1);
+    if (period === "week") {
+      const day = (now.getDay() + 6) % 7;
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+    }
+    this.collectionFrom = this.localDate(start);
+    this.collectionTo = this.localDate(now);
+  }
+  private localDate(value: Date) {
+    const offset = value.getTimezoneOffset() * 60000;
+    return new Date(value.getTime() - offset).toISOString().slice(0, 10);
+  }
 }

@@ -1,11 +1,24 @@
+# Dependencies & build output
 node_modules/
 dist/
 .angular/
-*.log
-.vs/
-bin/
-obj/
-node_modules/
-dist/
 .npm-cache/
 scratch/
+*.log
+
+# IDE / tooling
+.vs/
+.vscode/
+.idea/
+.claude/
+bin/
+obj/
+
+# Secrets & local environment
+.env
+.env.*
+!.env.example
+*.local.ts
+*.pem
+*.key
+*.pfx
